@@ -1,53 +1,52 @@
-<div class="seat-booking-container">
-  <!-- Movie Info Header -->
-  <div class="movie-info" *ngIf="movie">
+<div class="seat-booking-container" *ngIf="!loading; else loadingState">
+  <div class="movie-info" *ngIf="movieInfo">
     <div class="movie-poster">
-      <img [src]="movie.posterUrl" [alt]="movie.title">
+      <img [src]="movieInfo.posterUrl || 'assets/images/movies/default-poster.png'" [alt]="movieInfo.title">
     </div>
     <div class="movie-details">
-      <h1>{{ movie.title }}</h1>
+      <h1>{{ movieInfo.title }}</h1>
       <div class="movie-meta">
-        <span class="rating">⭐ {{ movie.rating }}/10</span>
-        <span class="duration">{{ movie.duration }} min</span>
-        <span class="genre">{{ movie.genre.join(', ') }}</span>
+        <span class="rating">⭐ {{ movieInfo.rating || 'N/A' }}/10</span>
+        <span class="duration">{{ movieInfo.duration || 0 }} min</span>
+        <span class="genre">{{ movieInfo.genre?.join(', ') }}</span>
       </div>
-      <div class="show-info">
+      <div class="show-info" *ngIf="showDateTime">
         <div class="info-item">
-          <strong>{{ theater }}</strong>
+          <strong>{{ theaterName }}</strong>
+          <span class="muted">{{ theaterLocation }}</span>
         </div>
         <div class="info-item">
-          <strong>{{ showDate }}</strong>
-          <span>{{ showtime }}</span>
+          <strong>{{ showDateTime | date:'MMM d, y' }}</strong>
+          <span>{{ showDateTime | date:'h:mm a' }}</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Seat Selection -->
-  <div class="seat-selection">
+  <div class="seat-selection" *ngIf="showtime">
     <h2>Select Your Seats</h2>
-    <app-seat-selector 
+    <app-seat-selector
       [showtimeId]="showtimeId"
       (seatsSelected)="onSeatsSelected($event)"
+      (seatLabelsChanged)="onSeatLabelsChanged($event)"
       (totalAmountChanged)="onTotalAmountChanged($event)">
     </app-seat-selector>
   </div>
 
-  <!-- Booking Summary -->
   <div class="booking-summary" *ngIf="selectedSeats.length > 0">
     <div class="summary-content">
       <div class="selected-info">
         <h3>Booking Summary</h3>
         <div class="summary-row">
-          <span>Selected Seats:</span>
-          <span class="seats-list">{{ selectedSeats.join(', ') }}</span>
+          <span>Selected Seats</span>
+          <span class="seats-list">{{ selectedSeatLabels.join(', ') }}</span>
         </div>
         <div class="summary-row">
-          <span>Number of Tickets:</span>
-          <span>{{ selectedSeats.length }}</span>
+          <span>Tickets</span>
+          <span>{{ selectedSeatLabels.length }}</span>
         </div>
         <div class="summary-row total">
-          <span>Total Amount:</span>
+          <span>Total Amount</span>
           <span class="amount">₹{{ totalAmount }}</span>
         </div>
       </div>
@@ -58,8 +57,11 @@
     </div>
   </div>
 
-  <!-- Empty State -->
   <div class="empty-state" *ngIf="selectedSeats.length === 0">
     <p>Please select at least one seat to continue</p>
   </div>
 </div>
+
+<ng-template #loadingState>
+  <app-loader [message]="'Loading seat layout...'"></app-loader>
+</ng-template>

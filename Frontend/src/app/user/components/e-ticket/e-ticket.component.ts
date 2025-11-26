@@ -73,8 +73,8 @@ import { Booking } from '../../../core/models/booking.model';
       </div>
 
       <div class="ticket-footer">
-        <div class="status" [class]="booking.status">
-          Status: {{booking.status.toUpperCase()}}
+        <div class="status" [ngClass]="booking.status.toLowerCase()">
+          Status: {{booking.status | titlecase}}
         </div>
         <div class="terms">
           <small>
@@ -234,7 +234,7 @@ import { Booking } from '../../../core/models/booking.model';
 export class ETicketComponent {
   @Input() booking!: Booking;
 
-  formatDateTime(date: Date): string {
+  formatDateTime(date: string | Date): string {
     return new Date(date).toLocaleString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -244,12 +244,12 @@ export class ETicketComponent {
     });
   }
 
-  formatDate(date: Date): string {
+  formatDate(date: string | Date): string {
     return new Date(date).toLocaleDateString('en-IN');
   }
 
   canCancel(): boolean {
-    if (this.booking.status !== 'confirmed') return false;
+    if (this.booking.status !== 'CONFIRMED') return false;
     const showTime = new Date(this.booking.showtime);
     const now = new Date();
     return showTime.getTime() - now.getTime() > 4 * 60 * 60 * 1000; // 4 hours before show

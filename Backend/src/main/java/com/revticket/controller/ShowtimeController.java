@@ -1,7 +1,9 @@
 package com.revticket.controller;
 
-import com.revticket.entity.Showtime;
+import com.revticket.dto.ShowtimeRequest;
+import com.revticket.dto.ShowtimeResponse;
 import com.revticket.service.ShowtimeService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +21,25 @@ public class ShowtimeController {
     @Autowired
     private ShowtimeService showtimeService;
 
+    @GetMapping
+    public ResponseEntity<List<ShowtimeResponse>> getShowtimes(
+            @RequestParam(required = false) String movieId,
+            @RequestParam(required = false) String theaterId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        if (movieId != null && date != null) {
+            return ResponseEntity.ok(showtimeService.getShowtimesByMovieAndDate(movieId, date));
+        }
+        if (movieId != null) {
+            return ResponseEntity.ok(showtimeService.getShowtimesByMovie(movieId));
+        }
+        if (theaterId != null) {
+            return ResponseEntity.ok(showtimeService.getShowtimesByTheater(theaterId));
+        }
+        return ResponseEntity.ok(showtimeService.getAllShowtimes());
+    }
+
     @GetMapping("/movie/{movieId}")
-    public ResponseEntity<List<Showtime>> getShowtimesByMovie(
+    public ResponseEntity<List<ShowtimeResponse>> getShowtimesByMovie(
             @PathVariable String movieId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         if (date != null) {
@@ -30,7 +49,7 @@ public class ShowtimeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Showtime> getShowtimeById(@PathVariable String id) {
+    public ResponseEntity<ShowtimeResponse> getShowtimeById(@PathVariable String id) {
         return showtimeService.getShowtimeById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -38,14 +57,15 @@ public class ShowtimeController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Showtime> createShowtime(@RequestBody Showtime showtime) {
-        return ResponseEntity.ok(showtimeService.createShowtime(showtime));
+    public ResponseEntity<ShowtimeResponse> createShowtime(@Valid @RequestBody ShowtimeRequest request) {
+        return ResponseEntity.ok(showtimeService.createShowtime(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable String id, @RequestBody Showtime showtime) {
-        return ResponseEntity.ok(showtimeService.updateShowtime(id, showtime));
+    public ResponseEntity<ShowtimeResponse> updateShowtime(@PathVariable String id,
+                                                           @Valid @RequestBody ShowtimeRequest request) {
+        return ResponseEntity.ok(showtimeService.updateShowtime(id, request));
     }
 
     @DeleteMapping("/{id}")

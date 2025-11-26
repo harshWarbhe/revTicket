@@ -4,6 +4,13 @@ export interface User {
   name: string;
   role: 'USER' | 'ADMIN';
   phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  preferredLanguage?: string;
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  pushNotifications?: boolean;
   createdAt: Date;
 }
 
@@ -17,6 +24,10 @@ export interface SignupRequest {
   email: string;
   password: string;
   phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  preferredLanguage?: string;
 }
 
 export interface AuthResponse {

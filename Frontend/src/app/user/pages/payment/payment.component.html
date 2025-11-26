@@ -1,101 +1,137 @@
-<div class="payment-container">
-  <h2>Payment</h2>
-  
-  <div class="booking-summary">
-    <h3>Booking Summary</h3>
-    <p>Movie: Sample Movie</p>
-    <p>Seats: 3 seats</p>
-    <p>Total: ₹600</p>
+<div class="payment-container" *ngIf="bookingDraft && costBreakdown; else missingBooking">
+  <div class="payment-grid">
+    <section class="summary-card">
+      <h2>Booking Summary</h2>
+      <div class="movie-info">
+        <h3>{{ bookingDraft.movieTitle }}</h3>
+        <p>{{ bookingDraft.theaterName }} • {{ bookingDraft.theaterLocation }}</p>
+        <p>{{ bookingDraft.showDateTime | date:'MMM d, y - h:mm a' }}</p>
+      </div>
+
+      <div class="seat-info">
+        <div class="label">Seats</div>
+        <div class="value">{{ bookingDraft.seats.join(', ') }}</div>
+      </div>
+
+      <div class="cost-breakdown">
+        <div class="row">
+          <span>Tickets ({{ bookingDraft.seats.length }})</span>
+          <span>₹{{ costBreakdown.baseAmount }}</span>
+        </div>
+        <div class="row">
+          <span>Convenience Fee</span>
+          <span>₹{{ costBreakdown.convenienceFee }}</span>
+        </div>
+        <div class="row">
+          <span>GST</span>
+          <span>₹{{ costBreakdown.gst }}</span>
+        </div>
+        <div class="row total">
+          <span>Total Payable</span>
+          <span>₹{{ costBreakdown.total }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="payment-card">
+      <h2>Payment Details</h2>
+
+      <form [formGroup]="contactForm" class="contact-form">
+        <div class="form-row">
+          <label>Full Name</label>
+          <input type="text" formControlName="name" placeholder="Your name">
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input type="email" formControlName="email" placeholder="you@email.com">
+        </div>
+        <div class="form-row">
+          <label>Phone</label>
+          <input type="tel" formControlName="phone" placeholder="10-digit number">
+        </div>
+      </form>
+
+      <div class="payment-methods">
+        <h3>Select Payment Method</h3>
+        <div class="method-options">
+          <label class="method-option" [class.active]="paymentMethod === 'card'">
+            <input type="radio" value="card" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('card')">
+            <span>💳 Card</span>
+          </label>
+          <label class="method-option" [class.active]="paymentMethod === 'upi'">
+            <input type="radio" value="upi" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('upi')">
+            <span>📱 UPI</span>
+          </label>
+          <label class="method-option" [class.active]="paymentMethod === 'wallet'">
+            <input type="radio" value="wallet" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('wallet')">
+            <span>💰 Wallet</span>
+          </label>
+        </div>
+      </div>
+
+      <form *ngIf="paymentMethod === 'card'" [formGroup]="cardForm" class="payment-form">
+        <div class="form-row">
+          <label>Cardholder Name</label>
+          <input type="text" formControlName="cardholderName" placeholder="Name on card">
+        </div>
+        <div class="form-row">
+          <label>Card Number</label>
+          <input type="text" formControlName="cardNumber" placeholder="1234 5678 9012 3456" maxlength="16">
+        </div>
+        <div class="two-column">
+          <div>
+            <label>Expiry Month</label>
+            <select formControlName="expiryMonth">
+              <option value="">MM</option>
+              <option *ngFor="let month of monthOptions" [value]="month">
+                {{ month | number:'2.0-0' }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label>Expiry Year</label>
+            <select formControlName="expiryYear">
+              <option value="">YYYY</option>
+              <option *ngFor="let year of yearOptions" [value]="year">{{ year }}</option>
+            </select>
+          </div>
+          <div>
+            <label>CVV</label>
+            <input type="text" formControlName="cvv" maxlength="4" placeholder="123">
+          </div>
+        </div>
+      </form>
+
+      <form *ngIf="paymentMethod === 'upi'" [formGroup]="upiForm" class="payment-form">
+        <div class="form-row">
+          <label>UPI ID</label>
+          <input type="text" formControlName="upiId" placeholder="yourname@upi">
+        </div>
+        <div class="upi-apps">
+          <button type="button">GPay</button>
+          <button type="button">PhonePe</button>
+          <button type="button">Paytm</button>
+        </div>
+      </form>
+
+      <div *ngIf="paymentMethod === 'wallet'" class="wallet-info">
+        <p>Select wallet from your linked accounts at checkout.</p>
+      </div>
+
+      <button 
+        type="button" 
+        class="pay-button" 
+        (click)="processPayment()" 
+        [disabled]="processing">
+        {{ processing ? 'Processing...' : ('Pay ₹' + costBreakdown.total) }}
+      </button>
+    </section>
   </div>
-
-  <div class="payment-methods">
-    <h3>Select Payment Method</h3>
-    <div class="method-options">
-      <label class="method-option" [class.active]="paymentMethod === 'card'">
-        <input type="radio" value="card" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('card')">
-        <span>💳 Credit/Debit Card</span>
-      </label>
-      <label class="method-option" [class.active]="paymentMethod === 'upi'">
-        <input type="radio" value="upi" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('upi')">
-        <span>📱 UPI</span>
-      </label>
-      <label class="method-option" [class.active]="paymentMethod === 'wallet'">
-        <input type="radio" value="wallet" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('wallet')">
-        <span>💰 Wallet</span>
-      </label>
-    </div>
-  </div>
-
-  <!-- Card Payment Form -->
-  <form *ngIf="paymentMethod === 'card'" [formGroup]="cardForm" class="payment-form">
-    <h4>Card Details</h4>
-    <div class="form-group">
-      <label>Cardholder Name</label>
-      <input type="text" formControlName="cardholderName" class="form-control" placeholder="John Doe">
-    </div>
-    <div class="form-group">
-      <label>Card Number</label>
-      <input type="text" formControlName="cardNumber" class="form-control" placeholder="1234567890123456" maxlength="16">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Expiry Month</label>
-        <select formControlName="expiryMonth" class="form-control">
-          <option value="">MM</option>
-          <option *ngFor="let month of [1,2,3,4,5,6,7,8,9,10,11,12]" [value]="month">{{ month.toString().padStart(2, '0') }}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Expiry Year</label>
-        <select formControlName="expiryYear" class="form-control">
-          <option value="">YYYY</option>
-          <option *ngFor="let year of [2024,2025,2026,2027,2028,2029,2030]" [value]="year">{{ year }}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>CVV</label>
-        <input type="text" formControlName="cvv" class="form-control" placeholder="123" maxlength="4">
-      </div>
-    </div>
-  </form>
-
-  <!-- UPI Payment Form -->
-  <form *ngIf="paymentMethod === 'upi'" [formGroup]="upiForm" class="payment-form">
-    <h4>UPI Details</h4>
-    <div class="form-group">
-      <label>UPI ID</label>
-      <input type="text" formControlName="upiId" class="form-control" placeholder="yourname@paytm">
-    </div>
-    <div class="upi-apps">
-      <p>Or pay using:</p>
-      <div class="app-buttons">
-        <button type="button" class="app-btn">📱 PhonePe</button>
-        <button type="button" class="app-btn">💰 Paytm</button>
-        <button type="button" class="app-btn">🏦 GPay</button>
-      </div>
-    </div>
-  </form>
-
-  <!-- Wallet Payment -->
-  <div *ngIf="paymentMethod === 'wallet'" class="payment-form">
-    <h4>Wallet Payment</h4>
-    <div class="wallet-options">
-      <div class="wallet-item">
-        <span>💰 Paytm Wallet</span>
-        <span class="balance">Balance: ₹1,200</span>
-      </div>
-      <div class="wallet-item">
-        <span>📱 PhonePe Wallet</span>
-        <span class="balance">Balance: ₹800</span>
-      </div>
-    </div>
-  </div>
-
-  <button 
-    type="button" 
-    class="btn-primary pay-button" 
-    (click)="processPayment()"
-    [disabled]="processing">
-    {{ processing ? 'Processing...' : 'Pay ₹600' }}
-  </button>
 </div>
+
+<ng-template #missingBooking>
+  <div class="payment-container">
+    <p>Your booking session has expired. Please start again.</p>
+    <button class="pay-button" routerLink="/user/home">Back to Home</button>
+  </div>
+</ng-template>

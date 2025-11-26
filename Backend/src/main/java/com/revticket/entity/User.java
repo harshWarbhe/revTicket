@@ -33,6 +33,26 @@ public class User {
 
     private String phone;
 
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+
+    private String gender;
+
+    @Column(length = 500)
+    private String address;
+
+    @Column(name = "preferred_language")
+    private String preferredLanguage;
+
+    @Column(name = "email_notifications")
+    private Boolean emailNotifications = true;
+
+    @Column(name = "sms_notifications")
+    private Boolean smsNotifications = false;
+
+    @Column(name = "push_notifications")
+    private Boolean pushNotifications = true;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

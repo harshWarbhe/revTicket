@@ -1,9 +1,11 @@
 package com.revticket.service;
 
+import com.revticket.dto.PasswordChangeRequest;
 import com.revticket.dto.UserDto;
 import com.revticket.entity.User;
 import com.revticket.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +16,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public UserDto getUserProfile(String userId) {
         User user = userRepository.findById(userId)
@@ -27,6 +32,13 @@ public class UserService {
 
         user.setName(userDto.getName());
         user.setPhone(userDto.getPhone());
+        user.setDateOfBirth(userDto.getDateOfBirth());
+        user.setGender(userDto.getGender());
+        user.setAddress(userDto.getAddress());
+        user.setPreferredLanguage(userDto.getPreferredLanguage());
+        user.setEmailNotifications(userDto.getEmailNotifications());
+        user.setSmsNotifications(userDto.getSmsNotifications());
+        user.setPushNotifications(userDto.getPushNotifications());
 
         user = userRepository.save(user);
         return convertToDto(user);
@@ -38,6 +50,18 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public void changePassword(String userId, PasswordChangeRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
     private UserDto convertToDto(User user) {
         return new UserDto(
                 user.getId(),
@@ -45,6 +69,13 @@ public class UserService {
                 user.getName(),
                 user.getRole().name(),
                 user.getPhone(),
+                user.getDateOfBirth(),
+                user.getGender(),
+                user.getAddress(),
+                user.getPreferredLanguage(),
+                user.getEmailNotifications(),
+                user.getSmsNotifications(),
+                user.getPushNotifications(),
                 user.getCreatedAt());
     }
 }

@@ -4,6 +4,11 @@ import { Observable } from 'rxjs';
 import { User } from '../models/user.model';
 import { environment } from '../../../environments/environment';
 
+export interface PasswordChangeRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -20,5 +25,9 @@ export class UserService {
 
   getAllUsers(): Observable<User[]> {
     return this.http.get<User[]>(`${environment.apiUrl}/users`);
+  }
+
+  changePassword(request: PasswordChangeRequest): Observable<string> {
+    return this.http.put(`${environment.apiUrl}/users/change-password`, request, { responseType: 'text' });
   }
 }

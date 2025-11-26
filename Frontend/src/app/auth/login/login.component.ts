@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
+import { AlertService } from '../../core/services/alert.service';
 
 @Component({
   selector: 'app-login',
@@ -11,10 +12,11 @@ import { CommonModule } from '@angular/common';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private alertService = inject(AlertService);
 
   loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -23,31 +25,62 @@ export class LoginComponent {
 
   loading = false;
   error = '';
+  showPassword = false;
+
+  ngOnInit(): void {
+    // Redirect if already logged in
+    if (this.authService.isAuthenticated()) {
+      const user = this.authService.getCurrentUser();
+      if (user?.role === 'ADMIN') {
+        this.router.navigate(['/admin/dashboard']);
+      } else {
+        this.router.navigate(['/user/home']);
+      }
+    }
+  }
 
   onSubmit(): void {
-    if (this.loginForm.valid) {
-      this.loading = true;
-      this.error = '';
-
-      this.authService.login({
-        email: this.loginForm.value.email!,
-        password: this.loginForm.value.password!
-      }).subscribe({
-        next: (response) => {
-          this.loading = false;
-
-          // Route based on user role
-          if (response.user.role === 'ADMIN') {
-            this.router.navigate(['/admin/dashboard']);
-          } else {
-            this.router.navigate(['/user/home']);
-          }
-        },
-        error: (err) => {
-          this.error = err.error?.message || 'Invalid credentials. Please try again.';
-          this.loading = false;
-        }
-      });
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
     }
+
+    this.loading = true;
+    this.error = '';
+
+    const credentials = {
+      email: this.loginForm.value.email!.trim(),
+      password: this.loginForm.value.password!
+    };
+
+    this.authService.login(credentials).subscribe({
+      next: (response) => {
+        this.loading = false;
+        this.alertService.success('Login successful! Welcome back.');
+
+        // Route based on user role
+        if (response.user.role === 'ADMIN') {
+          this.router.navigate(['/admin/dashboard']);
+        } else {
+          this.router.navigate(['/user/home']);
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err.error?.message || 'Invalid email or password. Please try again.';
+        console.error('Login error:', err);
+      }
+    });
+  }
+
+  // Helper method to check if field has error
+  hasError(fieldName: string, errorType: string): boolean {
+    const field = this.loginForm.get(fieldName);
+    return !!(field && field.hasError(errorType) && field.touched);
+  }
+
+  // Toggle password visibility
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 }

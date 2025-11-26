@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -8,7 +8,7 @@ export interface Showtime {
   movieId: string;
   theaterId: string;
   screen: string;
-  showDateTime: Date;
+  showDateTime: string;
   ticketPrice: number;
   totalSeats: number;
   availableSeats: number;
@@ -20,10 +20,12 @@ export interface Showtime {
     duration?: number;
     rating?: number;
     posterUrl?: string;
+    language?: string;
   };
   theater?: {
     id: string;
     name: string;
+    location?: string;
   };
 }
 
@@ -33,10 +35,25 @@ export interface Showtime {
 export class ShowtimeService {
   constructor(private http: HttpClient) {}
 
+  getShowtimes(filters?: { movieId?: string; theaterId?: string; date?: string }): Observable<Showtime[]> {
+    let params = new HttpParams();
+    if (filters?.movieId) {
+      params = params.set('movieId', filters.movieId);
+    }
+    if (filters?.theaterId) {
+      params = params.set('theaterId', filters.theaterId);
+    }
+    if (filters?.date) {
+      params = params.set('date', filters.date);
+    }
+    return this.http.get<Showtime[]>(`${environment.apiUrl}/showtimes`, { params });
+  }
+
   getShowtimesByMovie(movieId: string, date?: string): Observable<Showtime[]> {
-    const url = date 
-      ? `${environment.apiUrl}/showtimes/movie/${movieId}?date=${date}`
-      : `${environment.apiUrl}/showtimes/movie/${movieId}`;
+    let url = `${environment.apiUrl}/showtimes/movie/${movieId}`;
+    if (date) {
+      return this.http.get<Showtime[]>(url, { params: { date } });
+    }
     return this.http.get<Showtime[]>(url);
   }
 

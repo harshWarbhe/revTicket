@@ -1,7 +1,9 @@
 package com.revticket.controller;
 
-import com.revticket.entity.Theater;
+import com.revticket.dto.TheaterRequest;
+import com.revticket.dto.TheaterResponse;
 import com.revticket.service.TheaterService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,12 +20,13 @@ public class TheaterController {
     private TheaterService theaterService;
 
     @GetMapping
-    public ResponseEntity<List<Theater>> getAllTheaters() {
-        return ResponseEntity.ok(theaterService.getAllTheaters());
+    public ResponseEntity<List<TheaterResponse>> getAllTheaters(
+            @RequestParam(name = "activeOnly", defaultValue = "true") boolean activeOnly) {
+        return ResponseEntity.ok(theaterService.getAllTheaters(activeOnly));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Theater> getTheaterById(@PathVariable String id) {
+    public ResponseEntity<TheaterResponse> getTheaterById(@PathVariable String id) {
         return theaterService.getTheaterById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -31,14 +34,22 @@ public class TheaterController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Theater> createTheater(@RequestBody Theater theater) {
-        return ResponseEntity.ok(theaterService.createTheater(theater));
+    public ResponseEntity<TheaterResponse> createTheater(@Valid @RequestBody TheaterRequest request) {
+        return ResponseEntity.ok(theaterService.createTheater(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Theater> updateTheater(@PathVariable String id, @RequestBody Theater theater) {
-        return ResponseEntity.ok(theaterService.updateTheater(id, theater));
+    public ResponseEntity<TheaterResponse> updateTheater(@PathVariable String id,
+                                                         @Valid @RequestBody TheaterRequest request) {
+        return ResponseEntity.ok(theaterService.updateTheater(id, request));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TheaterResponse> updateTheaterStatus(@PathVariable String id,
+                                                               @RequestParam boolean active) {
+        return ResponseEntity.ok(theaterService.updateTheaterStatus(id, active));
     }
 
     @DeleteMapping("/{id}")

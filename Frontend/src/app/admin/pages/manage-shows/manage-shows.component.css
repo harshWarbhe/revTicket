@@ -385,6 +385,25 @@
   gap: 8px;
 }
 
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
 .form-group label {
   font-weight: 600;
   color: #333;
@@ -401,12 +420,152 @@
   transition: all 0.3s ease;
 }
 
+.form-group input:disabled {
+  background: #e9ecef;
+  cursor: not-allowed;
+}
+
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
   border-color: #667eea;
   background: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.seat-layout-config {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px dashed #667eea;
+}
+
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.config-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.btn-add-section {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-add-section:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+.seat-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.seat-section {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #e1e5e9;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.section-header h4 {
+  margin: 0;
+  color: #667eea;
+  font-size: 1rem;
+}
+
+.btn-remove {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.btn-remove:hover {
+  background: #c0392b;
+  transform: scale(1.1);
+}
+
+.section-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.field input,
+.field select {
+  padding: 10px 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+}
+
+.total-seats-display {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #333;
+  border: 2px solid #667eea;
+}
+
+.empty-sections {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
 }
 
 .form-actions {
@@ -452,6 +611,10 @@
   }
   
   .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-fields {
     grid-template-columns: 1fr;
   }
   

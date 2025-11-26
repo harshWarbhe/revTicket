@@ -1,4 +1,4 @@
-<div class="booking-success-container">
+<div class="booking-success-container" *ngIf="booking; else loadingState">
   <div class="success-card">
     <div class="success-header">
       <div class="success-icon">
@@ -9,10 +9,10 @@
         </div>
       </div>
       <h1>Booking Confirmed!</h1>
-      <p>Your movie tickets have been successfully booked</p>
+      <p>Your tickets are ready. Enjoy the movie!</p>
     </div>
 
-    <div class="booking-details" *ngIf="booking">
+    <div class="booking-details">
       <div class="detail-section">
         <h3>Booking Information</h3>
         <div class="detail-grid">
@@ -22,13 +22,13 @@
           </div>
           <div class="detail-item">
             <span class="label">Movie</span>
-            <span class="value">{{ booking.movie.title }}</span>
+            <span class="value">{{ booking.movieTitle }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Theater</span>
-            <span class="value">{{ booking.theater.name }}</span>
+            <span class="value">{{ booking.theaterName }}</span>
           </div>
-          <div class="detail-item">
+          <div class="detail-item" *ngIf="booking.screen">
             <span class="label">Screen</span>
             <span class="value">{{ booking.screen }}</span>
           </div>
@@ -46,17 +46,17 @@
       <div class="detail-section">
         <h3>Payment Summary</h3>
         <div class="payment-breakdown">
-          <div class="payment-row">
+          <div class="payment-row" *ngIf="booking.ticketPrice">
             <span>Tickets ({{ booking.seats.length }} × ₹{{ booking.ticketPrice }})</span>
-            <span>₹{{ booking.seats.length * booking.ticketPrice }}</span>
+            <span>₹{{ booking.seats.length * (booking.ticketPrice || 0) }}</span>
           </div>
-          <div class="payment-row">
+          <div class="payment-row" *ngIf="booking.convenienceFee">
             <span>Convenience Fee</span>
-            <span>₹{{ booking.convenienceFee || 50 }}</span>
+            <span>₹{{ booking.convenienceFee }}</span>
           </div>
-          <div class="payment-row">
-            <span>GST (18%)</span>
-            <span>₹{{ booking.gst || 25 }}</span>
+          <div class="payment-row" *ngIf="booking.gst">
+            <span>GST</span>
+            <span>₹{{ booking.gst }}</span>
           </div>
           <div class="payment-row total">
             <span>Total Amount</span>
@@ -77,7 +77,7 @@
       </button>
       <button class="btn-secondary" routerLink="/user/my-bookings">
         <span class="icon">📋</span>
-        View All Bookings
+        View My Bookings
       </button>
     </div>
 
@@ -88,21 +88,21 @@
           <div class="step-icon">📱</div>
           <div class="step-content">
             <h5>Save Your Ticket</h5>
-            <p>Download or save the ticket to your phone</p>
+            <p>Download or email the ticket for quick access.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-icon">🎬</div>
           <div class="step-content">
             <h5>Arrive Early</h5>
-            <p>Reach the theater 15-20 minutes before showtime</p>
+            <p>Reach 15 minutes before showtime for hassle-free entry.</p>
           </div>
         </div>
         <div class="step">
-          <div class="step-icon">🎫</div>
+          <div class="step-icon">🎟️</div>
           <div class="step-content">
             <h5>Show Your Ticket</h5>
-            <p>Present your ticket at the theater entrance</p>
+            <p>Present the QR code at the entrance.</p>
           </div>
         </div>
       </div>
@@ -115,3 +115,9 @@
     </div>
   </div>
 </div>
+
+<ng-template #loadingState>
+  <div class="booking-success-container">
+    <p>Loading booking details...</p>
+  </div>
+</ng-template>

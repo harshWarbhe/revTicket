@@ -32,33 +32,76 @@
           <div class="form-group">
             <label for="email" class="form-label">Email Address</label>
             <div class="input-wrapper">
-              <span class="input-icon">📧</span>
-              <input type="email" id="email" formControlName="email" class="form-input" placeholder="Enter your email"
-                [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+              <span class="input-icon" aria-hidden="true">📧</span>
+              <input 
+                type="email" 
+                id="email" 
+                name="email"
+                formControlName="email" 
+                class="form-input" 
+                placeholder="Enter your email"
+                autocomplete="email"
+                [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+                aria-required="true"
+                aria-describedby="email-error">
             </div>
-            <div class="error-message" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-              Please enter a valid email address
+            <div 
+              id="email-error"
+              class="error-message" 
+              *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+              role="alert">
+              <span *ngIf="loginForm.get('email')?.hasError('required')">Email is required</span>
+              <span *ngIf="loginForm.get('email')?.hasError('email')">Please enter a valid email address</span>
             </div>
           </div>
 
           <div class="form-group">
             <label for="password" class="form-label">Password</label>
-            <div class="input-wrapper">
-              <span class="input-icon">🔒</span>
-              <input type="password" id="password" formControlName="password" class="form-input"
+            <div class="input-wrapper password-wrapper">
+              <span class="input-icon" aria-hidden="true">🔒</span>
+              <input 
+                [type]="showPassword ? 'text' : 'password'" 
+                id="password" 
+                name="password"
+                formControlName="password" 
+                class="form-input password-input"
                 placeholder="Enter your password"
-                [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+                autocomplete="current-password"
+                [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+                aria-required="true"
+                aria-describedby="password-error">
+              <button 
+                type="button" 
+                class="toggle-password" 
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+                tabindex="0">
+                <span *ngIf="!showPassword">👁️</span>
+                <span *ngIf="showPassword">🙈</span>
+              </button>
             </div>
-            <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-              Password must be at least 6 characters
+            <div 
+              id="password-error"
+              class="error-message" 
+              *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+              role="alert">
+              <span *ngIf="loginForm.get('password')?.hasError('required')">Password is required</span>
+              <span *ngIf="loginForm.get('password')?.hasError('minlength')">Password must be at least 6 characters</span>
             </div>
           </div>
 
-          <div class="error-message" *ngIf="error">{{ error }}</div>
+          <div class="error-message server-error" *ngIf="error" role="alert" aria-live="polite">
+            <span class="error-icon" aria-hidden="true">⚠️</span>
+            {{ error }}
+          </div>
 
-          <button type="submit" class="submit-btn" [disabled]="loginForm.invalid || loading">
+          <button 
+            type="submit" 
+            class="submit-btn" 
+            [disabled]="loginForm.invalid || loading"
+            [attr.aria-busy]="loading">
             <span *ngIf="!loading">Login</span>
-            <span *ngIf="loading" class="loading-spinner">Loging in...</span>
+            <span *ngIf="loading" class="loading-spinner" role="status" aria-label="Logging in">Logging in...</span>
           </button>
         </form>
 

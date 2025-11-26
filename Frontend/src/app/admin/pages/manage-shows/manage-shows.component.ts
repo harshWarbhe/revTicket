@@ -2,12 +2,34 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ShowtimeService } from '../../../core/services/showtime.service';
-import { MovieService } from '../../../core/services/movie.service';
-import { TheaterService } from '../../../core/services/theater.service';
-import { AlertService } from '../../../core/services/alert.service';
 import { forkJoin } from 'rxjs';
-import { Showtime } from '../../../core/services/showtime.service';
+import { finalize } from 'rxjs/operators';
+import { ShowtimeService, Showtime } from '../../../core/services/showtime.service';
+import { MovieService } from '../../../core/services/movie.service';
+import { TheaterService, Theater } from '../../../core/services/theater.service';
+import { AlertService } from '../../../core/services/alert.service';
+import { Movie } from '../../../core/models/movie.model';
+
+interface SeatSection {
+  name: string;
+  rowStart: string;
+  rowEnd: string;
+  seatsPerRow: number;
+  price: number;
+  type: 'REGULAR' | 'PREMIUM' | 'VIP';
+}
+
+interface ShowtimeForm {
+  movieId: string;
+  theaterId: string;
+  screen: string;
+  showDateTime: string;
+  ticketPrice: number | null;
+  totalSeats: number | null;
+  status: Showtime['status'];
+  seatLayout: SeatSection[];
+  useCustomLayout: boolean;
+}
 
 @Component({
   selector: 'app-manage-shows',
@@ -17,29 +39,32 @@ import { Showtime } from '../../../core/services/showtime.service';
   styleUrls: ['./manage-shows.component.css']
 })
 export class ManageShowsComponent implements OnInit {
-  shows: any[] = [];
-  filteredShows: any[] = [];
-  movies: any[] = [];
-  theaters: any[] = [];
-  
+  shows: Showtime[] = [];
+  filteredShows: Showtime[] = [];
+  movies: Movie[] = [];
+  theaters: Theater[] = [];
+
   searchTerm = '';
-  selectedMovie = '';
-  selectedTheater = '';
+  selectedMovieId = '';
+  selectedTheaterId = '';
   selectedDate = '';
   showAddForm = false;
   isEditMode = false;
   editingShowId: string | null = null;
   loading = false;
   submitting = false;
-  
-  newShow = {
+  deleteInProgressId: string | null = null;
+
+  newShow: ShowtimeForm = {
     movieId: '',
     theaterId: '',
     screen: '',
     showDateTime: '',
-    ticketPrice: 0,
-    totalSeats: 0,
-    status: 'ACTIVE'
+    ticketPrice: null,
+    totalSeats: null,
+    status: 'ACTIVE',
+    seatLayout: [],
+    useCustomLayout: false
   };
 
   constructor(
@@ -53,101 +78,38 @@ export class ManageShowsComponent implements OnInit {
     this.loadData();
   }
 
-
   loadData(): void {
     this.loading = true;
-  
     forkJoin({
       movies: this.movieService.getMovies(),
-      theaters: this.theaterService.getAllTheaters()
-    }).subscribe({
-      next: ({ movies, theaters }) => {
-  
-        // 🔥 Normalize Movies
-        this.movies = movies.map((m: any) => ({
-          id: m.id || m._id,
-          title: m.title || m.name,
-          genre: m.genre || m.genres || [],
-          duration: m.duration || 0,
-          rating: m.rating || 0,
-          posterUrl: m.posterUrl || m.image || ''
-        }));
-  
-        // 🔥 Normalize Theaters
-        this.theaters = theaters.map((t: any) => ({
-          id: t.id || t._id,
-          name: t.name,
-          location: t.location || ''
-        }));
-  
-        this.loadShows();
-      },
-  
-      error: () => {
-        this.alertService.error('Failed to load data');
-        this.loading = false;
-      }
-    });
-  }
-
-  // loadData(): void {
-  //   this.loading = true;
-  //   forkJoin({
-  //     movies: this.movieService.getMovies(),
-  //     theaters: this.theaterService.getAllTheaters()
-  //   }).subscribe({
-  //     next: ({ movies, theaters }) => {
-  //       this.movies = movies;
-  //       this.theaters = theaters;
-  //       this.loadShows();
-  //     },
-  //     error: (err) => {
-  //       console.error('Error loading data:', err);
-  //       this.alertService.error('Failed to load data');
-  //       this.loading = false;
-  //     }
-  //   });
-  // }
-
-  loadShows(): void {
-    // Load all showtimes - in production, you'd have an endpoint for all showtimes
-    // For now, we'll get showtimes for each movie
-    const showtimePromises = this.movies.map(movie => 
-      this.showtimeService.getShowtimesByMovie(movie.id)
-    );
-
-    Promise.all(showtimePromises.map(p => p.toPromise())).then(results => {
-      this.shows = [];
-      results.forEach((showtimes: any, index) => {
-        if (showtimes && showtimes.length > 0) {
-          showtimes.forEach((st: any) => {
-            this.shows.push({
-              id: st.id,
-              movie: {
-                title: this.movies[index]?.title || 'Unknown',
-                genre: this.movies[index]?.genre || [],
-                duration: this.movies[index]?.duration || 0,
-                rating: this.movies[index]?.rating || 0,
-                posterUrl: this.movies[index]?.posterUrl || ''
-              },
-              theater: {
-                name: this.theaters.find(t => t.id === st.theaterId)?.name || 'Unknown'
-              },
-              screen: st.screen,
-              showtime: new Date(st.showDateTime),
-              ticketPrice: st.ticketPrice,
-              totalSeats: st.totalSeats,
-              availableSeats: st.availableSeats,
-              status: st.status
-            });
-          });
+      theaters: this.theaterService.getAllTheaters(false),
+      showtimes: this.showtimeService.getShowtimes()
+    })
+      .pipe(finalize(() => this.loading = false))
+      .subscribe({
+        next: ({ movies, theaters, showtimes }) => {
+          this.movies = movies;
+          this.theaters = theaters;
+          this.shows = showtimes.map(s => this.mapShowtimeToView(s));
+          this.filterShows();
+        },
+        error: (err) => {
+          console.error('Failed to load admin data', err);
+          this.alertService.error('Failed to load movies, theaters, or showtimes.');
         }
       });
-      this.filterShows();
-      this.loading = false;
-    }).catch(err => {
-      console.error('Error loading showtimes:', err);
-      this.loading = false;
+  }
+
+  private reloadShowtimes(): void {
+    this.showtimeService.getShowtimes().subscribe({
+      next: (showtimes) => {
+        this.shows = showtimes.map(s => this.mapShowtimeToView(s));
+        this.filterShows();
+      },
+      error: (err) => {
+        console.error('Failed to refresh showtimes', err);
+        this.alertService.error('Unable to refresh showtimes.');
+      }
     });
   }
 
@@ -160,28 +122,27 @@ export class ManageShowsComponent implements OnInit {
   }
 
   filterShows(): void {
+    const search = this.searchTerm.toLowerCase();
     this.filteredShows = this.shows.filter(show => {
-      const matchesSearch = !this.searchTerm || 
-        show.movie.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        show.theater.name.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesMovie = !this.selectedMovie || show.movie.title === this.selectedMovie;
-      const matchesTheater = !this.selectedTheater || show.theater.name === this.selectedTheater;
-      
+      const movieTitle = show.movie?.title?.toLowerCase() || '';
+      const theaterName = show.theater?.name?.toLowerCase() || '';
+      const matchesSearch = !search || movieTitle.includes(search) || theaterName.includes(search);
+
+      const matchesMovie = !this.selectedMovieId || show.movieId === this.selectedMovieId;
+      const matchesTheater = !this.selectedTheaterId || show.theaterId === this.selectedTheaterId;
+
       let matchesDate = true;
       if (this.selectedDate) {
-        const showDate = new Date(show.showtime).toDateString();
+        const showDate = new Date(show.showDateTime).toDateString();
         const filterDate = new Date(this.selectedDate).toDateString();
         matchesDate = showDate === filterDate;
       }
-      
+
       return matchesSearch && matchesMovie && matchesTheater && matchesDate;
     });
   }
 
-  onImageError(event: any): void {
-    event.target.src = 'assets/images/movies/default-poster.png';
-  }
+
 
   addNewShow(): void {
     this.isEditMode = false;
@@ -196,65 +157,109 @@ export class ManageShowsComponent implements OnInit {
       theaterId: '',
       screen: '',
       showDateTime: '',
-      ticketPrice: 0,
-      totalSeats: 0,
-      status: 'ACTIVE'
+      ticketPrice: null,
+      totalSeats: null,
+      status: 'ACTIVE',
+      seatLayout: [],
+      useCustomLayout: false
     };
   }
 
-  saveShow(): void {
-    if (this.validateForm()) {
-      this.submitting = true;
-      const showtimeData: Partial<Showtime> = {
-        movieId: this.newShow.movieId,
-        theaterId: this.newShow.theaterId,
-        screen: this.newShow.screen,
-        showDateTime: new Date(this.newShow.showDateTime),
-        ticketPrice: this.newShow.ticketPrice,
-        totalSeats: this.newShow.totalSeats,
-        availableSeats: this.newShow.totalSeats,
-        status: this.newShow.status as any
-      };
+  addSeatSection(): void {
+    this.newShow.seatLayout.push({
+      name: '',
+      rowStart: 'A',
+      rowEnd: 'A',
+      seatsPerRow: 12,
+      price: 150,
+      type: 'REGULAR'
+    });
+  }
 
-      if (this.isEditMode && this.editingShowId) {
-        this.showtimeService.updateShowtime(this.editingShowId, showtimeData).subscribe({
-          next: () => {
-            this.alertService.success('Show updated successfully!');
-            this.submitting = false;
-            this.loadShows();
-            this.cancelAdd();
-          },
-          error: (err) => {
-            console.error('Error updating show:', err);
-            this.alertService.error('Failed to update show');
-            this.submitting = false;
-          }
-        });
-      } else {
-        this.showtimeService.createShowtime(showtimeData).subscribe({
-          next: () => {
-            this.alertService.success('Show added successfully!');
-            this.submitting = false;
-            this.loadShows();
-            this.cancelAdd();
-          },
-          error: (err) => {
-            console.error('Error creating show:', err);
-            this.alertService.error('Failed to create show');
-            this.submitting = false;
-          }
-        });
-      }
+  removeSeatSection(index: number): void {
+    this.newShow.seatLayout.splice(index, 1);
+  }
+
+  calculateTotalSeats(): number {
+    if (!this.newShow.useCustomLayout) {
+      return this.newShow.totalSeats || 0;
     }
+    return this.newShow.seatLayout.reduce((total, section) => {
+      const rows = section.rowEnd.charCodeAt(0) - section.rowStart.charCodeAt(0) + 1;
+      return total + (rows * section.seatsPerRow);
+    }, 0);
+  }
+
+  saveShow(): void {
+    if (!this.validateForm()) {
+      return;
+    }
+
+    const totalSeats = this.newShow.useCustomLayout ? this.calculateTotalSeats() : Number(this.newShow.totalSeats);
+
+    const payload: any = {
+      movieId: this.newShow.movieId,
+      theaterId: this.newShow.theaterId,
+      screen: this.newShow.screen.trim(),
+      showDateTime: new Date(this.newShow.showDateTime).toISOString(),
+      ticketPrice: Number(this.newShow.ticketPrice),
+      totalSeats: totalSeats,
+      status: this.newShow.status
+    };
+
+    if (this.newShow.useCustomLayout && this.newShow.seatLayout.length > 0) {
+      payload.seatLayout = this.newShow.seatLayout;
+    }
+
+    if (!this.isEditMode) {
+      payload.availableSeats = payload.totalSeats;
+    }
+
+    this.submitting = true;
+
+    const request$ = this.isEditMode && this.editingShowId
+      ? this.showtimeService.updateShowtime(this.editingShowId, payload)
+      : this.showtimeService.createShowtime(payload);
+
+    request$
+      .pipe(finalize(() => this.submitting = false))
+      .subscribe({
+        next: () => {
+          this.alertService.success(`Show ${this.isEditMode ? 'updated' : 'created'} successfully!`);
+          this.cancelAdd();
+          this.reloadShowtimes();
+        },
+        error: (err) => {
+          console.error('Failed to save show', err);
+          this.alertService.error('Unable to save show. Please try again.');
+        }
+      });
   }
 
   validateForm(): boolean {
-    if (!this.newShow.movieId || !this.newShow.theaterId || 
-        !this.newShow.screen || !this.newShow.showDateTime ||
-        this.newShow.ticketPrice <= 0 || this.newShow.totalSeats <= 0) {
-      this.alertService.error('Please fill all required fields');
+    if (!this.newShow.movieId || !this.newShow.theaterId || !this.newShow.screen.trim()) {
+      this.alertService.error('Movie, theater, and screen are required.');
       return false;
     }
+
+    if (!this.newShow.showDateTime) {
+      this.alertService.error('Please select a show date and time.');
+      return false;
+    }
+
+    const ticketPrice = Number(this.newShow.ticketPrice);
+    const totalSeats = Number(this.newShow.totalSeats);
+
+    if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) {
+      this.alertService.error('Ticket price must be greater than 0.');
+      return false;
+    }
+
+    if (!Number.isInteger(totalSeats) || totalSeats <= 0) {
+      this.alertService.error('Total seats must be a positive number.');
+      return false;
+    }
+
     return true;
   }
 
@@ -265,50 +270,50 @@ export class ManageShowsComponent implements OnInit {
     this.resetForm();
   }
 
-  editShow(show: any): void {
+  editShow(show: Showtime): void {
     this.isEditMode = true;
     this.editingShowId = show.id;
     this.showAddForm = true;
-    
-    // Find movie and theater IDs
-    const movie = this.movies.find(m => m.title === show.movie.title);
-    const theater = this.theaters.find(t => t.name === show.theater.name);
-    
-    const showDateTime = new Date(show.showtime);
-    const formattedDateTime = showDateTime.toISOString().slice(0, 16);
-    
+
     this.newShow = {
-      movieId: movie?.id || '',
-      theaterId: theater?.id || '',
+      movieId: show.movieId,
+      theaterId: show.theaterId,
       screen: show.screen,
-      showDateTime: formattedDateTime,
+      showDateTime: this.toLocalDateTimeInput(show.showDateTime),
       ticketPrice: show.ticketPrice,
       totalSeats: show.totalSeats,
-      status: show.status
+      status: show.status,
+      seatLayout: [],
+      useCustomLayout: false
     };
   }
 
-  viewBookings(show: any): void {
-    this.alertService.info(`View bookings for: ${show.movie.title}`);
+  viewBookings(show: Showtime): void {
+    this.alertService.info(`View bookings for: ${show.movie?.title ?? 'this show'}`);
   }
 
-  deleteShow(show: any): void {
-    if (confirm(`Are you sure you want to delete the show "${show.movie.title}" at ${show.theater.name}?`)) {
-      this.showtimeService.deleteShowtime(show.id).subscribe({
+  deleteShow(show: Showtime): void {
+    if (!confirm(`Delete show "${show.movie?.title || ''}" at ${show.theater?.name || ''}?`)) {
+      return;
+    }
+
+    this.deleteInProgressId = show.id;
+    this.showtimeService.deleteShowtime(show.id)
+      .pipe(finalize(() => this.deleteInProgressId = null))
+      .subscribe({
         next: () => {
           this.alertService.success('Show deleted successfully!');
-          this.loadShows();
+          this.reloadShowtimes();
         },
         error: (err) => {
           console.error('Error deleting show:', err);
-          this.alertService.error('Failed to delete show');
+          this.alertService.error('Failed to delete show.');
         }
       });
-    }
   }
 
   hasFilters(): boolean {
-    return !!(this.searchTerm || this.selectedMovie || this.selectedTheater || this.selectedDate);
+    return !!(this.searchTerm || this.selectedMovieId || this.selectedTheaterId || this.selectedDate);
   }
 
   getEmptyStateMessage(): string {
@@ -316,5 +321,58 @@ export class ManageShowsComponent implements OnInit {
       return 'No shows match your current filters. Try adjusting your search criteria.';
     }
     return 'No shows scheduled yet. Start by adding your first show.';
+  }
+
+  trackByShowId(_index: number, show: Showtime): string {
+    return show.id;
+  }
+
+  private mapShowtimeToView(showtime: Showtime): Showtime {
+    const movie = showtime.movie ?? this.toMovieSummary(showtime.movieId);
+    const theater = showtime.theater ?? this.toTheaterSummary(showtime.theaterId);
+    return {
+      ...showtime,
+      movie,
+      theater
+    };
+  }
+
+  private toMovieSummary(movieId: string): Showtime['movie'] {
+    const movie = this.movies.find(m => m.id === movieId);
+    return movie
+      ? {
+          id: movie.id,
+          title: movie.title,
+          genre: movie.genre,
+          duration: movie.duration,
+          rating: movie.rating,
+          posterUrl: movie.posterUrl
+        }
+      : {
+          id: movieId,
+          title: 'Unknown',
+          genre: [],
+          duration: 0,
+          rating: 0,
+          posterUrl: 'assets/images/movies/default-poster.png'
+        };
+  }
+
+  private toTheaterSummary(theaterId: string): Showtime['theater'] {
+    const theater = this.theaters.find(t => t.id === theaterId);
+    return theater
+      ? { id: theater.id, name: theater.name, location: theater.location }
+      : { id: theaterId, name: 'Unknown', location: '' };
+  }
+
+  private toLocalDateTimeInput(dateTime: string): string {
+    const date = new Date(dateTime);
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  onImageError(event: Event): void {
+    (event.target as HTMLImageElement).src = 'assets/images/movies/default-poster.png';
   }
 }

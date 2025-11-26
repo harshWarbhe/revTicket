@@ -12,8 +12,10 @@ import { BookingSummaryComponent } from './pages/booking-summary/booking-summary
 
 export const userRoutes: Routes = [
   { path: 'home', component: HomeComponent },
-  { path: 'movie/:id', component: MovieDetailsComponent },
-  { path: 'movie/:id/showtimes', component: ShowtimesComponent, canActivate: [AuthGuard] },
+  { path: 'movie/:id/:slug', component: MovieDetailsComponent },
+  { path: 'movie/:id/:slug/showtimes', component: ShowtimesComponent, canActivate: [AuthGuard] },
+  { path: 'movie/:id/showtimes', redirectTo: 'movie/:id/movie/showtimes', pathMatch: 'full' },
+  { path: 'movie/:id', redirectTo: 'movie/:id/movie', pathMatch: 'full' },
   { path: 'booking/:showtimeId', component: SeatBookingComponent, canActivate: [AuthGuard] },
   { path: 'payment', component: PaymentComponent, canActivate: [AuthGuard] },
   { path: 'success/:bookingId', component: BookingSuccessComponent, canActivate: [AuthGuard] },

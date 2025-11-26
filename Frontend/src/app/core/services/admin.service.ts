@@ -59,9 +59,9 @@ export class AdminService {
           return bookingDate.getTime() === today.getTime();
         });
 
-        const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
+        const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED');
         const totalRevenue = confirmedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
-        const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+        const cancelledBookings = bookings.filter(b => b.status === 'CANCELLED').length;
         const activeMovies = movies.filter(m => m.isActive).length;
 
         return {
@@ -80,7 +80,7 @@ export class AdminService {
   getRevenueData(days: number = 7): Observable<RevenueData[]> {
     return this.bookingService.getAllBookings().pipe(
       map(bookings => {
-        const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
+        const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED');
         const revenueMap = new Map<string, number>();
         const today = new Date();
         

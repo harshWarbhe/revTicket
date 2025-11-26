@@ -1,60 +1,58 @@
 <div class="movie-card">
-  <div class="card-image">
-    <img [src]="movie.posterUrl" [alt]="movie.title" class="poster-img">
+  <div class="card-image-wrapper">
+    <img [src]="movie.posterUrl || 'assets/images/movies/default-poster.png'" 
+         [alt]="movie.title" 
+         class="card-image"
+         (error)="onImageError($event)">
+    
     <div class="image-overlay">
-      <div class="overlay-content">
-        <button class="play-btn" (click)="bookNow()">
-          <span class="play-icon">🎫</span>
-        </button>
-        <div class="quick-actions">
-          <button class="action-btn showtimes" title="View Showtimes" (click)="viewShowtimes()">
-            <span class="action-icon">🕐</span>
-          </button>
-          <button class="action-btn theaters" title="Find Theaters" (click)="viewDetails()">
-            <span class="action-icon">🏢</span>
-          </button>
-        </div>
+      <button class="overlay-btn" (click)="bookNow()" title="Book Tickets">
+        <span class="btn-icon">🎫</span>
+        <span class="btn-text">Book Now</span>
+      </button>
+    </div>
+    
+    <div class="card-badges">
+      <div class="rating-badge">
+        <span class="star-icon">⭐</span>
+        <span class="rating-text">{{ movie.rating || 'N/A' }}</span>
       </div>
     </div>
-    <div class="rating-badge">
-      <span class="rating-star">⭐</span>
-      <span class="rating-value">{{ movie.rating }}</span>
-    </div>
-    <div class="genre-badge">{{ movie.genre[0] }}</div>
   </div>
   
-  <div class="card-content">
-    <div class="movie-header">
-      <h3 class="movie-title" (click)="viewDetails()">{{ movie.title }}</h3>
-      <div class="movie-meta">
-        <span class="duration">
-          <span class="meta-icon">🕐</span>
-          {{ movie.duration }}m
-        </span>
-        <span class="language">
-          <span class="meta-icon">🌍</span>
-          {{ movie.language }}
-        </span>
+  <div class="card-body">
+    <h3 class="movie-title" (click)="viewDetails()" [title]="movie.title">
+      {{ movie.title }}
+    </h3>
+    
+    <div class="movie-info">
+      <div class="info-item">
+        <span class="info-icon">🕐</span>
+        <span class="info-text">{{ movie.duration }}m</span>
+      </div>
+      <div class="info-item">
+        <span class="info-icon">🌍</span>
+        <span class="info-text">{{ movie.language }}</span>
       </div>
     </div>
     
-    <div class="movie-genres">
-      <span class="genre-chip" *ngFor="let genre of movie.genre.slice(0, 2)">
+    <div class="genre-list" *ngIf="movie.genre && movie.genre.length > 0">
+      <span class="genre-tag" *ngFor="let genre of movie.genre.slice(0, 3)">
         {{ genre }}
       </span>
-      <span class="more-genres" *ngIf="movie.genre.length > 2">
-        +{{ movie.genre.length - 2 }}
+      <span class="more-tag" *ngIf="movie.genre.length > 3">
+        +{{ movie.genre.length - 3 }}
       </span>
     </div>
     
-    <div class="card-actions">
-      <button class="btn-secondary" (click)="viewShowtimes()">
+    <div class="card-footer">
+      <button class="btn btn-outline" (click)="viewShowtimes()">
         <span class="btn-icon">🕐</span>
-        Showtimes
+        <span>Showtimes</span>
       </button>
-      <button class="btn-primary" (click)="bookNow()">
+      <button class="btn btn-primary" (click)="bookNow()">
         <span class="btn-icon">🎫</span>
-        Book Tickets
+        <span>Book</span>
       </button>
     </div>
   </div>

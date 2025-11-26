@@ -3,7 +3,7 @@ import { AuthGuard } from './core/guards/auth.guard';
 import { AdminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/auth/home', pathMatch: 'full' },
+  { path: '', redirectTo: '/user/home', pathMatch: 'full' },
   {
     path: 'auth',
     loadChildren: () => import('./auth/auth.routes').then(m => m.authRoutes)

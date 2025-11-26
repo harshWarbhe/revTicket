@@ -80,6 +80,10 @@ public class AuthService {
         user.setName(request.getName());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setGender(request.getGender());
+        user.setAddress(request.getAddress());
+        user.setPreferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "English");
         user.setRole(User.Role.USER);
 
         user = userRepository.save(user);
@@ -103,6 +107,13 @@ public class AuthService {
                 user.getName(),
                 user.getRole().name(),
                 user.getPhone(),
+                user.getDateOfBirth(),
+                user.getGender(),
+                user.getAddress(),
+                user.getPreferredLanguage(),
+                user.getEmailNotifications(),
+                user.getSmsNotifications(),
+                user.getPushNotifications(),
                 user.getCreatedAt());
     }
 }

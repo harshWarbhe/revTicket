@@ -1,22 +1,36 @@
 package com.revticket.repository;
 
 import com.revticket.entity.Showtime;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ShowtimeRepository extends JpaRepository<Showtime, String> {
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
+    List<Showtime> findAllByOrderByShowDateTimeAsc();
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
     List<Showtime> findByMovieId(String movieId);
-    
-    @Query("SELECT s FROM Showtime s WHERE s.movie.id = :movieId AND DATE(s.showDateTime) = :date")
-    List<Showtime> findByMovieIdAndDate(@Param("movieId") String movieId, @Param("date") LocalDate date);
-    
-    List<Showtime> findByShowDateTimeAfter(LocalDateTime dateTime);
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
+    List<Showtime> findByTheaterId(String theaterId);
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
+    @Query("SELECT s FROM Showtime s WHERE s.movie.id = :movieId AND s.showDateTime BETWEEN :start AND :end")
+    List<Showtime> findByMovieIdAndShowDateBetween(@Param("movieId") String movieId,
+                                                   @Param("start") LocalDateTime start,
+                                                   @Param("end") LocalDateTime end);
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
+    @Query("SELECT s FROM Showtime s WHERE s.id = :id")
+    Optional<Showtime> findWithRelationsById(@Param("id") String id);
 }
 

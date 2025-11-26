@@ -5,42 +5,68 @@
   </div>
 
   <div class="theatre-form" *ngIf="showForm">
-    <h3>{{ editingTheatre ? 'Edit Theatre' : 'Add New Theatre' }}</h3>
-    <form [formGroup]="theatreForm" (ngSubmit)="onSubmit()">
+    <div class="form-header">
+      <h3>{{ editingTheatreId ? 'Edit Theatre' : 'Add New Theatre' }}</h3>
+      <button type="button" class="close-btn" (click)="cancelForm()">×</button>
+    </div>
+    <form [formGroup]="theatreForm" (ngSubmit)="submitTheatre()">
       <div class="form-row">
-        <div class="form-group">
-          <label for="name">Theatre Name</label>
-          <input type="text" id="name" formControlName="name" class="form-control">
+        <div class="form-group" [class.invalid]="isInvalid('name')">
+          <label for="name">Theatre Name *</label>
+          <input type="text" id="name" formControlName="name" class="form-control" placeholder="e.g., PVR Icon">
+          <small class="form-error" *ngIf="isInvalid('name')">Name is required</small>
         </div>
-        <div class="form-group">
-          <label for="location">Location</label>
-          <input type="text" id="location" formControlName="location" class="form-control">
+        <div class="form-group" [class.invalid]="isInvalid('location')">
+          <label for="location">Location *</label>
+          <input type="text" id="location" formControlName="location" class="form-control" placeholder="City or Area">
+          <small class="form-error" *ngIf="isInvalid('location')">Location is required</small>
         </div>
       </div>
-      
-      <div class="form-group">
-        <label for="address">Address</label>
-        <textarea id="address" formControlName="address" class="form-control" rows="3"></textarea>
+
+      <div class="form-group" [class.invalid]="isInvalid('address')">
+        <label for="address">Address *</label>
+        <textarea id="address" formControlName="address" class="form-control" rows="3" placeholder="Full address"></textarea>
+        <small class="form-error" *ngIf="isInvalid('address')">Address is required</small>
       </div>
-      
-      <div class="form-group">
-        <label for="totalScreens">Total Screens</label>
-        <input type="number" id="totalScreens" formControlName="totalScreens" class="form-control" min="1">
+
+      <div class="form-row">
+        <div class="form-group" [class.invalid]="isInvalid('totalScreens')">
+          <label for="totalScreens">Total Screens *</label>
+          <input type="number" id="totalScreens" formControlName="totalScreens" class="form-control" min="1">
+          <small class="form-error" *ngIf="isInvalid('totalScreens')">Provide at least one screen</small>
+        </div>
+        <div class="form-group" [class.invalid]="isInvalid('imageUrl')">
+          <label for="imageUrl">Image URL</label>
+          <input type="url" id="imageUrl" formControlName="imageUrl" class="form-control" placeholder="https://">
+        </div>
       </div>
-      
+
+      <div class="form-group status-select">
+        <label for="isActive">Status</label>
+        <select id="isActive" formControlName="isActive" class="form-control">
+          <option [ngValue]="true">Active</option>
+          <option [ngValue]="false">Inactive</option>
+        </select>
+      </div>
+
       <div class="form-actions">
-        <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="theatreForm.invalid">
-          {{ editingTheatre ? 'Update' : 'Add' }} Theatre
+        <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="submitting">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="theatreForm.invalid || submitting">
+          {{ submitting ? 'Saving...' : (editingTheatreId ? 'Update Theatre' : 'Add Theatre') }}
         </button>
       </div>
     </form>
   </div>
 
-  <div class="theatres-list">
-    <div class="theatre-card" *ngFor="let theatre of theatres">
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading theaters...</p>
+  </div>
+
+  <div class="theatres-list" *ngIf="!loading && theatres.length">
+    <div class="theatre-card" *ngFor="let theatre of theatres; trackBy: trackByTheatreId">
       <div class="theatre-image">
-        <img [src]="theatre.imageUrl" [alt]="theatre.name" class="theatre-img"
+        <img [src]="theatre.imageUrl || 'assets/images/theaters/PVR.png'" [alt]="theatre.name" class="theatre-img"
              (error)="onImageError($event, theatre)">
       </div>
       <div class="theatre-info">
@@ -54,10 +80,20 @@
           {{ theatre.isActive ? 'Active' : 'Inactive' }}
         </span>
         <button class="btn-edit" (click)="editTheatre(theatre)">Edit</button>
-        <button class="btn-toggle" (click)="toggleStatus(theatre)">
+        <button class="btn-toggle" (click)="toggleStatus(theatre)" [disabled]="statusUpdatingId === theatre.id">
           {{ theatre.isActive ? 'Deactivate' : 'Activate' }}
+        </button>
+        <button class="btn-danger" (click)="deleteTheatre(theatre)" [disabled]="deletingId === theatre.id">
+          Delete
         </button>
       </div>
     </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !theatres.length">
+    <div class="empty-icon">🎭</div>
+    <h3>No theaters yet</h3>
+    <p>Add your first theater to start scheduling showtimes.</p>
+    <button class="btn-primary" (click)="addTheatre()">Create Theater</button>
   </div>
 </div>

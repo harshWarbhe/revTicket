@@ -29,24 +29,24 @@ public class SeatController {
     }
 
     @PostMapping("/hold")
-    public ResponseEntity<?> holdSeats(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<Map<String, String>> holdSeats(@RequestBody Map<String, Object> request) {
         String showtimeId = (String) request.get("showtimeId");
         @SuppressWarnings("unchecked")
         List<String> seatIds = (List<String>) request.get("seatIds");
         String sessionId = (String) request.get("sessionId");
         
         seatService.holdSeats(showtimeId, seatIds, sessionId);
-        return ResponseEntity.ok().body("Seats held successfully");
+        return ResponseEntity.ok(Map.of("message", "Seats held successfully"));
     }
 
     @PostMapping("/release")
-    public ResponseEntity<?> releaseSeats(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<Map<String, String>> releaseSeats(@RequestBody Map<String, Object> request) {
         String showtimeId = (String) request.get("showtimeId");
         @SuppressWarnings("unchecked")
         List<String> seatIds = (List<String>) request.get("seatIds");
         
         seatService.releaseSeats(showtimeId, seatIds);
-        return ResponseEntity.ok().body("Seats released successfully");
+        return ResponseEntity.ok(Map.of("message", "Seats released successfully"));
     }
 }
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -19,8 +19,12 @@ export interface Theater {
 export class TheaterService {
   constructor(private http: HttpClient) {}
 
-  getAllTheaters(): Observable<Theater[]> {
-    return this.http.get<Theater[]>(`${environment.apiUrl}/theaters`);
+  getAllTheaters(activeOnly: boolean = true): Observable<Theater[]> {
+    let params = new HttpParams();
+    if (!activeOnly) {
+      params = params.set('activeOnly', 'false');
+    }
+    return this.http.get<Theater[]>(`${environment.apiUrl}/theaters`, { params });
   }
 
   getTheaterById(id: string): Observable<Theater> {
@@ -33,6 +37,11 @@ export class TheaterService {
 
   updateTheater(id: string, theater: Partial<Theater>): Observable<Theater> {
     return this.http.put<Theater>(`${environment.apiUrl}/theaters/${id}`, theater);
+  }
+
+  updateTheaterStatus(id: string, isActive: boolean): Observable<Theater> {
+    const params = new HttpParams().set('active', String(isActive));
+    return this.http.patch<Theater>(`${environment.apiUrl}/theaters/${id}/status`, null, { params });
   }
 
   deleteTheater(id: string): Observable<void> {

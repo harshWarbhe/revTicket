@@ -1,5 +1,6 @@
 package com.revticket.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,6 +38,7 @@ public class Theater {
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "theater", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("theater-showtimes")
     private List<Showtime> showtimes = new ArrayList<>();
 }
 

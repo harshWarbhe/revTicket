@@ -18,7 +18,15 @@ export class AuthService {
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials)
-      .pipe(tap(response => this.setCurrentUser(response)));
+      .pipe(
+        tap(response => {
+          if (response && response.token && response.user) {
+            this.setCurrentUser(response);
+          } else {
+            throw new Error('Invalid response from server');
+          }
+        })
+      );
   }
 
   signup(userData: SignupRequest): Observable<AuthResponse> {
@@ -42,9 +50,14 @@ export class AuthService {
   }
 
   private setCurrentUser(authResponse: AuthResponse): void {
-    localStorage.setItem('token', authResponse.token);
-    localStorage.setItem('user', JSON.stringify(authResponse.user));
-    this.currentUserSubject.next(authResponse.user);
+    try {
+      localStorage.setItem('token', authResponse.token);
+      localStorage.setItem('user', JSON.stringify(authResponse.user));
+      this.currentUserSubject.next(authResponse.user);
+    } catch (error) {
+      console.error('Error storing user data:', error);
+      throw new Error('Failed to store authentication data');
+    }
   }
 
   getCurrentUser(): User | null {
@@ -56,9 +69,17 @@ export class AuthService {
   }
 
   private loadUserFromStorage(): void {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      this.currentUserSubject.next(JSON.parse(userStr));
+    try {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        this.currentUserSubject.next(user);
+      }
+    } catch (error) {
+      console.error('Error loading user from storage:', error);
+      this.logout();
     }
   }
 }

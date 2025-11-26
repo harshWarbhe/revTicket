@@ -1,5 +1,7 @@
 package com.revticket.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,6 +28,7 @@ public class Booking {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "showtime_id", nullable = false)
+    @JsonBackReference("showtime-bookings")
     private Showtime showtime;
 
     @ElementCollection
@@ -72,6 +75,7 @@ public class Booking {
     private String cancellationReason;
 
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private Payment payment;
 
     public enum BookingStatus {

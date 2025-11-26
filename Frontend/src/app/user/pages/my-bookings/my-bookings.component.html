@@ -42,22 +42,22 @@
     </div>
   </div>
 
-  <div class="bookings-list" *ngIf="filteredBookings.length > 0">
+  <div class="loading-state" *ngIf="loading">
+    Loading your bookings...
+  </div>
+
+  <div class="bookings-list" *ngIf="!loading && filteredBookings.length > 0">
     <div class="booking-card" *ngFor="let booking of filteredBookings">
       <div class="booking-header">
         <div class="movie-info">
           <img 
-            [src]="booking.movie.posterUrl || 'assets/images/movies/default-poster.png'" 
-            [alt]="booking.movie.title"
+            [src]="booking.moviePosterUrl || 'assets/images/movies/default-poster.png'" 
+            [alt]="booking.movieTitle"
             class="movie-poster"
             (error)="onImageError($event)">
           <div class="movie-details">
-            <h3>{{ booking.movie.title }}</h3>
-            <div class="movie-meta">
-              <span class="genre">{{ booking.movie.genre }}</span>
-              <span class="rating">{{ booking.movie.rating }}</span>
-              <span class="duration">{{ booking.movie.duration }}m</span>
-            </div>
+            <h3>{{ booking.movieTitle }}</h3>
+            <p class="movie-meta">{{ booking.theaterName }}</p>
           </div>
         </div>
         
@@ -65,7 +65,7 @@
           <span 
             class="status-badge" 
             [class]="'status-' + booking.status.toLowerCase()">
-            {{ booking.status }}
+            {{ booking.status | titlecase }}
           </span>
           <div class="booking-id">
             #{{ booking.id }}
@@ -77,7 +77,7 @@
         <div class="detail-row">
           <div class="detail-item">
             <span class="label">Theater:</span>
-            <span class="value">{{ booking.theater.name }}</span>
+            <span class="value">{{ booking.theaterName }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Screen:</span>
@@ -98,10 +98,6 @@
             <span class="label">Total Amount:</span>
             <span class="value amount">₹{{ booking.totalAmount }}</span>
           </div>
-          <div class="detail-item">
-            <span class="label">Payment:</span>
-            <span class="value">{{ booking.paymentMethod }}</span>
-          </div>
         </div>
       </div>
 
@@ -109,7 +105,7 @@
         <button 
           class="btn-secondary" 
           (click)="downloadTicket(booking)"
-          *ngIf="booking.status === 'Confirmed'">
+          *ngIf="booking.status === 'CONFIRMED'">
           <span class="icon">📄</span>
           Download Ticket
         </button>
@@ -117,7 +113,7 @@
         <button 
           class="btn-secondary" 
           (click)="viewTicket(booking)"
-          *ngIf="booking.status === 'Confirmed'">
+          *ngIf="booking.status === 'CONFIRMED'">
           <span class="icon">🎫</span>
           View E-Ticket
         </button>
@@ -132,19 +128,19 @@
         <button 
           class="btn-danger" 
           (click)="cancelBooking(booking)"
-          *ngIf="booking.status === 'Confirmed' && canCancel(booking)">
+          *ngIf="booking.status === 'CONFIRMED' && canCancel(booking)">
           <span class="icon">❌</span>
           Cancel
         </button>
         
-        <div class="refund-info" *ngIf="booking.status === 'Cancelled' && getRefundInfo(booking)">
+        <div class="refund-info" *ngIf="booking.status === 'CANCELLED' && getRefundInfo(booking)">
           <small>{{ getRefundInfo(booking) }}</small>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="empty-state" *ngIf="filteredBookings.length === 0">
+  <div class="empty-state" *ngIf="!loading && filteredBookings.length === 0">
     <div class="empty-icon">🎫</div>
     <h3>No Bookings Found</h3>
     <p>{{ getEmptyStateMessage() }}</p>

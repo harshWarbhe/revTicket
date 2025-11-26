@@ -1,112 +1,127 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MovieService } from '../../../core/services/movie.service';
-import { Movie } from '../../../core/models/movie.model';
 import { SeatSelectorComponent } from '../../components/seat-selector/seat-selector.component';
-
-
+import { Showtime, ShowtimeService } from '../../../core/services/showtime.service';
+import { BookingDraft } from '../../../core/models/booking.model';
+import { BookingService } from '../../../core/services/booking.service';
+import { AlertService } from '../../../core/services/alert.service';
+import { LoaderComponent } from '../../../shared/components/loader/loader.component';
 
 @Component({
   selector: 'app-seat-booking',
   standalone: true,
-  imports: [CommonModule, SeatSelectorComponent],
+  imports: [CommonModule, SeatSelectorComponent, LoaderComponent],
   templateUrl: './seat-booking.component.html',
-  styleUrl: './seat-booking.component.css'
+  styleUrls: ['./seat-booking.component.css']
 })
 export class SeatBookingComponent implements OnInit {
-  movie: Movie | null = null;
+  showtimeId!: string;
+  showtime: Showtime | null = null;
+  movieInfo: {
+    title: string;
+    posterUrl?: string;
+    rating?: number;
+    duration?: number;
+    genre?: string[];
+    language?: string;
+  } = {
+    title: '',
+    posterUrl: '',
+    rating: 0,
+    duration: 0,
+    genre: [],
+    language: ''
+  };
+  theaterName = '';
+  theaterLocation = '';
   selectedSeats: string[] = [];
+  selectedSeatLabels: string[] = [];
   totalAmount = 0;
-  showtimeId = 'showtime-123';
-  showtime = '7:00 PM';
-  showDate = 'Today';
-  theater = 'PVR Cinemas - Mall Road';
-  screen = 'Screen 1';
-  
+  loading = true;
+  showDateTime: Date | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private movieService: MovieService
+    private showtimeService: ShowtimeService,
+    private bookingService: BookingService,
+    private alertService: AlertService
   ) {}
 
   ngOnInit(): void {
-    const movieId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('showtimeId');
-    console.log('Movie ID from route:', movieId);
-    if (movieId) {
-      this.loadMovie(movieId);
-    } else {
-      // Default movie for testing
-      this.loadMovie('1');
+    this.showtimeId = this.route.snapshot.paramMap.get('showtimeId') || '';
+    if (!this.showtimeId) {
+      this.alertService.error('Invalid showtime selected');
+      this.router.navigate(['/user/home']);
+      return;
     }
-    this.showtimeId = this.route.snapshot.queryParams['showtimeId'] || 'showtime-123';
-  }
-
-  loadMovie(id: string): void {
-    console.log('Loading movie with ID:', id);
-    this.movieService.getMovieById(id).subscribe({
-      next: (movie) => {
-        console.log('Movie loaded:', movie);
-        this.movie = movie;
-      },
-      error: (error) => {
-        console.error('Error loading movie:', error);
-        // Load default movie on error
-        this.movieService.getMovieById('1').subscribe(defaultMovie => {
-          this.movie = defaultMovie;
-        });
-      }
-    });
+    this.loadShowtime();
   }
 
   onSeatsSelected(seats: string[]): void {
     this.selectedSeats = seats;
-    console.log('Seats selected:', seats);
+  }
+
+  onSeatLabelsChanged(labels: string[]): void {
+    this.selectedSeatLabels = labels;
   }
 
   onTotalAmountChanged(amount: number): void {
     this.totalAmount = amount;
-    console.log('Total amount:', amount);
   }
 
-
-
-
-
   proceedToPayment(): void {
-    console.log('Proceed to payment clicked. Selected seats:', this.selectedSeats);
-    console.log('Total amount:', this.totalAmount);
-    
     if (this.selectedSeats.length === 0) {
-      alert('Please select at least one seat');
+      this.alertService.error('Please select at least one seat to continue.');
       return;
     }
-    
-    if (!this.movie) {
-      alert('Movie information not loaded');
+
+    if (!this.showtime) {
+      this.alertService.error('Showtime information not available.');
       return;
     }
-    
-    const bookingData = {
-      movieId: this.movie.id,
-      movieTitle: this.movie.title,
+
+    const draft: BookingDraft = {
       showtimeId: this.showtimeId,
-      showtime: this.showtime,
-      showDate: this.showDate,
-      theater: this.theater,
-      screen: this.screen,
-      selectedSeats: [...this.selectedSeats],
+      showDateTime: this.showtime.showDateTime,
+      movieId: this.showtime.movieId,
+      movieTitle: this.movieInfo.title || 'Movie',
+      moviePosterUrl: this.movieInfo.posterUrl,
+      theaterId: this.showtime.theaterId,
+      theaterName: this.theaterName,
+      theaterLocation: this.theaterLocation,
+      screen: this.showtime.screen,
+      seats: [...this.selectedSeatLabels],
       totalAmount: this.totalAmount
     };
-    
-    console.log('Booking data:', bookingData);
-    localStorage.setItem('bookingData', JSON.stringify(bookingData));
-    
-    console.log('Navigating to payment...');
-    this.router.navigate(['/user/payment']).then(success => {
-      console.log('Navigation success:', success);
-    }).catch(error => {
-      console.error('Navigation error:', error);
+
+    this.bookingService.setCurrentBooking(draft);
+    this.router.navigate(['/user/booking-summary']);
+  }
+
+  private loadShowtime(): void {
+    this.loading = true;
+    this.showtimeService.getShowtimeById(this.showtimeId).subscribe({
+      next: showtime => {
+        this.showtime = showtime;
+        this.showDateTime = new Date(showtime.showDateTime);
+        this.theaterName = showtime.theater?.name || '';
+        this.theaterLocation = showtime.theater?.location || '';
+        this.movieInfo = {
+          title: showtime.movie?.title || '',
+          posterUrl: showtime.movie?.posterUrl,
+          rating: showtime.movie?.rating,
+          duration: showtime.movie?.duration,
+          genre: showtime.movie?.genre || [],
+          language: showtime.movie?.language
+        };
+        this.loading = false;
+      },
+      error: () => {
+        this.alertService.error('Unable to load showtime details');
+        this.router.navigate(['/user/home']);
+      }
     });
   }
 }

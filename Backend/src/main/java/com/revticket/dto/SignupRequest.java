@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Data
 public class SignupRequest {
     @NotBlank(message = "Name is required")
@@ -19,5 +21,8 @@ public class SignupRequest {
     private String password;
 
     private String phone;
+    private LocalDate dateOfBirth;
+    private String gender;
+    private String address;
+    private String preferredLanguage;
 }
-

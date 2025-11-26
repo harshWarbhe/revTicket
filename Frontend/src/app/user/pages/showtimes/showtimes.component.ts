@@ -1,83 +1,137 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Movie } from '../../../core/models/movie.model';
 import { MovieService } from '../../../core/services/movie.service';
-import { Movie, Showtime } from '../../../core/models/movie.model';
+import { Showtime, ShowtimeService } from '../../../core/services/showtime.service';
+import { DateSelectorComponent } from '../../components/date-selector/date-selector.component';
+import { LoaderComponent } from '../../../shared/components/loader/loader.component';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-showtimes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DateSelectorComponent, LoaderComponent],
   templateUrl: './showtimes.component.html',
   styleUrls: ['./showtimes.component.css']
 })
 export class ShowtimesComponent implements OnInit {
-  movie: Movie | null = null;
+  movie!: Movie;
+  movieId!: string;
+  movieSlug!: string;
   showtimes: Showtime[] = [];
+  groupedShowtimes: { [key: string]: Showtime[] } = {};
+  loadingMovie = true;
+  loadingShowtimes = true;
+  selectedDate = new Date();
+  errorMessage = '';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private movieService: MovieService
+    private movieService: MovieService,
+    private showtimeService: ShowtimeService,
+    private alertService: AlertService
   ) {}
 
   ngOnInit(): void {
-    const movieId = this.route.snapshot.paramMap.get('id');
-    if (movieId) {
-      this.movieService.getMovieById(movieId).subscribe(movie => {
-        this.movie = movie;
-      });
-      this.loadShowtimes(movieId);
+    this.movieId = this.route.snapshot.paramMap.get('id') || '';
+    this.movieSlug = this.route.snapshot.paramMap.get('slug') || '';
+    
+    if (!this.movieId) {
+      this.alertService.error('Movie not found');
+      this.router.navigate(['/user/home']);
+      return;
     }
+
+    this.loadMovie();
+    this.loadShowtimes();
   }
 
-  loadShowtimes(movieId: string): void {
-    // Mock showtimes
-    this.showtimes = [
-      {
-        id: '1',
-        movieId,
-        theaterId: '1',
-        theaterName: 'PVR Cinemas',
-        theaterIcon: 'assets/images/theaters/PVR.png',
-        showDate: new Date(),
-        showTime: '10:00 AM',
-        price: 200,
-        availableSeats: 45,
-        totalSeats: 100
-      },
-      {
-        id: '2',
-        movieId,
-        theaterId: '2',
-        theaterName: 'INOX',
-        theaterIcon: 'assets/images/theaters/inox.png',
-        showDate: new Date(),
-        showTime: '2:00 PM',
-        price: 250,
-        availableSeats: 30,
-        totalSeats: 80
-      },
-      {
-        id: '3',
-        movieId,
-        theaterId: '3',
-        theaterName: 'Cinepolis',
-        theaterIcon: 'assets/images/theaters/cinepolis.png',
-        showDate: new Date(),
-        showTime: '7:00 PM',
-        price: 300,
-        availableSeats: 60,
-        totalSeats: 120
-      }
-    ];
+  onDateSelected(date: Date): void {
+    this.selectedDate = date;
+    this.loadShowtimes();
   }
 
   selectShowtime(showtime: Showtime): void {
     this.router.navigate(['/user/booking', showtime.id]);
   }
 
-  onImageError(event: any, showtime: any): void {
-    event.target.src = 'https://via.placeholder.com/40x40/667eea/ffffff?text=' + encodeURIComponent(showtime.theaterName.charAt(0));
+  getTheaterName(showtime: Showtime): string {
+    return showtime.theater?.name || 'Theater';
+  }
+
+  getTheaterLocation(showtime: Showtime): string {
+    return showtime.theater?.location || '';
+  }
+
+  getAvailabilityPercent(showtime: Showtime): number {
+    if (!showtime.totalSeats) {
+      return 0;
+    }
+    return ((showtime.totalSeats - showtime.availableSeats) / showtime.totalSeats) * 100;
+  }
+
+  getTheaterKeys(): string[] {
+    return Object.keys(this.groupedShowtimes);
+  }
+
+  trackByShowId(_index: number, showtime: Showtime): string {
+    return showtime.id;
+  }
+
+  trackByTheater(_index: number, theater: string): string {
+    return theater;
+  }
+
+  private loadMovie(): void {
+    this.loadingMovie = true;
+    this.movieService.getMovieById(this.movieId).subscribe({
+      next: movie => {
+        this.movie = movie;
+        this.loadingMovie = false;
+      },
+      error: (err) => {
+        console.error('Error loading movie:', err);
+        this.alertService.error('Unable to load movie details');
+        this.loadingMovie = false;
+        this.router.navigate(['/user/home']);
+      }
+    });
+  }
+
+  private loadShowtimes(): void {
+    this.loadingShowtimes = true;
+    const dateParam = this.formatDate(this.selectedDate);
+
+    this.showtimeService.getShowtimesByMovie(this.movieId, dateParam).subscribe({
+      next: showtimes => {
+        this.showtimes = showtimes.filter(s => s.status === 'ACTIVE');
+        this.groupShowtimesByTheater();
+        this.errorMessage = this.showtimes.length ? '' : 'No showtimes available for this date.';
+        this.loadingShowtimes = false;
+      },
+      error: (err) => {
+        console.error('Error loading showtimes:', err);
+        this.alertService.error('Failed to load showtimes');
+        this.loadingShowtimes = false;
+        this.errorMessage = 'Unable to fetch showtimes right now. Please try again later.';
+      }
+    });
+  }
+
+  private groupShowtimesByTheater(): void {
+    this.groupedShowtimes = {};
+    this.showtimes.forEach(showtime => {
+      const theaterName = this.getTheaterName(showtime);
+      if (!this.groupedShowtimes[theaterName]) {
+        this.groupedShowtimes[theaterName] = [];
+      }
+      this.groupedShowtimes[theaterName].push(showtime);
+    });
+  }
+
+  private formatDate(date: Date): string {
+    return date.toISOString().split('T')[0];
   }
 }

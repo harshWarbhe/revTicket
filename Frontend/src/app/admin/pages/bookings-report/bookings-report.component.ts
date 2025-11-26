@@ -111,7 +111,7 @@ export class BookingsReportComponent implements OnInit {
 
     this.totalBookings = this.allBookings.length;
     
-    const confirmedBookings = this.allBookings.filter(b => b.status === 'confirmed');
+    const confirmedBookings = this.allBookings.filter(b => b.status === 'CONFIRMED');
     this.totalRevenue = confirmedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
     
     this.todayBookings = this.allBookings.filter(b => {
@@ -120,7 +120,7 @@ export class BookingsReportComponent implements OnInit {
       return bookingDate.getTime() === today.getTime();
     }).length;
 
-    this.cancelledBookings = this.allBookings.filter(b => b.status === 'cancelled').length;
+    this.cancelledBookings = this.allBookings.filter(b => b.status === 'CANCELLED').length;
 
     const totalTickets = this.allBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
     this.avgTicketsPerBooking = this.totalBookings > 0 ? totalTickets / this.totalBookings : 0;

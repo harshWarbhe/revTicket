@@ -36,6 +36,15 @@ public class UserController {
         return ResponseEntity.ok(userService.updateProfile(userId, userDto));
     }
 
+    @PutMapping("/change-password")
+    public ResponseEntity<String> changePassword(
+            @RequestBody com.revticket.dto.PasswordChangeRequest request,
+            Authentication authentication) {
+        String userId = securityUtil.getCurrentUserId(authentication);
+        userService.changePassword(userId, request);
+        return ResponseEntity.ok("Password changed successfully");
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserDto>> getAllUsers() {

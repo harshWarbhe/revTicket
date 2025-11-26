@@ -5,8 +5,9 @@
 Use these credentials to login as admin:
 
 ### Admin Account
+
 - **Email:** `admin@revticket.com`
-- **Password:** `admin123`
+- **Password:** `Admin@123`
 - **Role:** `ADMIN`
 
 ---
@@ -17,7 +18,7 @@ Use these credentials to login as admin:
 2. Click "Login"
 3. Enter credentials:
    - Email: `admin@revticket.com`
-   - Password: `admin123`
+   - Password: `Admin@123`
 4. Click "Login"
 5. You will be automatically redirected to `/admin/dashboard`
 
@@ -59,6 +60,7 @@ SELECT email, name, role FROM users WHERE email = 'admin@revticket.com';
 ```
 
 Should show:
+
 ```
 +----------------------+------------+-------+
 | email                | name       | role  |
@@ -75,4 +77,3 @@ Should show:
 - Just enter the admin credentials to login
 - System automatically routes to admin dashboard if role is ADMIN
 - System routes to user home if role is USER
-

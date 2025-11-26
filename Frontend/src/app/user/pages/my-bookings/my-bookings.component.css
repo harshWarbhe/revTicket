@@ -100,6 +100,13 @@
   gap: 20px;
 }
 
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-weight: 500;
+}
+
 .booking-card {
   background: white;
   border-radius: 15px;

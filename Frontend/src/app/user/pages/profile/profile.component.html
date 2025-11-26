@@ -1,210 +1,222 @@
 <div class="profile-container">
-  <div class="profile-header">
-    <div class="profile-avatar">
-      <img 
-        [src]="user.avatar || 'assets/images/users/default-avatar.svg'" 
-        [alt]="user.name"
-        (error)="onImageError($event)">
-      <button class="avatar-edit" (click)="changeAvatar()">
-        <span class="icon">📷</span>
-      </button>
-    </div>
-    <div class="profile-info">
-      <h1>{{ user.name }}</h1>
-      <p class="email">{{ user.email }}</p>
-      <div class="member-since">
-        <span class="icon">📅</span>
-        Member since {{ user.joinDate | date:'MMMM yyyy' }}
-      </div>
-    </div>
+  <div class="loading-overlay" *ngIf="loadingProfile">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
   </div>
 
-  <div class="profile-content">
-    <div class="profile-tabs">
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'personal'"
-        (click)="setActiveTab('personal')">
-        Personal Info
-      </button>
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'preferences'"
-        (click)="setActiveTab('preferences')">
-        Preferences
-      </button>
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'security'"
-        (click)="setActiveTab('security')">
-        Security
-      </button>
+  <div *ngIf="!loadingProfile && user">
+    <div class="profile-header">
+      <div class="profile-avatar">
+        <img 
+          src="assets/images/users/default-avatar.svg" 
+          [alt]="displayName"
+          (error)="onImageError($event)">
+        <button class="avatar-edit" (click)="changeAvatar()">
+          <span class="icon">📷</span>
+        </button>
+      </div>
+      <div class="profile-info">
+        <h1>{{ displayName }}</h1>
+        <p class="email">{{ displayEmail }}</p>
+        <div class="member-since">
+          <span class="icon">📅</span>
+          Member since {{ memberSince | date:'MMMM yyyy' }}
+        </div>
+      </div>
     </div>
 
-    <div class="tab-content">
-      <!-- Personal Info Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'personal'">
-        <div class="section-card">
-          <h3>Personal Information</h3>
-          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="name">Full Name</label>
-                <input 
-                  type="text" 
-                  id="name" 
-                  formControlName="name"
-                  placeholder="Enter your full name">
+    <div class="profile-content">
+      <div class="profile-tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'personal'"
+          (click)="setActiveTab('personal')">
+          Personal Info
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'preferences'"
+          (click)="setActiveTab('preferences')">
+          Preferences
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'security'"
+          (click)="setActiveTab('security')">
+          Security
+        </button>
+      </div>
+
+      <div class="tab-content">
+        <!-- Personal Info Tab -->
+        <div class="tab-panel" *ngIf="activeTab === 'personal'">
+          <div class="section-card">
+            <h3>Personal Information</h3>
+            <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="name">Full Name *</label>
+                  <input 
+                    type="text" 
+                    id="name" 
+                    formControlName="name"
+                    placeholder="Enter your full name">
+                  <span class="error" *ngIf="profileForm.get('name')?.invalid && profileForm.get('name')?.touched">
+                    Name is required (min 2 characters)
+                  </span>
+                </div>
+                <div class="form-group">
+                  <label for="phone">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    id="phone" 
+                    formControlName="phone"
+                    placeholder="10-digit phone number">
+                  <span class="error" *ngIf="profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched">
+                    Phone must be 10 digits
+                  </span>
+                </div>
               </div>
-              <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input 
-                  type="tel" 
-                  id="phone" 
-                  formControlName="phone"
-                  placeholder="Enter your phone number">
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="dateOfBirth">Date of Birth</label>
+                  <input 
+                    type="date" 
+                    id="dateOfBirth" 
+                    formControlName="dateOfBirth">
+                </div>
+                <div class="form-group">
+                  <label for="gender">Gender</label>
+                  <select id="gender" formControlName="gender">
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            
-            <div class="form-row">
+
               <div class="form-group">
-                <label for="dateOfBirth">Date of Birth</label>
-                <input 
-                  type="date" 
-                  id="dateOfBirth" 
-                  formControlName="dateOfBirth">
+                <label for="address">Address</label>
+                <textarea 
+                  id="address" 
+                  formControlName="address"
+                  placeholder="Enter your address"
+                  rows="3"></textarea>
               </div>
+
               <div class="form-group">
-                <label for="gender">Gender</label>
-                <select id="gender" formControlName="gender">
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                <label>Email</label>
+                <input 
+                  type="email" 
+                  [value]="displayEmail"
+                  disabled
+                  style="background: #e9ecef; cursor: not-allowed;">
+                <small style="color: #666; font-size: 0.85rem;">Email cannot be changed</small>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary" [disabled]="profileForm.invalid || loading">
+                  {{ loading ? 'Updating...' : 'Update Profile' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Preferences Tab -->
+        <div class="tab-panel" *ngIf="activeTab === 'preferences'">
+          <div class="section-card">
+            <h3>Movie Preferences</h3>
+            <div class="preferences-grid">
+              <div class="preference-item">
+                <label>Preferred Language</label>
+                <select [(ngModel)]="preferences.language">
+                  <option value="english">English</option>
+                  <option value="hindi">Hindi</option>
+                  <option value="tamil">Tamil</option>
+                  <option value="telugu">Telugu</option>
+                  <option value="malayalam">Malayalam</option>
+                  <option value="kannada">Kannada</option>
                 </select>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="address">Address</label>
-              <textarea 
-                id="address" 
-                formControlName="address"
-                placeholder="Enter your address"
-                rows="3"></textarea>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" class="btn-primary" [disabled]="profileForm.invalid || loading">
-                {{ loading ? 'Updating...' : 'Update Profile' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Preferences Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'preferences'">
-        <div class="section-card">
-          <h3>Movie Preferences</h3>
-          <div class="preferences-grid">
-            <div class="preference-item">
-              <label>Favorite Genres</label>
-              <div class="genre-tags">
-                <span 
-                  class="genre-tag" 
-                  *ngFor="let genre of availableGenres"
-                  [class.selected]="isGenreSelected(genre)"
-                  (click)="toggleGenre(genre)">
-                  {{ genre }}
-                </span>
-              </div>
-            </div>
-            
-            <div class="preference-item">
-              <label>Preferred Language</label>
-              <select [(ngModel)]="preferences.language">
-                <option value="english">English</option>
-                <option value="hindi">Hindi</option>
-                <option value="tamil">Tamil</option>
-                <option value="telugu">Telugu</option>
-              </select>
-            </div>
-            
-            <div class="preference-item">
-              <label>Notifications</label>
-              <div class="notification-settings">
-                <div class="setting-item">
-                  <input 
-                    type="checkbox" 
-                    id="emailNotifications" 
-                    [(ngModel)]="preferences.emailNotifications">
-                  <label for="emailNotifications">Email Notifications</label>
-                </div>
-                <div class="setting-item">
-                  <input 
-                    type="checkbox" 
-                    id="smsNotifications" 
-                    [(ngModel)]="preferences.smsNotifications">
-                  <label for="smsNotifications">SMS Notifications</label>
-                </div>
-                <div class="setting-item">
-                  <input 
-                    type="checkbox" 
-                    id="pushNotifications" 
-                    [(ngModel)]="preferences.pushNotifications">
-                  <label for="pushNotifications">Push Notifications</label>
+              
+              <div class="preference-item">
+                <label>Notifications</label>
+                <div class="notification-settings">
+                  <div class="setting-item">
+                    <input 
+                      type="checkbox" 
+                      id="emailNotifications" 
+                      [(ngModel)]="preferences.emailNotifications">
+                    <label for="emailNotifications">Email Notifications</label>
+                  </div>
+                  <div class="setting-item">
+                    <input 
+                      type="checkbox" 
+                      id="smsNotifications" 
+                      [(ngModel)]="preferences.smsNotifications">
+                    <label for="smsNotifications">SMS Notifications</label>
+                  </div>
+                  <div class="setting-item">
+                    <input 
+                      type="checkbox" 
+                      id="pushNotifications" 
+                      [(ngModel)]="preferences.pushNotifications">
+                    <label for="pushNotifications">Push Notifications</label>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div class="form-actions">
-            <button class="btn-primary" (click)="updatePreferences()">
-              Save Preferences
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Security Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'security'">
-        <div class="section-card">
-          <h3>Change Password</h3>
-          <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
-            <div class="form-group">
-              <label for="currentPassword">Current Password</label>
-              <input 
-                type="password" 
-                id="currentPassword" 
-                formControlName="currentPassword"
-                placeholder="Enter current password">
-            </div>
             
-            <div class="form-group">
-              <label for="newPassword">New Password</label>
-              <input 
-                type="password" 
-                id="newPassword" 
-                formControlName="newPassword"
-                placeholder="Enter new password">
-            </div>
-            
-            <div class="form-group">
-              <label for="confirmPassword">Confirm New Password</label>
-              <input 
-                type="password" 
-                id="confirmPassword" 
-                formControlName="confirmPassword"
-                placeholder="Confirm new password">
-            </div>
-
             <div class="form-actions">
-              <button type="submit" class="btn-primary" [disabled]="passwordForm.invalid || loading">
-                {{ loading ? 'Updating...' : 'Change Password' }}
+              <button class="btn-primary" (click)="updatePreferences()" [disabled]="loading">
+                {{ loading ? 'Saving...' : 'Save Preferences' }}
               </button>
             </div>
-          </form>
+          </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="tab-panel" *ngIf="activeTab === 'security'">
+          <div class="section-card">
+            <h3>Change Password</h3>
+            <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+              <div class="form-group">
+                <label for="currentPassword">Current Password *</label>
+                <input 
+                  type="password" 
+                  id="currentPassword" 
+                  formControlName="currentPassword"
+                  placeholder="Enter current password">
+              </div>
+              
+              <div class="form-group">
+                <label for="newPassword">New Password *</label>
+                <input 
+                  type="password" 
+                  id="newPassword" 
+                  formControlName="newPassword"
+                  placeholder="Enter new password (min 6 characters)">
+              </div>
+              
+              <div class="form-group">
+                <label for="confirmPassword">Confirm New Password *</label>
+                <input 
+                  type="password" 
+                  id="confirmPassword" 
+                  formControlName="confirmPassword"
+                  placeholder="Confirm new password">
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary" [disabled]="passwordForm.invalid || loading">
+                  {{ loading ? 'Changing...' : 'Change Password' }}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

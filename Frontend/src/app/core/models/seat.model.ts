@@ -6,6 +6,8 @@ export interface Seat {
   isHeld: boolean;
   price: number;
   type: SeatType;
+  holdExpiry?: string;
+  sessionId?: string;
 }
 
 export interface SeatLayout {
@@ -35,6 +37,7 @@ export interface SeatAvailability {
   seatId: string;
   isAvailable: boolean;
   isHeld: boolean;
-  heldBy?: string;
-  holdExpiry?: Date;
+  isBooked: boolean;
+  heldBySession?: string;
+  holdExpiry?: string;
 }

@@ -15,15 +15,26 @@ export class MovieCardComponent {
 
   constructor(@Inject(Router) private router: Router) {}
 
+  onImageError(event: any): void {
+    event.target.src = 'assets/images/movies/default-poster.png';
+  }
+
   viewDetails(): void {
-    this.router.navigate(['/user/movie', this.movie.id]);
+    const slug = this.createSlug(this.movie.title);
+    this.router.navigate(['/user/movie', this.movie.id, slug]);
   }
 
   bookNow(): void {
-    this.router.navigate(['/user/movie', this.movie.id, 'showtimes']);
+    const slug = this.createSlug(this.movie.title);
+    this.router.navigate(['/user/movie', this.movie.id, slug, 'showtimes']);
   }
 
   viewShowtimes(): void {
-    this.router.navigate(['/user/movie', this.movie.id, 'showtimes']);
+    const slug = this.createSlug(this.movie.title);
+    this.router.navigate(['/user/movie', this.movie.id, slug, 'showtimes']);
+  }
+
+  private createSlug(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 }
