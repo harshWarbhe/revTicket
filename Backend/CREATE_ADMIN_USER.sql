@@ -1,16 +1,6 @@
 -- ============================================
 -- Create Admin User for RevTicket
 -- ============================================
--- This script creates an admin user in the database
--- Password is BCrypt encoded: "admin123"
--- 
--- Usage:
---   mysql -u root -p revticket_db < CREATE_ADMIN_USER.sql
---   OR
---   mysql -u root -p
---   USE revticket_db;
---   source CREATE_ADMIN_USER.sql
--- ============================================
 
 USE revticket_db;
 

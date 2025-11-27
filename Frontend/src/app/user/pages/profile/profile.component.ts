@@ -152,6 +152,71 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  showCurrentPassword = signal(false);
+  showNewPassword = signal(false);
+  showConfirmPassword = signal(false);
+
+  toggleCurrentPassword(): void {
+    this.showCurrentPassword.update(v => !v);
+  }
+
+  toggleNewPassword(): void {
+    this.showNewPassword.update(v => !v);
+  }
+
+  toggleConfirmPassword(): void {
+    this.showConfirmPassword.update(v => !v);
+  }
+
+  getPasswordStrength(): string {
+    const password = this.passwordForm.get('newPassword')?.value || '';
+    if (password.length === 0) return '';
+    
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+    if (strength <= 2) return 'weak';
+    if (strength <= 3) return 'medium';
+    return 'strong';
+  }
+
+  getPasswordStrengthText(): string {
+    const strength = this.getPasswordStrength();
+    if (strength === 'weak') return 'Weak';
+    if (strength === 'medium') return 'Medium';
+    if (strength === 'strong') return 'Strong';
+    return '';
+  }
+
+  hasUpperCase(): boolean {
+    return /[A-Z]/.test(this.passwordForm.get('newPassword')?.value || '');
+  }
+
+  hasLowerCase(): boolean {
+    return /[a-z]/.test(this.passwordForm.get('newPassword')?.value || '');
+  }
+
+  hasNumber(): boolean {
+    return /\d/.test(this.passwordForm.get('newPassword')?.value || '');
+  }
+
+  passwordsMatch(): boolean {
+    const newPass = this.passwordForm.get('newPassword')?.value;
+    const confirmPass = this.passwordForm.get('confirmPassword')?.value;
+    return newPass && confirmPass && newPass === confirmPass;
+  }
+
+  resetPasswordForm(): void {
+    this.passwordForm.reset();
+    this.showCurrentPassword.set(false);
+    this.showNewPassword.set(false);
+    this.showConfirmPassword.set(false);
+  }
+
   changePassword(): void {
     if (this.passwordForm.invalid) {
       this.alertService.error('Please fill in all password fields');
@@ -176,7 +241,7 @@ export class ProfileComponent implements OnInit {
     this.userService.changePassword({ currentPassword, newPassword }).subscribe({
       next: () => {
         this.alertService.success('Password changed successfully!');
-        this.passwordForm.reset();
+        this.resetPasswordForm();
         this.loading.set(false);
       },
       error: (err) => {

@@ -4,23 +4,30 @@
     <p>Loading profile...</p>
   </div>
 
-  <div *ngIf="!loadingProfile() && user()">
+  <div *ngIf="!loadingProfile() && user()" class="profile-wrapper">
     <div class="profile-header">
-      <div class="profile-avatar">
-        <img 
-          src="assets/images/users/default-avatar.svg" 
-          [alt]="displayName"
-          (error)="onImageError($event)">
-        <button class="avatar-edit" (click)="changeAvatar()">
-          <span class="icon">📷</span>
-        </button>
-      </div>
-      <div class="profile-info">
-        <h1>{{ displayName }}</h1>
-        <p class="email">{{ displayEmail }}</p>
-        <div class="member-since">
-          <span class="icon">📅</span>
-          Member since {{ memberSince | date:'MMMM yyyy' }}
+      <div class="header-background"></div>
+      <div class="header-content">
+        <div class="profile-avatar">
+          <div class="avatar-ring"></div>
+          <img 
+            src="assets/images/users/default-avatar.svg" 
+            [alt]="displayName"
+            (error)="onImageError($event)">
+          <button class="avatar-edit" (click)="changeAvatar()">
+            <span class="icon">📷</span>
+          </button>
+        </div>
+        <div class="profile-info">
+          <h1>{{ displayName }}</h1>
+          <p class="email">✉️ {{ displayEmail }}</p>
+          <div class="profile-badges">
+            <span class="badge member-badge">
+              <span class="badge-icon">⭐</span>
+              Member since {{ memberSince | date:'MMM yyyy' }}
+            </span>
+            <span class="badge role-badge">{{ user()?.role || 'USER' }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -31,19 +38,22 @@
           class="tab-btn" 
           [class.active]="activeTab() === 'personal'"
           (click)="setActiveTab('personal')">
-          Personal Info
+          <span class="tab-icon">👤</span>
+          <span class="tab-label">Personal Info</span>
         </button>
         <button 
           class="tab-btn" 
           [class.active]="activeTab() === 'preferences'"
           (click)="setActiveTab('preferences')">
-          Preferences
+          <span class="tab-icon">⚙️</span>
+          <span class="tab-label">Preferences</span>
         </button>
         <button 
           class="tab-btn" 
           [class.active]="activeTab() === 'security'"
           (click)="setActiveTab('security')">
-          Security
+          <span class="tab-icon">🔒</span>
+          <span class="tab-label">Security</span>
         </button>
       </div>
 
@@ -51,7 +61,10 @@
         <!-- Personal Info Tab -->
         <div class="tab-panel" *ngIf="activeTab() === 'personal'">
           <div class="section-card">
-            <h3>Personal Information</h3>
+            <div class="section-header">
+              <h3>👤 Personal Information</h3>
+              <p class="section-subtitle">Manage your personal details and contact information</p>
+            </div>
             <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
               <div class="form-row">
                 <div class="form-group">
@@ -118,7 +131,8 @@
 
               <div class="form-actions">
                 <button type="submit" class="btn-primary" [disabled]="profileForm.invalid || loading()">
-                  {{ loading() ? 'Updating...' : 'Update Profile' }}
+                  <span *ngIf="!loading()">💾 Save Changes</span>
+                  <span *ngIf="loading()" class="loading-spinner">⏳ Updating...</span>
                 </button>
               </div>
             </form>
@@ -128,7 +142,10 @@
         <!-- Preferences Tab -->
         <div class="tab-panel" *ngIf="activeTab() === 'preferences'">
           <div class="section-card">
-            <h3>Movie Preferences</h3>
+            <div class="section-header">
+              <h3>🎬 Movie Preferences</h3>
+              <p class="section-subtitle">Customize your movie experience and notifications</p>
+            </div>
             <div class="preferences-grid">
               <div class="preference-item">
                 <label>Preferred Language</label>
@@ -175,7 +192,8 @@
             
             <div class="form-actions">
               <button class="btn-primary" (click)="updatePreferences()" [disabled]="loading()">
-                {{ loading() ? 'Saving...' : 'Save Preferences' }}
+                <span *ngIf="!loading()">💾 Save Preferences</span>
+                <span *ngIf="loading()" class="loading-spinner">⏳ Saving...</span>
               </button>
             </div>
           </div>
@@ -183,39 +201,115 @@
 
         <!-- Security Tab -->
         <div class="tab-panel" *ngIf="activeTab() === 'security'">
-          <div class="section-card">
-            <h3>Change Password</h3>
+          <div class="section-card password-card">
+            <div class="password-header">
+              <div class="password-icon">🔐</div>
+              <div>
+                <h3>Change Password</h3>
+                <p class="password-subtitle">Keep your account secure with a strong password</p>
+              </div>
+            </div>
+            
             <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
-              <div class="form-group">
-                <label for="currentPassword">Current Password *</label>
-                <input 
-                  type="password" 
-                  id="currentPassword" 
-                  formControlName="currentPassword"
-                  placeholder="Enter current password">
-              </div>
-              
-              <div class="form-group">
-                <label for="newPassword">New Password *</label>
-                <input 
-                  type="password" 
-                  id="newPassword" 
-                  formControlName="newPassword"
-                  placeholder="Enter new password (min 6 characters)">
-              </div>
-              
-              <div class="form-group">
-                <label for="confirmPassword">Confirm New Password *</label>
-                <input 
-                  type="password" 
-                  id="confirmPassword" 
-                  formControlName="confirmPassword"
-                  placeholder="Confirm new password">
+              <div class="password-form-grid">
+                <div class="form-group password-input-group">
+                  <label for="currentPassword">
+                    <span class="label-icon">🔑</span>
+                    Current Password
+                  </label>
+                  <div class="input-wrapper">
+                    <input 
+                      [type]="showCurrentPassword() ? 'text' : 'password'"
+                      id="currentPassword" 
+                      formControlName="currentPassword"
+                      placeholder="Enter your current password"
+                      class="password-input">
+                    <button 
+                      type="button" 
+                      class="toggle-password"
+                      (click)="toggleCurrentPassword()">
+                      {{ showCurrentPassword() ? '👁️' : '👁️‍🗨️' }}
+                    </button>
+                  </div>
+                  <span class="error" *ngIf="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched">
+                    Current password is required
+                  </span>
+                </div>
+                
+                <div class="form-group password-input-group">
+                  <label for="newPassword">
+                    <span class="label-icon">✨</span>
+                    New Password
+                  </label>
+                  <div class="input-wrapper">
+                    <input 
+                      [type]="showNewPassword() ? 'text' : 'password'"
+                      id="newPassword" 
+                      formControlName="newPassword"
+                      placeholder="Enter new password (min 6 characters)"
+                      class="password-input">
+                    <button 
+                      type="button" 
+                      class="toggle-password"
+                      (click)="toggleNewPassword()">
+                      {{ showNewPassword() ? '👁️' : '👁️‍🗨️' }}
+                    </button>
+                  </div>
+                  <div class="password-strength" *ngIf="passwordForm.get('newPassword')?.value">
+                    <div class="strength-bar">
+                      <div class="strength-fill" [class]="getPasswordStrength()"></div>
+                    </div>
+                    <span class="strength-text" [class]="getPasswordStrength()">
+                      {{ getPasswordStrengthText() }}
+                    </span>
+                  </div>
+                  <span class="error" *ngIf="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched">
+                    Password must be at least 6 characters
+                  </span>
+                </div>
+                
+                <div class="form-group password-input-group">
+                  <label for="confirmPassword">
+                    <span class="label-icon">✓</span>
+                    Confirm New Password
+                  </label>
+                  <div class="input-wrapper">
+                    <input 
+                      [type]="showConfirmPassword() ? 'text' : 'password'"
+                      id="confirmPassword" 
+                      formControlName="confirmPassword"
+                      placeholder="Re-enter your new password"
+                      class="password-input">
+                    <button 
+                      type="button" 
+                      class="toggle-password"
+                      (click)="toggleConfirmPassword()">
+                      {{ showConfirmPassword() ? '👁️' : '👁️‍🗨️' }}
+                    </button>
+                  </div>
+                  <span class="error" *ngIf="passwordForm.get('confirmPassword')?.value && passwordForm.get('newPassword')?.value !== passwordForm.get('confirmPassword')?.value">
+                    Passwords do not match
+                  </span>
+                </div>
               </div>
 
-              <div class="form-actions">
-                <button type="submit" class="btn-primary" [disabled]="passwordForm.invalid || loading()">
-                  {{ loading() ? 'Changing...' : 'Change Password' }}
+              <div class="password-tips">
+                <h4>Password Requirements:</h4>
+                <ul>
+                  <li [class.met]="passwordForm.get('newPassword')?.value?.length >= 6">At least 6 characters long</li>
+                  <li [class.met]="hasUpperCase()">Contains uppercase letter</li>
+                  <li [class.met]="hasLowerCase()">Contains lowercase letter</li>
+                  <li [class.met]="hasNumber()">Contains a number</li>
+                </ul>
+              </div>
+
+              <div class="form-actions password-actions">
+                <button type="button" class="btn-secondary" (click)="resetPasswordForm()">
+                  Cancel
+                </button>
+                <button type="submit" class="btn-primary" [disabled]="passwordForm.invalid || loading() || !passwordsMatch()">
+                  <span *ngIf="!loading()">🔒 Update Password</span>
+                  <span *ngIf="loading()" class="loading-spinner">⏳ Updating...</span>
                 </button>
               </div>
             </form>
