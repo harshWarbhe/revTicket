@@ -1,7 +1,12 @@
 <div class="add-movie-container">
-  <div class="page-header">
-    <h1>{{ getPageTitle() }}</h1>
-    <p>{{ isEditMode() ? 'Update movie information' : 'Create a new movie listing for your theater' }}</p>
+  <div class="admin-page-header">
+    <div class="admin-header-background"></div>
+    <div class="admin-header-content">
+      <div class="admin-header-text">
+        <h1>{{ getPageTitle() }}</h1>
+        <p>{{ isEditMode() ? 'Update movie information' : 'Create a new movie listing for your theater' }}</p>
+      </div>
+    </div>
   </div>
 
   <div class="loading-state" *ngIf="loading()">

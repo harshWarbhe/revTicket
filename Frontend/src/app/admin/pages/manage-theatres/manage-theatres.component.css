@@ -1,18 +1,11 @@
+@import '../../../admin/styles/admin-shared.css';
+
 .manage-theatres-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header h2 {
-  color: #333;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
 }
 
 .theatre-form {
@@ -94,6 +87,7 @@
 .theatres-list {
   display: grid;
   gap: 1rem;
+  margin: 0 40px 40px;
 }
 
 .theatre-card {
@@ -161,9 +155,10 @@
 .btn-primary, .btn-secondary, .btn-edit, .btn-toggle {
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
+  transition: all 0.2s ease;
 }
 
 .btn-danger {
@@ -177,12 +172,24 @@
 }
 
 .btn-primary {
-  background: #667eea;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
   color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
-  background: #5a6fd8;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {

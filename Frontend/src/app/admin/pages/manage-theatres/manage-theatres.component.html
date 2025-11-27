@@ -1,7 +1,15 @@
 <div class="manage-theatres-container">
-  <div class="header">
-    <h2>Manage Theatres</h2>
-    <button class="btn-primary" (click)="addTheatre()">Add Theatre</button>
+  <div class="admin-page-header">
+    <div class="admin-header-background"></div>
+    <div class="admin-header-content">
+      <div class="admin-header-text">
+        <h1>Manage Theatres</h1>
+        <p>View and manage all theatres in your system</p>
+      </div>
+      <div class="admin-header-actions">
+        <button class="btn-primary" (click)="addTheatre()">Add Theatre</button>
+      </div>
+    </div>
   </div>
 
   <div class="theatre-form" *ngIf="showForm()">

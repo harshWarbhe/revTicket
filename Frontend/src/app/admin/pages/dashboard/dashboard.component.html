@@ -1,12 +1,12 @@
 <div class="dashboard-container">
-  <div class="page-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-text">
+  <div class="admin-page-header">
+    <div class="admin-header-background"></div>
+    <div class="admin-header-content">
+      <div class="admin-header-text">
         <h1>📊 Dashboard Overview</h1>
         <p>Welcome back, Admin! Here's what's happening with RevTicket today.</p>
       </div>
-      <div class="header-actions">
+      <div class="admin-header-actions">
         <button class="btn-refresh" (click)="refreshData()" [disabled]="loading()">
           <span class="icon" [class.spinning]="loading()">🔄</span>
           <span>{{ loading() ? 'Loading...' : 'Refresh' }}</span>
