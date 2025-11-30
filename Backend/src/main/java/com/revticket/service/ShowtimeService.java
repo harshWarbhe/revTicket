@@ -70,6 +70,42 @@ public class ShowtimeService {
     }
 
     @Transactional(readOnly = true)
+    public List<ShowtimeResponse> getShowtimesWithFilters(String movieId, String theaterId, LocalDate date, String search) {
+        List<Showtime> showtimes;
+        
+        if (date != null) {
+            LocalDateTime start = date.atStartOfDay();
+            LocalDateTime end = date.atTime(LocalTime.MAX);
+            if (movieId != null) {
+                showtimes = showtimeRepository.findByMovieIdAndShowDateBetween(movieId, start, end);
+            } else if (theaterId != null) {
+                showtimes = showtimeRepository.findByTheaterIdAndShowDateBetween(theaterId, start, end);
+            } else {
+                showtimes = showtimeRepository.findByShowDateTimeBetween(start, end);
+            }
+        } else if (movieId != null) {
+            showtimes = showtimeRepository.findByMovieId(movieId);
+        } else if (theaterId != null) {
+            showtimes = showtimeRepository.findByTheaterId(theaterId);
+        } else {
+            showtimes = showtimeRepository.findAllByOrderByShowDateTimeAsc();
+        }
+        
+        // Apply search filter
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase().trim();
+            showtimes = showtimes.stream()
+                .filter(s -> s.getMovie().getTitle().toLowerCase().contains(searchLower) ||
+                            s.getTheater().getName().toLowerCase().contains(searchLower))
+                .collect(Collectors.toList());
+        }
+        
+        return showtimes.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public Optional<ShowtimeResponse> getShowtimeById(String id) {
         return showtimeRepository.findWithRelationsById(id).map(this::mapToResponse);
     }
@@ -113,6 +149,21 @@ public class ShowtimeService {
         Showtime showtime = showtimeRepository.findById(Objects.requireNonNullElse(id, ""))
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
         showtimeRepository.delete(showtime);
+    }
+
+    @Transactional
+    public ShowtimeResponse toggleShowtimeStatus(String id) {
+        Showtime showtime = showtimeRepository.findById(Objects.requireNonNullElse(id, ""))
+                .orElseThrow(() -> new RuntimeException("Showtime not found"));
+        
+        // Toggle between ACTIVE and CANCELLED
+        if (showtime.getStatus() == Showtime.ShowStatus.ACTIVE) {
+            showtime.setStatus(Showtime.ShowStatus.CANCELLED);
+        } else if (showtime.getStatus() == Showtime.ShowStatus.CANCELLED) {
+            showtime.setStatus(Showtime.ShowStatus.ACTIVE);
+        }
+        
+        return mapToResponse(showtimeRepository.save(showtime));
     }
 
     private void applyRequest(Showtime showtime,

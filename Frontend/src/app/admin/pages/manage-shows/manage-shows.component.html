@@ -1,51 +1,66 @@
-<div class="manage-shows-container">
-  <div class="admin-page-header">
-    <div class="admin-header-background"></div>
-    <div class="admin-header-content">
-      <div class="admin-header-text">
-        <h1>Manage Shows</h1>
-        <p>Schedule and manage movie showtimes</p>
-      </div>
-      <div class="admin-header-actions">
-        <button class="btn-primary" (click)="addNewShow()">
-          <span class="icon">+</span>
-          Add New Show
-        </button>
-      </div>
+<div class="dashboard-page">
+  <!-- HEADER -->
+  <header class="main-header">
+    <div class="header-left">
+      <h1 class="page-title">Manage Shows</h1>
+      <p class="page-sub">Schedule and manage movie showtimes</p>
     </div>
-  </div>
 
-  <div class="filters-section">
-    <div class="search-box">
-      <input type="text" placeholder="Search shows..." [(ngModel)]="searchTerm">
+    <div class="header-actions">
+      <button class="refresh-btn" (click)="addNewShow()" [disabled]="loading()">
+        <span>➕</span>
+        <span>Add New Show</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- FILTERS SECTION -->
+  @if (!showAddForm()) {
+  <section class="filters-panel fade-in">
+    <div class="search-wrapper">
+      <input type="text" 
+             class="search-input" 
+             placeholder="Search by movie or theater..." 
+             [value]="searchTerm()" 
+             (input)="onSearchChange($any($event.target).value)">
       <span class="search-icon">🔍</span>
     </div>
 
-    <div class="filter-controls">
-      <select [(ngModel)]="selectedMovieId">
-        <option value="">All Movies</option>
-        @for (movie of movies(); track movie.id) {
-          <option [value]="movie.id">{{ movie.title }}</option>
-        }
-      </select>
+    <select class="filter-select" 
+            [value]="selectedMovieId()" 
+            (change)="selectedMovieId.set($any($event.target).value); onFilterChange()">
+      <option value="">All Movies</option>
+      @for (movie of movies(); track movie.id) {
+        <option [value]="movie.id">{{ movie.title }}</option>
+      }
+    </select>
 
-      <select [(ngModel)]="selectedTheaterId">
-        <option value="">All Theaters</option>
-        @for (theater of theaters(); track theater.id) {
-          <option [value]="theater.id">{{ theater.name }}</option>
-        }
-      </select>
+    <select class="filter-select" 
+            [value]="selectedTheaterId()" 
+            (change)="selectedTheaterId.set($any($event.target).value); onFilterChange()">
+      <option value="">All Theaters</option>
+      @for (theater of theaters(); track theater.id) {
+        <option [value]="theater.id">{{ theater.name }}</option>
+      }
+    </select>
 
-      <input type="date" [(ngModel)]="selectedDate" class="date-filter">
-    </div>
+    <input type="date" 
+           class="filter-select" 
+           [value]="selectedDate()" 
+           (change)="selectedDate.set($any($event.target).value); onFilterChange()">
+  </section>
+  }
 
-    @if (showAddForm()) {
-      <div class="add-show-form">
-        <div class="form-header">
-          <h2>{{ isEditMode() ? 'Edit Show' : 'Add New Show' }}</h2>
-          <button class="close-btn" (click)="cancelAdd()">×</button>
-        </div>
+  <!-- ADD/EDIT FORM -->
+  @if (showAddForm()) {
+  <section class="form-section fade-in">
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">{{ isEditMode() ? '✏️ Edit Show' : '➕ Add New Show' }}</h3>
+        <button class="close-btn" (click)="cancelAdd()" title="Close">×</button>
+      </div>
 
+      <div class="panel-body">
         <form class="show-form" (ngSubmit)="saveShow()">
           <div class="form-row">
             <div class="form-group">
@@ -204,112 +219,124 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" (click)="cancelAdd()" [disabled]="submitting()">Cancel</button>
-            <button type="submit" class="btn-primary" [disabled]="submitting()">
+            <button type="button" class="btn-cancel" (click)="cancelAdd()" [disabled]="submitting()">Cancel</button>
+            <button type="submit" class="btn-save" [disabled]="submitting()">
               {{ submitting() ? (isEditMode() ? 'Updating...' : 'Saving...') : (isEditMode() ? 'Update Show' : 'Save Show') }}
             </button>
           </div>
         </form>
       </div>
-    }
+    </div>
+  </section>
+  }
 
-    @if (loading()) {
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading shows...</p>
-      </div>
-    }
+  <!-- LOADING STATE -->
+  @if (loading()) {
+  <section class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading shows...</p>
+  </section>
+  }
 
-    @if (!loading() && filteredShows().length > 0 && !showAddForm()) {
-      <div class="shows-grid">
-        @for (show of filteredShows(); track show.id) {
-          <div class="show-card">
-            <div class="show-header">
-              <div class="movie-info">
-                <img [src]="show.movie?.posterUrl" [alt]="show.movie?.title" class="movie-poster"
-                  (error)="onImageError($event)">
-                <div class="movie-details">
-                  <h3>{{ show.movie?.title }}</h3>
-                  <div class="movie-meta">
-                    <span class="genre">{{ show.movie?.genre?.join(', ') || 'N/A' }}</span>
-                    <span class="duration">{{ show.movie?.duration || 0 }}m</span>
-                    <span class="rating">{{ show.movie?.rating ?? 'N/A' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="show-status">
-                <span class="status-badge status-{{ show.status.toLowerCase() }}">
-                  {{ show.status }}
-                </span>
-              </div>
-            </div>
-
-            <div class="show-details">
-              <div class="detail-row">
-                <div class="detail-item">
-                  <span class="label">Theater:</span>
-                  <span class="value">{{ show.theater?.name }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Screen:</span>
-                  <span class="value">{{ show.screen }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Date & Time:</span>
-                  <span class="value">{{ show.showDateTime | date:'MMM dd, yyyy - h:mm a' }}</span>
-                </div>
-              </div>
-
-              <div class="detail-row">
-                <div class="detail-item">
-                  <span class="label">Price:</span>
-                  <span class="value price">₹{{ show.ticketPrice }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Available Seats:</span>
-                  <span class="value">{{ show.availableSeats }}/{{ show.totalSeats }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Bookings:</span>
-                  <span class="value">{{ show.totalSeats - show.availableSeats }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="show-actions">
-              <button class="btn-secondary" (click)="editShow(show)">
-                <span class="icon">✏️</span>
-                Edit
-              </button>
-              <button class="btn-secondary" (click)="viewBookings(show)">
-                <span class="icon">👁️</span>
-                View Bookings
-              </button>
-              @if (show.status !== 'COMPLETED') {
-                <button class="btn-danger" (click)="deleteShow(show)" 
-                        [disabled]="deleteInProgressId() === show.id">
-                  <span class="icon">🗑️</span>
-                  Delete
-                </button>
-              }
+  <!-- SHOWS GRID -->
+  @if (!loading() && filteredShows().length > 0 && !showAddForm()) {
+  <section class="shows-grid fade-in">
+    @for (show of filteredShows(); track trackByShowId($index, show)) {
+    <div class="show-card">
+      <div class="card-header">
+        <div class="movie-info">
+          <img [src]="show.movie?.posterUrl" 
+               [alt]="show.movie?.title" 
+               class="movie-poster"
+               (error)="onImageError($event)">
+          <div class="movie-details">
+            <h3 class="movie-title">{{ show.movie?.title }}</h3>
+            <div class="movie-meta">
+              <span class="badge badge-genre">{{ show.movie?.genre?.join(', ') || 'N/A' }}</span>
+              <span class="badge badge-duration">{{ show.movie?.duration || 0 }}m</span>
+              <span class="badge badge-rating">⭐ {{ show.movie?.rating ?? 'N/A' }}</span>
             </div>
           </div>
-        }
+        </div>
+        <span class="status-badge status-{{ show.status.toLowerCase() }}">
+          {{ show.status }}
+        </span>
       </div>
-    }
 
-    @if (!loading() && filteredShows().length === 0 && !showAddForm()) {
-      <div class="empty-state">
-        <div class="empty-icon">🎬</div>
-        <h3>No Shows Found</h3>
-        <p>{{ getEmptyStateMessage() }}</p>
-        @if (!hasFilters()) {
-          <button class="btn-primary" (click)="addNewShow()">
-            Add First Show
-          </button>
+      <div class="card-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">🏢 Theater</span>
+            <span class="info-value">{{ show.theater?.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📺 Screen</span>
+            <span class="info-value">{{ show.screen }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📅 Date & Time</span>
+            <span class="info-value">{{ show.showDateTime | date:'MMM dd, h:mm a' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">💰 Price</span>
+            <span class="info-value price">₹{{ show.ticketPrice }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">💺 Available</span>
+            <span class="info-value">{{ show.availableSeats }}/{{ show.totalSeats }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">🎫 Bookings</span>
+            <span class="info-value">{{ show.totalSeats - show.availableSeats }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="action-btn btn-edit" (click)="editShow(show)" title="Edit">
+          ✏️ Edit
+        </button>
+        <button class="action-btn btn-view" (click)="viewBookings(show)" title="View Bookings">
+          👁️ View
+        </button>
+        @if (show.status !== 'COMPLETED') {
+        <button class="action-btn btn-toggle" 
+                (click)="toggleShowStatus(show)"
+                [disabled]="toggleStatusInProgressId() === show.id"
+                title="Toggle Status">
+          {{ toggleStatusInProgressId() === show.id ? '⏳' : (show.status === 'ACTIVE' ? '⏸️' : '▶️') }}
+        </button>
+        <button class="action-btn btn-delete" 
+                (click)="deleteShow(show)" 
+                [disabled]="deleteInProgressId() === show.id"
+                title="Delete">
+          {{ deleteInProgressId() === show.id ? '⏳' : '🗑️' }}
+        </button>
         }
       </div>
+    </div>
     }
-  </div>
+  </section>
+  }
+
+  <!-- EMPTY STATE -->
+  @if (!loading() && filteredShows().length === 0 && !showAddForm()) {
+  <section class="empty-state fade-in">
+    <div class="panel">
+      <div class="panel-body">
+        <div class="empty-content">
+          <div class="empty-icon">🎬</div>
+          <h3>No Shows Found</h3>
+          <p>{{ getEmptyStateMessage() }}</p>
+          @if (!hasFilters()) {
+          <button class="refresh-btn" (click)="addNewShow()">
+            <span>➕</span>
+            <span>Add First Show</span>
+          </button>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+  }
 </div>

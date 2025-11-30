@@ -1,12 +1,8 @@
-<div class="add-movie-container">
-  <div class="admin-page-header">
-    <div class="admin-header-background"></div>
-    <div class="admin-header-content">
-      <div class="admin-header-text">
-        <h1>{{ getPageTitle() }}</h1>
-        <p>{{ isEditMode() ? 'Update movie information' : 'Create a new movie listing for your theater' }}</p>
-      </div>
-    </div>
+<div class="add-movie-page">
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">{{ getPageTitle() }}</h1>
+    <p class="page-subtitle">{{ isEditMode() ? 'Update movie information' : 'Create a new movie listing for your theater' }}</p>
   </div>
 
   @if (loading()) {
@@ -17,175 +13,226 @@
   }
 
   @if (!loading()) {
-    <div class="add-movie-card">
-    <form [formGroup]="movieForm" (ngSubmit)="onSubmit()">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="title">Movie Title *</label>
-          <input 
-            type="text" 
-            id="title" 
-            formControlName="title"
-            placeholder="Enter movie title"
-            [class.error]="movieForm.get('title')?.invalid && movieForm.get('title')?.touched">
-          @if (movieForm.get('title')?.invalid && movieForm.get('title')?.touched) {
-            <div class="error-message">
-              {{ getFieldError('title') || 'Movie title is required' }}
-            </div>
-          }
+    <div class="form-card">
+      <form [formGroup]="movieForm" (ngSubmit)="onSubmit()">
+        
+        <!-- Basic Details Section -->
+        <div class="section-header">
+          <h3>Basic Details</h3>
         </div>
 
-        <div class="form-group">
-          <label for="genre">Genre * (comma-separated)</label>
-          <input 
-            type="text" 
-            id="genre" 
-            formControlName="genre"
-            placeholder="e.g., Action, Adventure, Drama"
-            [class.error]="movieForm.get('genre')?.invalid && movieForm.get('genre')?.touched">
-          <small class="hint">Enter genres separated by commas</small>
-          @if (movieForm.get('genre')?.invalid && movieForm.get('genre')?.touched) {
-            <div class="error-message">
-              {{ getFieldError('genre') || 'Please enter at least one genre' }}
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="duration">Duration (minutes) *</label>
-          <input 
-            type="number" 
-            id="duration" 
-            formControlName="duration"
-            placeholder="120"
-            min="1"
-            [class.error]="movieForm.get('duration')?.invalid && movieForm.get('duration')?.touched">
-          @if (movieForm.get('duration')?.invalid && movieForm.get('duration')?.touched) {
-            <div class="error-message">
-              {{ getFieldError('duration') || 'Duration must be at least 1 minute' }}
-            </div>
-          }
-        </div>
-
-        <div class="form-group">
-          <label for="rating">Rating (0-10) *</label>
-          <input 
-            type="number" 
-            id="rating" 
-            formControlName="rating"
-            placeholder="8.5"
-            min="0"
-            max="10"
-            step="0.1"
-            [class.error]="movieForm.get('rating')?.invalid && movieForm.get('rating')?.touched">
-          @if (movieForm.get('rating')?.invalid && movieForm.get('rating')?.touched) {
-            <div class="error-message">
-              {{ getFieldError('rating') || 'Rating must be between 0 and 10' }}
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="director">Director</label>
-          <input 
-            type="text" 
-            id="director" 
-            formControlName="director"
-            placeholder="Enter director name">
-        </div>
-
-        <div class="form-group">
-          <label for="crew">Crew (comma-separated)</label>
-          <input 
-            type="text" 
-            id="crew" 
-            formControlName="crew"
-            placeholder="e.g., Producer Name, Writer Name">
-          <small class="hint">Enter crew members separated by commas</small>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="releaseDate">Release Date *</label>
-          <input 
-            type="date" 
-            id="releaseDate" 
-            formControlName="releaseDate"
-            [class.error]="movieForm.get('releaseDate')?.invalid && movieForm.get('releaseDate')?.touched">
-          @if (movieForm.get('releaseDate')?.invalid && movieForm.get('releaseDate')?.touched) {
-            <div class="error-message">
-              {{ getFieldError('releaseDate') || 'Release date is required' }}
-            </div>
-          }
-        </div>
-
-        <div class="form-group">
-          <label for="language">Language *</label>
-          <input 
-            type="text" 
-            id="language" 
-            formControlName="language"
-            placeholder="English"
-            [class.error]="movieForm.get('language')?.invalid && movieForm.get('language')?.touched">
-          @if (movieForm.get('language')?.invalid && movieForm.get('language')?.touched) {
-            <div class="error-message">
-              {{ getFieldError('language') || 'Language is required' }}
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="description">Description *</label>
-        <textarea 
-          id="description" 
-          formControlName="description"
-          placeholder="Enter movie description..."
-          rows="4"
-          [class.error]="movieForm.get('description')?.invalid && movieForm.get('description')?.touched"></textarea>
-        @if (movieForm.get('description')?.invalid && movieForm.get('description')?.touched) {
-          <div class="error-message">
-            {{ getFieldError('description') || 'Description is required' }}
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="title">🎬 Movie Title *</label>
+            <input 
+              type="text" 
+              id="title" 
+              formControlName="title"
+              placeholder="Enter movie title"
+              [class.error]="movieForm.get('title')?.invalid && movieForm.get('title')?.touched">
+            @if (movieForm.get('title')?.invalid && movieForm.get('title')?.touched) {
+              <span class="error-message">{{ getFieldError('title') }}</span>
+            }
           </div>
-        }
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="posterUrl">Poster URL</label>
-          <input 
-            type="url" 
-            id="posterUrl" 
-            formControlName="posterUrl"
-            placeholder="https://example.com/poster.jpg">
-        </div>
-        <div class="form-group">
-          <label for="trailerUrl">Trailer URL</label>
-          <input 
-            type="url" 
-            id="trailerUrl" 
-            formControlName="trailerUrl"
-            placeholder="https://youtube.com/watch?v=...">
-        </div>
-      </div>
+          <div class="form-group">
+            <label for="director">🎥 Director</label>
+            <input 
+              type="text" 
+              id="director" 
+              formControlName="director"
+              placeholder="Enter director name">
+          </div>
 
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" (click)="onCancel()" [disabled]="submitting()">
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          class="btn-primary" 
-          [disabled]="movieForm.invalid || submitting()">
-          {{ submitting() ? (isEditMode() ? 'Updating...' : 'Adding...') : getSubmitButtonText() }}
-        </button>
-      </div>
-    </form>
+          <div class="form-group">
+            <label for="duration">⏱️ Duration (minutes) *</label>
+            <input 
+              type="number" 
+              id="duration" 
+              formControlName="duration"
+              placeholder="120"
+              min="1"
+              [class.error]="movieForm.get('duration')?.invalid && movieForm.get('duration')?.touched">
+            @if (movieForm.get('duration')?.invalid && movieForm.get('duration')?.touched) {
+              <span class="error-message">{{ getFieldError('duration') }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="rating">⭐ Rating (0-10) *</label>
+            <input 
+              type="number" 
+              id="rating" 
+              formControlName="rating"
+              placeholder="7.5"
+              min="0"
+              max="10"
+              step="0.1"
+              [class.error]="movieForm.get('rating')?.invalid && movieForm.get('rating')?.touched">
+            @if (movieForm.get('rating')?.invalid && movieForm.get('rating')?.touched) {
+              <span class="error-message">{{ getFieldError('rating') }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="language">🌐 Language *</label>
+            <input 
+              type="text" 
+              id="language" 
+              formControlName="language"
+              placeholder="English"
+              [class.error]="movieForm.get('language')?.invalid && movieForm.get('language')?.touched">
+            @if (movieForm.get('language')?.invalid && movieForm.get('language')?.touched) {
+              <span class="error-message">{{ getFieldError('language') }}</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="releaseDate">📅 Release Date *</label>
+            <input 
+              type="date" 
+              id="releaseDate" 
+              formControlName="releaseDate"
+              [class.error]="movieForm.get('releaseDate')?.invalid && movieForm.get('releaseDate')?.touched">
+            @if (movieForm.get('releaseDate')?.invalid && movieForm.get('releaseDate')?.touched) {
+              <span class="error-message">{{ getFieldError('releaseDate') }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Genre Selection & Description -->
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="genreSelect">🎭 Genre *</label>
+            <select 
+              id="genreSelect" 
+              (change)="onGenreSelect($event)"
+              class="genre-select"
+              multiple
+              size="6">
+              @for (genre of getAvailableGenres(); track genre) {
+                <option [value]="genre">{{ genre }}</option>
+              }
+            </select>
+            @if (selectedGenres().length > 0) {
+              <div class="selected-genres">
+                @for (genre of selectedGenres(); track genre) {
+                  <span class="genre-tag">
+                    {{ genre }}
+                    <button type="button" (click)="removeGenre(genre)" class="remove-genre">×</button>
+                  </span>
+                }
+              </div>
+            } @else {
+              <small class="hint">No genres selected yet</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="description">📝 Description *</label>
+            <textarea 
+              id="description" 
+              formControlName="description"
+              placeholder="Enter a compelling movie description..."
+              rows="8"
+              [class.error]="movieForm.get('description')?.invalid && movieForm.get('description')?.touched"></textarea>
+            @if (movieForm.get('description')?.invalid && movieForm.get('description')?.touched) {
+              <span class="error-message">{{ getFieldError('description') }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Media Assets Section -->
+        <div class="section-header">
+          <h3>Media Assets</h3>
+        </div>
+        
+        <div class="form-grid">
+          <!-- Poster Upload -->
+          <div class="form-group">
+            <label for="posterFile">🖼️ Poster Image</label>
+            <div class="file-upload-wrapper">
+              <input 
+                type="file" 
+                id="posterFile" 
+                accept="image/*"
+                (change)="onPosterFileChange($event)"
+                class="file-input">
+              <label for="posterFile" class="file-label">
+                <span>📤</span>
+                <span>Choose Image</span>
+              </label>
+            </div>
+            <div class="url-divider">OR</div>
+            <div class="url-input-group">
+              <input 
+                type="text" 
+                id="posterUrl" 
+                formControlName="posterUrl"
+                placeholder="Enter image URL">
+              <button type="button" class="load-btn" (click)="loadPosterPreview()">
+                Load Preview
+              </button>
+            </div>
+            @if (posterPreview() && isImage(posterPreview())) {
+              <div class="preview-box">
+                <img [src]="posterPreview()" alt="Poster preview">
+              </div>
+            }
+          </div>
+
+          <!-- Trailer Upload -->
+          <div class="form-group">
+            <label for="trailerFile">🎞️ Trailer Video</label>
+            <div class="file-upload-wrapper">
+              <input 
+                type="file" 
+                id="trailerFile" 
+                accept="video/*"
+                (change)="onTrailerFileChange($event)"
+                class="file-input">
+              <label for="trailerFile" class="file-label">
+                <span>📤</span>
+                <span>Choose Video</span>
+              </label>
+            </div>
+            <div class="url-divider">OR</div>
+            <div class="url-input-group">
+              <input 
+                type="text" 
+                id="trailerUrl" 
+                formControlName="trailerUrl"
+                placeholder="Enter video URL">
+              <button type="button" class="load-btn" (click)="loadTrailerPreview()">
+                Load Preview
+              </button>
+            </div>
+            @if (trailerPreview() && isVideo(trailerPreview())) {
+              <div class="preview-box">
+                <video [src]="trailerPreview()" controls></video>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="onCancel()" [disabled]="submitting()">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn-primary" 
+            [disabled]="movieForm.invalid || selectedGenres().length === 0 || submitting()">
+            @if (submitting()) {
+              <span class="spinner-small"></span>
+              <span>{{ isEditMode() ? 'Updating...' : 'Adding...' }}</span>
+            } @else {
+              <span>{{ getSubmitButtonText() }}</span>
+            }
+          </button>
+        </div>
+      </form>
     </div>
   }
 </div>

@@ -1,37 +1,39 @@
-<div class="manage-users-page">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-left">
-      <h1 class="page-title">Manage Users</h1>
-      <p class="page-subtitle">View and manage all registered users</p>
-    </div>
-  </div>
+<div class="page-wrapper">
+  <!-- HEADER -->
+  <header class="page-header">
+    <h1 class="page-title">Manage Users</h1>
+    <p class="page-subtitle">View and manage all registered users</p>
+  </header>
 
-  <!-- Filters -->
-  <div class="filters-section">
+  <!-- FILTERS -->
+  <section class="filters-bar">
     <div class="search-box">
-      <span class="search-icon">🔍</span>
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
       <input 
         type="text" 
+        class="search-input"
         placeholder="Search by name, email, or mobile..." 
         [value]="searchTerm()"
         (input)="onSearch($any($event.target).value)">
     </div>
     
-    <select class="filter-select" [value]="roleFilter()" (change)="onRoleFilterChange($any($event.target).value)">
+    <select class="filter-dropdown" [value]="roleFilter()" (change)="onRoleFilterChange($any($event.target).value)">
       <option value="ALL">All Roles</option>
       <option value="ADMIN">Admin</option>
       <option value="USER">User</option>
     </select>
 
-    <select class="filter-select" [value]="statusFilter()" (change)="onStatusFilterChange($any($event.target).value)">
+    <select class="filter-dropdown" [value]="statusFilter()" (change)="onStatusFilterChange($any($event.target).value)">
       <option value="ALL">All Status</option>
       <option value="ACTIVE">Active</option>
       <option value="BLOCKED">Blocked</option>
     </select>
-  </div>
+  </section>
 
-  <!-- Loading State -->
+  <!-- LOADING -->
   @if (loading()) {
     <div class="loading-state">
       <div class="spinner"></div>
@@ -39,7 +41,7 @@
     </div>
   }
 
-  <!-- Empty State -->
+  <!-- EMPTY STATE -->
   @else if (filteredUsers().length === 0) {
     <div class="empty-state">
       <div class="empty-icon">👥</div>
@@ -48,20 +50,20 @@
     </div>
   }
 
-  <!-- Users Table -->
+  <!-- USERS TABLE -->
   @else {
     <div class="users-table">
       <div class="table-header">
-        <div class="col-name" (click)="onSortChange('name')" style="cursor: pointer;">
+        <div class="col-name" (click)="onSortChange('name')">
           Name {{ sortBy() === 'name' ? (sortOrder() === 'asc' ? '↑' : '↓') : '' }}
         </div>
-        <div class="col-email" (click)="onSortChange('email')" style="cursor: pointer;">
+        <div class="col-email" (click)="onSortChange('email')">
           Email {{ sortBy() === 'email' ? (sortOrder() === 'asc' ? '↑' : '↓') : '' }}
         </div>
         <div class="col-mobile">Mobile</div>
         <div class="col-role">Role</div>
         <div class="col-status">Status</div>
-        <div class="col-joined" (click)="onSortChange('createdAt')" style="cursor: pointer;">
+        <div class="col-joined" (click)="onSortChange('createdAt')">
           Joined {{ sortBy() === 'createdAt' ? (sortOrder() === 'asc' ? '↑' : '↓') : '' }}
         </div>
         <div class="col-actions">Actions</div>
@@ -78,23 +80,43 @@
           <div class="col-email">{{ user.email }}</div>
           <div class="col-mobile">{{ user.phone || 'N/A' }}</div>
           <div class="col-role">
-            <span class="role-badge" [ngClass]="getRoleClass(user.role)">{{ user.role }}</span>
+            <span class="role-badge" [class.admin]="user.role === 'ADMIN'" [class.user]="user.role === 'USER'">
+              {{ user.role }}
+            </span>
           </div>
           <div class="col-status">
-            <span class="status-badge" [ngClass]="getStatusClass(user)">{{ user.isActive !== false ? 'ACTIVE' : 'BLOCKED' }}</span>
+            <span class="status-badge" [class.active]="user.isActive !== false" [class.inactive]="user.isActive === false">
+              {{ user.isActive !== false ? 'Active' : 'Inactive' }}
+            </span>
           </div>
-          <div class="col-joined">{{ user.createdAt | date:'MMM d, y' }}</div>
+          <div class="col-joined">
+            <span class="date-text">📅 {{ user.createdAt | date:'MMM d, y' }}</span>
+          </div>
           <div class="col-actions">
-            <button class="action-btn view" (click)="viewUser(user)" title="View Details">👁️</button>
-            <button class="action-btn edit" (click)="openEditRoleModal(user)" title="Edit Role">✏️</button>
-            <button 
-              class="action-btn" 
-              [ngClass]="user.isActive !== false ? 'block' : 'unblock'"
-              (click)="toggleUserStatus(user)" 
-              [title]="user.isActive !== false ? 'Block User' : 'Unblock User'">
-              {{ user.isActive !== false ? '🚫' : '✅' }}
+            <button class="action-btn view" (click)="viewUser(user)" title="View details">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
             </button>
-            <button class="action-btn delete" (click)="deleteUser(user)" title="Delete User">🗑️</button>
+            <button class="action-btn edit" (click)="toggleRole(user)" [disabled]="updatingRoleId() === user.id" title="Edit role">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button class="action-btn disable" (click)="toggleUserStatus(user)" [title]="user.isActive !== false ? 'Disable user' : 'Enable user'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+            </button>
+            <button class="action-btn delete" (click)="deleteUser(user)" title="Delete user">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
           </div>
         </div>
       }
@@ -102,53 +124,43 @@
   }
 </div>
 
-<!-- View User Modal -->
+<!-- VIEW MODAL -->
 @if (showViewModal()) {
   <div class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>User Details</h2>
-        <button class="close-btn" (click)="closeModal()">✕</button>
+        <button class="btn-close" (click)="closeModal()">✕</button>
       </div>
       
       @if (selectedUser(); as user) {
         <div class="modal-body">
           <div class="user-details">
             <div class="detail-row">
-              <span class="detail-label">Name:</span>
-              <span class="detail-value">{{ user.name }}</span>
+              <span class="label">Name:</span>
+              <span class="value">{{ user.name }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Email:</span>
-              <span class="detail-value">{{ user.email }}</span>
+              <span class="label">Email:</span>
+              <span class="value">{{ user.email }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Mobile:</span>
-              <span class="detail-value">{{ user.phone || 'N/A' }}</span>
+              <span class="label">Mobile:</span>
+              <span class="value">{{ user.phone || 'N/A' }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Role:</span>
-              <span class="role-badge" [ngClass]="getRoleClass(user.role)">{{ user.role }}</span>
+              <span class="label">Role:</span>
+              <span class="role-badge" [class.admin]="user.role === 'ADMIN'" [class.user]="user.role === 'USER'">{{ user.role }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Status:</span>
-              <span class="status-badge" [ngClass]="getStatusClass(user)">{{ user.isActive !== false ? 'ACTIVE' : 'BLOCKED' }}</span>
+              <span class="label">Status:</span>
+              <span class="status-badge" [class.active]="user.isActive !== false" [class.blocked]="user.isActive === false">
+                {{ user.isActive !== false ? 'ACTIVE' : 'BLOCKED' }}
+              </span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Gender:</span>
-              <span class="detail-value">{{ user.gender || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Date of Birth:</span>
-              <span class="detail-value">{{ user.dateOfBirth ? (user.dateOfBirth | date:'MMM d, y') : 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Address:</span>
-              <span class="detail-value">{{ user.address || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Joined:</span>
-              <span class="detail-value">{{ user.createdAt | date:'MMM d, y, h:mm a' }}</span>
+              <span class="label">Joined:</span>
+              <span class="value">{{ user.createdAt | date:'MMM d, y, h:mm a' }}</span>
             </div>
           </div>
 
@@ -157,7 +169,7 @@
             @if (loadingBookings()) {
               <div class="loading-bookings">
                 <div class="spinner-small"></div>
-                <p>Loading bookings...</p>
+                <p>Loading...</p>
               </div>
             } @else if (userBookings().length === 0) {
               <p class="no-bookings">No bookings found</p>
@@ -171,8 +183,8 @@
                       <span>{{ booking.showDate | date:'MMM d, y' }} at {{ booking.showTime }}</span>
                     </div>
                     <div class="booking-meta">
-                      <span class="booking-amount">₹{{ booking.totalAmount }}</span>
-                      <span class="booking-status" [ngClass]="booking.status.toLowerCase()">{{ booking.status }}</span>
+                      <span class="amount">₹{{ booking.totalAmount }}</span>
+                      <span class="status" [class]="booking.status.toLowerCase()">{{ booking.status }}</span>
                     </div>
                   </div>
                 }
@@ -185,53 +197,4 @@
   </div>
 }
 
-<!-- Edit Role Modal -->
-@if (showEditRoleModal()) {
-  <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-content modal-small" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Edit User Role</h2>
-        <button class="close-btn" (click)="closeModal()">✕</button>
-      </div>
-      
-      @if (selectedUser(); as user) {
-        <div class="modal-body">
-          <p class="modal-description">Change role for <strong>{{ user.name }}</strong></p>
-          
-          <div class="role-options">
-            <label class="role-option">
-              <input 
-                type="radio" 
-                name="role" 
-                value="USER" 
-                [checked]="newRole() === 'USER'"
-                (change)="newRole.set('USER')">
-              <span class="role-label">
-                <span class="role-badge user">USER</span>
-                <span class="role-desc">Regular user with basic permissions</span>
-              </span>
-            </label>
-            
-            <label class="role-option">
-              <input 
-                type="radio" 
-                name="role" 
-                value="ADMIN" 
-                [checked]="newRole() === 'ADMIN'"
-                (change)="newRole.set('ADMIN')">
-              <span class="role-label">
-                <span class="role-badge admin">ADMIN</span>
-                <span class="role-desc">Administrator with full access</span>
-              </span>
-            </label>
-          </div>
 
-          <div class="modal-actions">
-            <button class="btn-secondary" (click)="closeModal()">Cancel</button>
-            <button class="btn-primary" (click)="updateRole()">Update Role</button>
-          </div>
-        </div>
-      }
-    </div>
-  </div>
-}

@@ -81,7 +81,7 @@
       </div>
 
       <div class="col-rating">
-        <span class="rating-pill">{{ movie.rating || 'N/A' }}</span>
+        <span class="rating-pill">{{ movie.rating != null ? (movie.rating | number:'1.1-1') : 'N/A' }}</span>
       </div>
 
       <div class="col-status">

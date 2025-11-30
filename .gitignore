@@ -20,7 +20,9 @@ build/
 *.tar.gz
 *.rar
 
-# ==========================
+# Application properties
+*.properties
+
 # IDE Files
 # ==========================
 # IntelliJ IDEA

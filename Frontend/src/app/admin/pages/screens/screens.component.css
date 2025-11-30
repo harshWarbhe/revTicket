@@ -191,8 +191,7 @@
 }
 
 .form-field input,
-.form-field select,
-.form-field textarea {
+.form-field select {
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -203,15 +202,13 @@
 }
 
 .form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
+.form-field select:focus {
   outline: none;
   border-color: #667eea;
 }
 
 .form-field.error input,
-.form-field.error select,
-.form-field.error textarea {
+.form-field.error select {
   border-color: #ef4444;
 }
 
@@ -219,6 +216,27 @@
   font-size: 0.75rem;
   color: #ef4444;
   font-weight: 500;
+}
+
+.form-field input[type="file"] {
+  padding: 8px;
+  background: white;
+  margin-bottom: 8px;
+}
+
+.preview-box {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.preview-img {
+  max-width: 180px;
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
 }
 
 .form-actions {
@@ -289,15 +307,15 @@
   margin: 0;
 }
 
-/* THEATRES GRID */
-.theatres-grid {
+/* SCREENS GRID */
+.screens-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
 
-.theatre-card {
+.screen-card {
   background: #fff;
   border-radius: 10px;
   padding: 16px;
@@ -306,7 +324,7 @@
   transition: all 200ms;
 }
 
-.theatre-card:hover {
+.screen-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   transform: translateY(-2px);
 }
@@ -318,7 +336,7 @@
   margin-bottom: 10px;
 }
 
-.theatre-name {
+.screen-name {
   font-size: 1.1rem;
   font-weight: 700;
   color: #1a202c;
@@ -360,17 +378,24 @@
   color: #cbd5e0;
 }
 
-.card-address {
-  font-size: 0.85rem;
-  color: #64748b;
+.card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e2e8f0;
 }
 
+.detail-item {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
 .card-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -383,6 +408,7 @@
   transition: all 200ms;
   border: none;
   white-space: nowrap;
+  min-width: fit-content;
 }
 
 .action-btn:hover:not(:disabled) {
@@ -394,12 +420,21 @@
   cursor: not-allowed;
 }
 
-.action-btn.screens {
+.action-btn.assign {
+  background: #e9d5ff;
+  color: #6b21a8;
+}
+
+.action-btn.assign:hover:not(:disabled) {
+  background: #ddd6fe;
+}
+
+.action-btn.layout {
   background: #f1f5f9;
   color: #475569;
 }
 
-.action-btn.screens:hover:not(:disabled) {
+.action-btn.layout:hover:not(:disabled) {
   background: #e2e8f0;
 }
 
@@ -457,26 +492,100 @@
   font-size: 0.95rem;
 }
 
-/* PREVIEW STYLES */
-.preview-box {
-  margin-top: 12px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-.preview-img {
-  max-width: 180px;
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 12px;
-}
-
-.form-field input[type="file"] {
-  padding: 8px;
+.modal-content {
   background: white;
-  margin-bottom: 8px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.movie-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.movie-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 200ms;
+  width: 100%;
+  text-align: left;
+}
+
+.movie-item:hover:not(:disabled) {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+  transform: translateX(4px);
+}
+
+.movie-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.movie-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.movie-arrow {
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.no-movies {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px 20px;
+  font-size: 0.95rem;
 }
 
 /* RESPONSIVE */
@@ -509,7 +618,7 @@
     width: 100%;
   }
 
-  .theatres-grid {
+  .screens-grid {
     grid-template-columns: 1fr;
   }
 
@@ -533,10 +642,16 @@
   }
 
   .card-actions {
-    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .action-btn {
-    flex: 1 1 calc(50% - 4px);
+    flex: 1 1 calc(50% - 3px);
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  .modal-content {
+    width: 95%;
   }
 }

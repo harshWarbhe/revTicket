@@ -1,9 +1,10 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { forkJoin, Subject } from 'rxjs';
+import { finalize, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ShowtimeService, Showtime, Screen } from '../../../core/services/showtime.service';
 import { MovieService } from '../../../core/services/movie.service';
 import { TheaterService, Theater } from '../../../core/services/theater.service';
@@ -62,50 +63,40 @@ export class ManageShowsComponent implements OnInit {
   loading = signal(false);
   submitting = signal(false);
   deleteInProgressId = signal<string | null>(null);
+  toggleStatusInProgressId = signal<string | null>(null);
   
-  filteredShows = computed(() => {
-    const shows = this.shows();
-    const search = this.searchTerm().toLowerCase().trim();
-    const movieId = this.selectedMovieId();
-    const theaterId = this.selectedTheaterId();
-    const date = this.selectedDate();
-    
-    if (!shows || shows.length === 0) {
-      return [];
-    }
-
-    return shows.filter(show => {
-      const movieTitle = show.movie?.title?.toLowerCase() || '';
-      const theaterName = show.theater?.name?.toLowerCase() || '';
-      const matchesSearch = !search || movieTitle.includes(search) || theaterName.includes(search);
-
-      const matchesMovie = !movieId || show.movieId === movieId;
-      const matchesTheater = !theaterId || show.theaterId === theaterId;
-
-      let matchesDate = true;
-      if (date) {
-        try {
-          const showDate = new Date(show.showDateTime).toDateString();
-          const filterDate = new Date(date).toDateString();
-          matchesDate = showDate === filterDate;
-        } catch (e) {
-          matchesDate = true;
-        }
-      }
-
-      return matchesSearch && matchesMovie && matchesTheater && matchesDate;
-    });
-  });
-
-  newShow: ShowtimeForm = this.getEmptyForm();
-
+  private searchSubject = new Subject<string>();
+  private destroyRef = inject(DestroyRef);
   private showtimeService = inject(ShowtimeService);
   private movieService = inject(MovieService);
   private theaterService = inject(TheaterService);
   private alertService = inject(AlertService);
+  
+  filteredShows = computed(() => this.shows());
+  newShow: ShowtimeForm = this.getEmptyForm();
 
   ngOnInit(): void {
     this.loadData();
+    this.setupSearchDebounce();
+  }
+  
+  private setupSearchDebounce(): void {
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.reloadShowtimes();
+    });
+  }
+  
+  onSearchChange(value: string): void {
+    this.searchTerm.set(value);
+    this.searchSubject.next(value);
+  }
+  
+  onFilterChange(): void {
+    this.reloadShowtimes();
   }
   
   private getEmptyForm(): ShowtimeForm {
@@ -132,7 +123,10 @@ export class ManageShowsComponent implements OnInit {
       theaters: this.theaterService.getAdminTheaters(false),
       showtimes: this.showtimeService.getAdminShowtimes()
     })
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: ({ movies, theaters, showtimes }) => {
           this.movies.set(movies || []);
@@ -151,8 +145,18 @@ export class ManageShowsComponent implements OnInit {
 
   private reloadShowtimes(): void {
     this.loading.set(true);
-    this.showtimeService.getAdminShowtimes()
-      .pipe(finalize(() => this.loading.set(false)))
+    const filters: any = {};
+    
+    if (this.selectedMovieId()) filters.movieId = this.selectedMovieId();
+    if (this.selectedTheaterId()) filters.theaterId = this.selectedTheaterId();
+    if (this.selectedDate()) filters.date = this.selectedDate();
+    if (this.searchTerm()) filters.search = this.searchTerm();
+    
+    this.showtimeService.getAdminShowtimes(filters)
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (showtimes: Showtime[]) => {
           this.shows.set((showtimes || []).map((s: Showtime) => this.mapShowtimeToView(s)));
@@ -233,7 +237,10 @@ export class ManageShowsComponent implements OnInit {
       : this.showtimeService.createShowtime(payload);
 
     request$
-      .pipe(finalize(() => this.submitting.set(false)))
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: () => {
           this.alertService.success(`Show ${this.isEditMode() ? 'updated' : 'created'} successfully!`);
@@ -328,13 +335,19 @@ export class ManageShowsComponent implements OnInit {
   }
 
   deleteShow(show: Showtime): void {
-    if (!confirm(`Delete show "${show.movie?.title || ''}" at ${show.theater?.name || ''}?`)) {
+    const movieTitle = show.movie?.title || 'Unknown Movie';
+    const theaterName = show.theater?.name || 'Unknown Theater';
+    
+    if (!confirm(`Are you sure you want to delete the show "${movieTitle}" at ${theaterName}?`)) {
       return;
     }
 
     this.deleteInProgressId.set(show.id);
     this.showtimeService.deleteShowtime(show.id)
-      .pipe(finalize(() => this.deleteInProgressId.set(null)))
+      .pipe(
+        finalize(() => this.deleteInProgressId.set(null)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: () => {
           this.alertService.success('Show deleted successfully!');
@@ -342,6 +355,24 @@ export class ManageShowsComponent implements OnInit {
         },
         error: () => {
           this.alertService.error('Failed to delete show.');
+        }
+      });
+  }
+  
+  toggleShowStatus(show: Showtime): void {
+    this.toggleStatusInProgressId.set(show.id);
+    this.showtimeService.toggleShowtimeStatus(show.id)
+      .pipe(
+        finalize(() => this.toggleStatusInProgressId.set(null)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (updated) => {
+          this.alertService.success(`Show status changed to ${updated.status}`);
+          this.reloadShowtimes();
+        },
+        error: () => {
+          this.alertService.error('Failed to update show status.');
         }
       });
   }
@@ -433,15 +464,17 @@ export class ManageShowsComponent implements OnInit {
   }
 
   private loadTheaterScreens(theaterId: string): void {
-    this.theaterService.getTheaterScreens(theaterId).subscribe({
-      next: (screens: Screen[]) => {
-        this.screens.set(screens || []);
-      },
-      error: (err: any) => {
-        console.error('Failed to load screens:', err);
-        this.screens.set([]);
-      }
-    });
+    this.theaterService.getTheaterScreens(theaterId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (screens: Screen[]) => {
+          this.screens.set(screens || []);
+        },
+        error: (err: any) => {
+          console.error('Failed to load screens:', err);
+          this.screens.set([]);
+        }
+      });
   }
 
   trackById(index: number, item: any): string {

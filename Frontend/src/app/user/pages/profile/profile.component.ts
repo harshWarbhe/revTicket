@@ -20,6 +20,7 @@ export class ProfileComponent implements OnInit {
   activeTab = signal('personal');
   loading = signal(false);
   loadingProfile = signal(true);
+  avatarPreview = signal<string>('');
 
   availableGenres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Thriller', 'Adventure', 'Animation', 'Documentary'];
   
@@ -100,6 +101,23 @@ export class ProfileComponent implements OnInit {
 
   changeAvatar(): void {
     this.alertService.info('Avatar upload feature coming soon!');
+  }
+
+  previewAvatar(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        this.avatarPreview.set(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  isImage(url: string): boolean {
+    return /\.(png|jpg|jpeg|webp|svg|gif)$/i.test(url) || url.startsWith('data:image');
   }
 
   updateProfile(): void {

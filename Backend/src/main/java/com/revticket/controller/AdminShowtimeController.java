@@ -29,17 +29,9 @@ public class AdminShowtimeController {
     public ResponseEntity<List<ShowtimeResponse>> getShowtimes(
             @RequestParam(name = "movieId", required = false) String movieId,
             @RequestParam(name = "theaterId", required = false) String theaterId,
-            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        if (movieId != null && date != null) {
-            return ResponseEntity.ok(showtimeService.getShowtimesByMovieAndDate(movieId, date));
-        }
-        if (movieId != null) {
-            return ResponseEntity.ok(showtimeService.getShowtimesByMovie(movieId));
-        }
-        if (theaterId != null) {
-            return ResponseEntity.ok(showtimeService.getShowtimesByTheater(theaterId));
-        }
-        return ResponseEntity.ok(showtimeService.getAllShowtimes());
+            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(name = "search", required = false) String search) {
+        return ResponseEntity.ok(showtimeService.getShowtimesWithFilters(movieId, theaterId, date, search));
     }
 
     @GetMapping("/{id}")
@@ -65,6 +57,11 @@ public class AdminShowtimeController {
     public ResponseEntity<Void> deleteShowtime(@PathVariable String id) {
         showtimeService.deleteShowtime(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ShowtimeResponse> toggleStatus(@PathVariable String id) {
+        return ResponseEntity.ok(showtimeService.toggleShowtimeStatus(id));
     }
 
     @GetMapping("/check-conflict")

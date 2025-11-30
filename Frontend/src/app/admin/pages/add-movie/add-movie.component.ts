@@ -25,18 +25,23 @@ export class AddMovieComponent implements OnInit {
   editingMovieId = signal<string | null>(null);
   loading = signal(false);
   submitting = signal(false);
+  posterPreview = signal<string>('');
+  trailerPreview = signal<string>('');
 
-  genreOptions = ['Action', 'Adventure', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Thriller', 'Fantasy', 'Animation'];
+  availableGenres = [
+    'Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
+    'Documentary', 'Drama', 'Family', 'Fantasy', 'Horror', 'Mystery',
+    'Romance', 'Sci-Fi', 'Sports', 'Thriller', 'War', 'Western'
+  ];
+  selectedGenres = signal<string[]>([]);
 
   constructor() {
     this.movieForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(2)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       duration: ['', [Validators.required, Validators.min(1)]],
-      rating: ['', [Validators.required, Validators.min(0), Validators.max(10)]],
+      rating: ['', [Validators.required, Validators.min(0), Validators.max(10), Validators.pattern(/^\d+(\.\d{1})?$/)]],
       director: [''],
-      crew: [''],
-      genre: ['', Validators.required],
       language: ['English', Validators.required],
       releaseDate: ['', Validators.required],
       posterUrl: [''],
@@ -46,9 +51,9 @@ export class AddMovieComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      if (params['edit']) {
+      if (params['id']) {
         this.isEditMode.set(true);
-        this.editingMovieId.set(params['edit']);
+        this.editingMovieId.set(params['id']);
         this.loadMovieForEdit();
       }
     });
@@ -59,7 +64,7 @@ export class AddMovieComponent implements OnInit {
     if (!movieId) return;
 
     this.loading.set(true);
-    this.movieService.getMovieById(movieId).subscribe({
+    this.movieService.getAdminMovieById(movieId).subscribe({
       next: (movie) => {
         this.movieForm.patchValue({
           title: movie.title,
@@ -67,13 +72,20 @@ export class AddMovieComponent implements OnInit {
           duration: movie.duration,
           rating: movie.rating,
           director: movie.director || '',
-          crew: Array.isArray(movie.crew) ? movie.crew.join(', ') : '',
-          genre: Array.isArray(movie.genre) ? movie.genre.join(', ') : movie.genre || '',
           language: movie.language || 'English',
           releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : '',
           posterUrl: movie.posterUrl || '',
           trailerUrl: movie.trailerUrl || ''
         });
+        
+        if (Array.isArray(movie.genre)) {
+          this.selectedGenres.set(movie.genre);
+        } else if (typeof movie.genre === 'string') {
+          this.selectedGenres.set((movie.genre as string).split(',').map((g: string) => g.trim()));
+        }
+        
+        if (movie.posterUrl) this.posterPreview.set(movie.posterUrl);
+        if (movie.trailerUrl) this.trailerPreview.set(movie.trailerUrl);
         this.loading.set(false);
       },
       error: () => {
@@ -84,20 +96,27 @@ export class AddMovieComponent implements OnInit {
     });
   }
 
+  onGenreSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    const newGenres = selectedOptions.filter(g => g && !this.selectedGenres().includes(g));
+    if (newGenres.length > 0) {
+      this.selectedGenres.set([...this.selectedGenres(), ...newGenres]);
+    }
+  }
+
+  removeGenre(genre: string): void {
+    this.selectedGenres.set(this.selectedGenres().filter(g => g !== genre));
+  }
+
+  getAvailableGenres(): string[] {
+    return this.availableGenres.filter(g => !this.selectedGenres().includes(g));
+  }
+
   onSubmit(): void {
-    if (this.movieForm.valid) {
+    if (this.movieForm.valid && this.selectedGenres().length > 0) {
       this.submitting.set(true);
       const formValue = this.movieForm.value;
-      
-      // Convert genre string to array
-      const genreArray = formValue.genre
-        ? formValue.genre.split(',').map((g: string) => g.trim()).filter((g: string) => g.length > 0)
-        : [];
-      
-      // Convert crew string to array
-      const crewArray = formValue.crew
-        ? formValue.crew.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
-        : [];
 
       const movieData: Partial<Movie> = {
         title: formValue.title,
@@ -105,8 +124,7 @@ export class AddMovieComponent implements OnInit {
         duration: parseInt(formValue.duration),
         rating: parseFloat(formValue.rating),
         director: formValue.director || undefined,
-        crew: crewArray.length > 0 ? crewArray : undefined,
-        genre: genreArray,
+        genre: this.selectedGenres(),
         language: formValue.language,
         releaseDate: new Date(formValue.releaseDate),
         posterUrl: formValue.posterUrl || undefined,
@@ -141,11 +159,14 @@ export class AddMovieComponent implements OnInit {
         });
       }
     } else {
-      // Mark all fields as touched to show validation errors
       Object.keys(this.movieForm.controls).forEach(key => {
         this.movieForm.get(key)?.markAsTouched();
       });
-      this.alertService.error('Please fill all required fields correctly');
+      if (this.selectedGenres().length === 0) {
+        this.alertService.error('Please select at least one genre');
+      } else {
+        this.alertService.error('Please fill all required fields correctly');
+      }
     }
   }
 
@@ -161,6 +182,54 @@ export class AddMovieComponent implements OnInit {
     return this.isEditMode() ? 'Update Movie' : 'Add Movie';
   }
 
+  onPosterFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.posterPreview.set(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      this.movieForm.patchValue({ posterUrl: '' });
+    }
+  }
+
+  onTrailerFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.trailerPreview.set(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      this.movieForm.patchValue({ trailerUrl: '' });
+    }
+  }
+
+  loadPosterPreview(): void {
+    const url = this.movieForm.get('posterUrl')?.value?.trim();
+    if (url) {
+      this.posterPreview.set(url);
+    }
+  }
+
+  loadTrailerPreview(): void {
+    const url = this.movieForm.get('trailerUrl')?.value?.trim();
+    if (url) {
+      this.trailerPreview.set(url);
+    }
+  }
+
+  isImage(url: string): boolean {
+    return /\.(png|jpg|jpeg|webp|svg|gif)$/i.test(url) || url.startsWith('data:image');
+  }
+
+  isVideo(url: string): boolean {
+    return /\.(mp4|webm|ogg)$/i.test(url) || url.startsWith('data:video');
+  }
+
   getFieldError(fieldName: string): string {
     const field = this.movieForm.get(fieldName);
     if (field?.hasError('required')) {
@@ -170,10 +239,13 @@ export class AddMovieComponent implements OnInit {
       return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is too short`;
     }
     if (field?.hasError('min')) {
-      return `Value must be greater than ${field.errors?.['min'].min}`;
+      return `Value must be at least ${field.errors?.['min'].min}`;
     }
     if (field?.hasError('max')) {
-      return `Value must be less than ${field.errors?.['max'].max}`;
+      return `Value must be at most ${field.errors?.['max'].max}`;
+    }
+    if (field?.hasError('pattern')) {
+      return 'Please enter a valid decimal number (e.g., 7.5)';
     }
     return '';
   }

@@ -87,7 +87,7 @@ export class ShowtimeService {
     return this.getShowtimes();
   }
 
-  getAdminShowtimes(filters?: { movieId?: string; theaterId?: string; date?: string }): Observable<Showtime[]> {
+  getAdminShowtimes(filters?: { movieId?: string; theaterId?: string; date?: string; search?: string }): Observable<Showtime[]> {
     let params = new HttpParams();
     if (filters?.movieId) {
       params = params.set('movieId', filters.movieId);
@@ -98,7 +98,14 @@ export class ShowtimeService {
     if (filters?.date) {
       params = params.set('date', filters.date);
     }
+    if (filters?.search) {
+      params = params.set('search', filters.search);
+    }
     return this.http.get<Showtime[]>(`${environment.apiUrl}/admin/showtimes`, { params });
+  }
+
+  toggleShowtimeStatus(id: string): Observable<Showtime> {
+    return this.http.patch<Showtime>(`${environment.apiUrl}/admin/showtimes/${id}/status`, {});
   }
 
   checkConflict(screenId: string, showDateTime: string, excludeShowId?: string): Observable<boolean> {

@@ -19,7 +19,7 @@ export class AlertComponent {
       const currentAlerts = this.alerts();
       currentAlerts.forEach(alert => {
         if (alert.autoClose) {
-          setTimeout(() => this.startFadeOut(alert.id), 2700);
+          setTimeout(() => this.startFadeOut(alert.id), 3200);
         }
       });
     });

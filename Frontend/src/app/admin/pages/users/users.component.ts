@@ -28,9 +28,8 @@ export class UsersComponent implements OnInit {
   selectedUser = signal<User | null>(null);
   userBookings = signal<UserBooking[]>([]);
   showViewModal = signal(false);
-  showEditRoleModal = signal(false);
   loadingBookings = signal(false);
-  newRole = signal<string>('USER');
+  updatingRoleId = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadUsers();
@@ -40,11 +39,13 @@ export class UsersComponent implements OnInit {
     this.loading.set(true);
     this.adminUserService.getAllUsers().subscribe({
       next: (users) => {
+        console.log('Users loaded:', users);
         this.users.set(users);
         this.applyFilters();
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to load users:', err);
         this.alertService.error('Failed to load users');
         this.loading.set(false);
       }
@@ -149,24 +150,21 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  openEditRoleModal(user: User): void {
-    this.selectedUser.set(user);
-    this.newRole.set(user.role);
-    this.showEditRoleModal.set(true);
-  }
+  toggleRole(user: User): void {
+    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+    
+    if (!confirm(`Change ${user.name}'s role to ${newRole}?`)) return;
 
-  updateRole(): void {
-    const user = this.selectedUser();
-    if (!user) return;
-
-    this.adminUserService.updateUserRole(user.id, this.newRole()).subscribe({
+    this.updatingRoleId.set(user.id);
+    this.adminUserService.updateUserRole(user.id, newRole).subscribe({
       next: () => {
         this.alertService.success('User role updated successfully');
-        this.showEditRoleModal.set(false);
+        this.updatingRoleId.set(null);
         this.loadUsers();
       },
       error: () => {
         this.alertService.error('Failed to update user role');
+        this.updatingRoleId.set(null);
       }
     });
   }
@@ -204,7 +202,6 @@ export class UsersComponent implements OnInit {
 
   closeModal(): void {
     this.showViewModal.set(false);
-    this.showEditRoleModal.set(false);
     this.selectedUser.set(null);
     this.userBookings.set([]);
   }

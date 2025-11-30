@@ -42,7 +42,7 @@ export class AlertService {
     this.alertsSignal.update(alerts => [...alerts, alert]);
 
     if (autoClose) {
-      setTimeout(() => this.removeAlert(alert.id), 3000);
+      setTimeout(() => this.removeAlert(alert.id), 3500);
     }
   }
 

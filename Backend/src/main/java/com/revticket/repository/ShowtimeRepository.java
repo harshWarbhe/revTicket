@@ -37,5 +37,16 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, String> {
     List<Showtime> findByScreenAndShowDateTimeBetween(@Param("screen") String screen,
                                                        @Param("start") LocalDateTime start,
                                                        @Param("end") LocalDateTime end);
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
+    @Query("SELECT s FROM Showtime s WHERE s.theater.id = :theaterId AND s.showDateTime BETWEEN :start AND :end")
+    List<Showtime> findByTheaterIdAndShowDateBetween(@Param("theaterId") String theaterId,
+                                                      @Param("start") LocalDateTime start,
+                                                      @Param("end") LocalDateTime end);
+
+    @EntityGraph(attributePaths = {"movie", "theater"})
+    @Query("SELECT s FROM Showtime s WHERE s.showDateTime BETWEEN :start AND :end ORDER BY s.showDateTime ASC")
+    List<Showtime> findByShowDateTimeBetween(@Param("start") LocalDateTime start,
+                                             @Param("end") LocalDateTime end);
 }
 

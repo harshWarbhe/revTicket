@@ -1,72 +1,101 @@
-<div class="bookings-container">
-  <div class="bookings-header">
+<div class="page-wrapper">
+  <!-- HEADER -->
+  <header class="page-header">
     <div>
-      <h1>Manage Bookings</h1>
-      <p>View and manage all movie bookings</p>
+      <h1 class="page-title">Manage Bookings</h1>
+      <p class="page-subtitle">View and manage all movie bookings</p>
     </div>
-    <div class="header-actions">
-      <input type="text" placeholder="Search bookings..." (input)="searchBookings($any($event.target).value)" class="search-input">
-      <select (change)="filterByStatus($any($event.target).value)" class="filter-select">
-        <option value="ALL">All Status</option>
-        <option value="CONFIRMED">Confirmed</option>
-        <option value="CANCELLED">Cancelled</option>
-        <option value="PENDING">Pending</option>
-      </select>
-    </div>
-  </div>
+  </header>
 
+  <!-- FILTERS -->
+  <section class="filters-bar">
+    <div class="search-box">
+      <input type="text" 
+             class="search-input" 
+             placeholder="Search by booking ID, movie, or user..." 
+             [value]="searchTerm()"
+             (input)="searchBookings($any($event.target).value)">
+      <span class="search-icon">🔍</span>
+    </div>
+
+    <select class="filter-dropdown" 
+            [value]="filterStatus()"
+            (change)="filterByStatus($any($event.target).value)">
+      <option value="ALL">All Status</option>
+      <option value="CONFIRMED">Confirmed</option>
+      <option value="CANCELLED">Cancelled</option>
+      <option value="PENDING">Pending</option>
+    </select>
+  </section>
+
+  <!-- LOADING -->
   @if (loading()) {
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading bookings...</p>
-    </div>
-  } @else if (filteredBookings().length === 0) {
-    <div class="empty-state">
-      <p>No bookings found</p>
-    </div>
-  } @else {
-    <div class="bookings-grid">
-      @for (booking of filteredBookings(); track booking.id) {
-        <div class="booking-card">
-          <div class="booking-header">
-            <span class="booking-id">{{ booking.bookingId || booking.id }}</span>
-            <span class="status-badge" [class]="booking.status?.toLowerCase()">
-              {{ booking.status }}
-            </span>
-          </div>
-          <div class="booking-details">
-            <div class="detail-row">
-              <span class="label">Movie:</span>
-              <span class="value">{{ booking.movieTitle }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">User:</span>
-              <span class="value">{{ booking.userName || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Theatre:</span>
-              <span class="value">{{ booking.theaterName || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Seats:</span>
-              <span class="value">{{ booking.seats?.join(', ') || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Amount:</span>
-              <span class="value amount">{{ formatCurrency(booking.totalAmount || 0) }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Date:</span>
-              <span class="value">{{ booking.bookingDate | date: 'medium' }}</span>
-            </div>
-          </div>
-          @if (booking.status === 'CONFIRMED') {
-            <button class="btn-cancel" (click)="cancelBooking(booking.id)">
-              Cancel Booking
-            </button>
-          }
+  <section class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading bookings...</p>
+  </section>
+  }
+
+  <!-- BOOKINGS GRID -->
+  @if (!loading() && filteredBookings().length > 0) {
+  <section class="bookings-grid">
+    @for (booking of filteredBookings(); track booking.id) {
+    <div class="booking-card">
+      <div class="card-header">
+        <span class="booking-id">{{ booking.bookingId || booking.id }}</span>
+        <span class="status-pill" 
+              [class.confirmed]="booking.status === 'CONFIRMED'"
+              [class.cancelled]="booking.status === 'CANCELLED'"
+              [class.pending]="booking.status === 'PENDING'">
+          {{ booking.status }}
+        </span>
+      </div>
+
+      <div class="card-details">
+        <div class="detail-row">
+          <span class="detail-label">🎬 Movie</span>
+          <span class="detail-value">{{ booking.movieTitle }}</span>
         </div>
+        <div class="detail-row">
+          <span class="detail-label">👤 User</span>
+          <span class="detail-value">{{ booking.userName || 'N/A' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">🏢 Theatre</span>
+          <span class="detail-value">{{ booking.theaterName || 'N/A' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">💺 Seats</span>
+          <span class="detail-value">{{ booking.seats?.join(', ') || 'N/A' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">💰 Amount</span>
+          <span class="detail-value amount">{{ formatCurrency(booking.totalAmount || 0) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">📅 Date</span>
+          <span class="detail-value">{{ booking.bookingDate | date: 'medium' }}</span>
+        </div>
+      </div>
+
+      @if (booking.status === 'CONFIRMED') {
+      <div class="card-actions">
+        <button class="action-btn cancel" (click)="cancelBooking(booking.id)">
+          Cancel Booking
+        </button>
+      </div>
       }
     </div>
+    }
+  </section>
+  }
+
+  <!-- EMPTY STATE -->
+  @if (!loading() && filteredBookings().length === 0) {
+  <section class="empty-state">
+    <div class="empty-icon">🎫</div>
+    <h3>No Bookings Found</h3>
+    <p>{{ searchTerm() || filterStatus() !== 'ALL' ? 'Try adjusting your filters' : 'No bookings have been made yet' }}</p>
+  </section>
   }
 </div>

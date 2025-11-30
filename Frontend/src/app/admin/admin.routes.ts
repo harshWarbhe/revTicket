@@ -9,8 +9,7 @@ import { ManageTheatresComponent } from './pages/manage-theatres/manage-theatres
 import { ProfileComponent } from './pages/profile/profile.component';
 import { UsersComponent } from './pages/users/users.component';
 import { BookingsComponent } from './pages/bookings/bookings.component';
-import { ScreensComponent } from './pages/screens/screens.component';
-import { SettingsComponent } from './pages/settings/settings.component';
+
 
 export const adminRoutes: Routes = [
   {
@@ -23,11 +22,9 @@ export const adminRoutes: Routes = [
       { path: 'manage-movies', component: ManageMoviesComponent },
       { path: 'manage-shows', component: ManageShowsComponent },
       { path: 'manage-theatres', component: ManageTheatresComponent },
-      { path: 'screens', component: ScreensComponent },
       { path: 'bookings', component: BookingsComponent },
       { path: 'users', component: UsersComponent },
       { path: 'bookings-report', component: BookingsReportComponent },
-      { path: 'settings', component: SettingsComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   }

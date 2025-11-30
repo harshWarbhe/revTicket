@@ -1,8 +1,9 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TheaterService, Theater } from '../../../core/services/theater.service';
 import { AlertService } from '../../../core/services/alert.service';
 
@@ -18,12 +19,12 @@ export class ManageTheatresComponent implements OnInit {
   private fb = inject(FormBuilder);
   private theaterService = inject(TheaterService);
   private alertService = inject(AlertService);
+  private destroyRef = inject(DestroyRef);
 
   theatres = signal<Theater[]>([]);
   filteredTheatres = signal<Theater[]>([]);
   theatreForm: FormGroup;
   
-  // UI state
   showForm = signal(false);
   loading = signal(false);
   submitting = signal(false);
@@ -31,14 +32,13 @@ export class ManageTheatresComponent implements OnInit {
   statusUpdatingId = signal<string | null>(null);
   editingTheatreId = signal<string | null>(null);
   
-  // Filters
   searchTerm = signal('');
   selectedCity = signal('');
   selectedStatus = signal('');
   cities = signal<string[]>([]);
+  imagePreview = signal<string>('');
 
-  constructor(private formBuilder: FormBuilder) {
-    this.fb = formBuilder;
+  constructor() {
     this.theatreForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(120)]],
       location: ['', [Validators.required, Validators.maxLength(120)]],
@@ -56,7 +56,10 @@ export class ManageTheatresComponent implements OnInit {
   loadTheatres(): void {
     this.loading.set(true);
     this.theaterService.getAdminTheaters(false)
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (theatres) => {
           this.theatres.set(theatres);
@@ -64,7 +67,7 @@ export class ManageTheatresComponent implements OnInit {
           this.applyFilters();
         },
         error: () => {
-          this.alertService.error('Failed to load theatres. Please try again.');
+          this.alertService.error('Failed to load theatres');
         }
       });
   }
@@ -105,13 +108,7 @@ export class ManageTheatresComponent implements OnInit {
     this.applyFilters();
   }
 
-  onCityChange(value: string): void {
-    this.selectedCity.set(value);
-    this.applyFilters();
-  }
-
-  onStatusChange(value: string): void {
-    this.selectedStatus.set(value);
+  onFilterChange(): void {
     this.applyFilters();
   }
 
@@ -139,6 +136,7 @@ export class ManageTheatresComponent implements OnInit {
       imageUrl: theatre.imageUrl ?? '',
       isActive: theatre.isActive
     });
+    if (theatre.imageUrl) this.imagePreview.set(theatre.imageUrl);
   }
 
   submitTheatre(): void {
@@ -156,7 +154,10 @@ export class ManageTheatresComponent implements OnInit {
       : this.theaterService.createTheater(payload);
 
     request$
-      .pipe(finalize(() => this.submitting.set(false)))
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: () => {
           this.alertService.success(`Theatre ${editId ? 'updated' : 'created'} successfully`);
@@ -164,7 +165,7 @@ export class ManageTheatresComponent implements OnInit {
           this.loadTheatres();
         },
         error: () => {
-          this.alertService.error('Unable to save theatre. Please check the details and try again.');
+          this.alertService.error('Unable to save theatre');
         }
       });
   }
@@ -172,15 +173,18 @@ export class ManageTheatresComponent implements OnInit {
   toggleStatus(theatre: Theater): void {
     this.statusUpdatingId.set(theatre.id);
     this.theaterService.updateTheaterStatus(theatre.id, !theatre.isActive)
-      .pipe(finalize(() => this.statusUpdatingId.set(null)))
+      .pipe(
+        finalize(() => this.statusUpdatingId.set(null)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (updated) => {
-          this.alertService.success(`Theatre ${updated.isActive ? 'activated' : 'deactivated'} successfully`);
+          this.alertService.success(`Theatre ${updated.isActive ? 'activated' : 'deactivated'}`);
           this.theatres.update(theatres => theatres.map(t => t.id === updated.id ? updated : t));
           this.applyFilters();
         },
         error: () => {
-          this.alertService.error('Unable to update status. Please try again.');
+          this.alertService.error('Unable to update status');
         }
       });
   }
@@ -192,7 +196,10 @@ export class ManageTheatresComponent implements OnInit {
 
     this.deletingId.set(theatre.id);
     this.theaterService.deleteTheater(theatre.id)
-      .pipe(finalize(() => this.deletingId.set(null)))
+      .pipe(
+        finalize(() => this.deletingId.set(null)),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: () => {
           this.alertService.success('Theatre deleted successfully');
@@ -200,13 +207,12 @@ export class ManageTheatresComponent implements OnInit {
           this.applyFilters();
         },
         error: () => {
-          this.alertService.error('Unable to delete theatre. Please try again.');
+          this.alertService.error('Unable to delete theatre');
         }
       });
   }
 
   viewScreens(theatreId: string): void {
-    // Navigate to screens page - can be enhanced to pass theatreId as query param
     this.router.navigate(['/admin/screens'], { queryParams: { theatreId } });
   }
 
@@ -229,8 +235,20 @@ export class ManageTheatresComponent implements OnInit {
     return theatre.id;
   }
 
-  onImageError(event: Event, theatre: Theater): void {
-    const img = event.target as HTMLImageElement;
-    img.src = `https://via.placeholder.com/80x80/667eea/ffffff?text=${encodeURIComponent(theatre.name.charAt(0))}`;
+  previewFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        this.imagePreview.set(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  isImage(url: string): boolean {
+    return /\.(png|jpg|jpeg|webp|svg|gif)$/i.test(url) || url.startsWith('data:image');
   }
 }

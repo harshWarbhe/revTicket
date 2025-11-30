@@ -6,6 +6,7 @@ import com.revticket.service.ReviewService;
 import com.revticket.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,9 +20,12 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
+    @Autowired
+    private SecurityUtil securityUtil;
+
     @PostMapping
-    public ResponseEntity<ReviewResponse> addReview(@RequestBody ReviewRequest request) {
-        String userId = SecurityUtil.getCurrentUserId();
+    public ResponseEntity<ReviewResponse> addReview(@RequestBody ReviewRequest request, Authentication authentication) {
+        String userId = securityUtil.getCurrentUserId(authentication);
         ReviewResponse response = reviewService.addReview(userId, request);
         return ResponseEntity.ok(response);
     }

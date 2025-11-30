@@ -1,187 +1,184 @@
-<div class="manage-theatres-page">
-  <!-- Header -->
+<div class="page-wrapper">
+  <!-- HEADER -->
   <header class="page-header">
-    <div class="header-left">
+    <div>
       <h1 class="page-title">Manage Theatres</h1>
       <p class="page-subtitle">View and manage all theatres in your system</p>
     </div>
-    <div class="header-actions">
-      <button class="btn-primary" (click)="addTheatre()">
-        <span>+</span>
-        <span>Add Theatre</span>
-      </button>
-    </div>
+    <button class="btn-add" (click)="addTheatre()" [disabled]="loading()">
+      <span>+</span>
+      <span>Add Theatre</span>
+    </button>
   </header>
 
-  <!-- Filters Section -->
-  <section class="filters-section">
+  <!-- FILTERS -->
+  @if (!showForm()) {
+  <section class="filters-bar">
     <div class="search-box">
+      <input type="text" 
+             class="search-input" 
+             placeholder="Search theatres..." 
+             [value]="searchTerm()" 
+             (input)="onSearchChange($any($event.target).value)">
       <span class="search-icon">🔍</span>
-      <input type="text" placeholder="Search theatres..." [value]="searchTerm()"
-        (input)="onSearchChange($any($event).target.value)">
     </div>
 
-    <select [value]="selectedCity()" (change)="onCityChange($any($event).target.value)" class="filter-select">
+    <select class="filter-dropdown" 
+            [value]="selectedCity()" 
+            (change)="selectedCity.set($any($event.target).value); onFilterChange()">
       <option value="">All Cities</option>
       @for (city of cities(); track $index) {
-      <option [value]="city">{{ city }}</option>
+        <option [value]="city">{{ city }}</option>
       }
     </select>
 
-    <select [value]="selectedStatus()" (change)="onStatusChange($any($event).target.value)" class="filter-select">
+    <select class="filter-dropdown" 
+            [value]="selectedStatus()" 
+            (change)="selectedStatus.set($any($event.target).value); onFilterChange()">
       <option value="">All Status</option>
       <option value="active">Active</option>
       <option value="inactive">Inactive</option>
     </select>
   </section>
-
-  <!-- Add/Edit Form Modal -->
-  @if (showForm()) {
-  <div class="form-overlay" (click)="cancelForm()"></div>
-  <div class="form-modal" (click)="$event.stopPropagation()">
-    <div class="form-header">
-      <h3>{{ editingTheatreId() ? 'Edit Theatre' : 'Add New Theatre' }}</h3>
-      <button type="button" class="close-btn" (click)="cancelForm()">×</button>
-    </div>
-
-    <form [formGroup]="theatreForm" (ngSubmit)="submitTheatre()" class="theatre-form">
-      <div class="form-row">
-        <div class="form-group" [class.invalid]="isInvalid('name')">
-          <label for="name">Theatre Name *</label>
-          <input type="text" id="name" formControlName="name" class="form-control" placeholder="e.g., PVR Icon">
-          @if (isInvalid('name')) {
-          <small class="form-error">Name is required (max 120 characters)</small>
-          }
-        </div>
-
-        <div class="form-group" [class.invalid]="isInvalid('location')">
-          <label for="location">City / Location *</label>
-          <input type="text" id="location" formControlName="location" class="form-control"
-            placeholder="e.g., Mumbai, Delhi">
-          @if (isInvalid('location')) {
-          <small class="form-error">Location is required</small>
-          }
-        </div>
-      </div>
-
-      <div class="form-group" [class.invalid]="isInvalid('address')">
-        <label for="address">Address *</label>
-        <textarea id="address" formControlName="address" class="form-control" rows="3"
-          placeholder="Full address of the theatre"></textarea>
-        @if (isInvalid('address')) {
-        <small class="form-error">Address is required</small>
-        }
-      </div>
-
-      <div class="form-row">
-        <div class="form-group" [class.invalid]="isInvalid('totalScreens')">
-          <label for="totalScreens">Total Screens *</label>
-          <input type="number" id="totalScreens" formControlName="totalScreens" class="form-control" min="1">
-          @if (isInvalid('totalScreens')) {
-          <small class="form-error">Provide at least one screen</small>
-          }
-        </div>
-
-        <div class="form-group" [class.invalid]="isInvalid('imageUrl')">
-          <label for="imageUrl">Image URL</label>
-          <input type="url" id="imageUrl" formControlName="imageUrl" class="form-control" placeholder="https://...">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="isActive">Status</label>
-        <select id="isActive" formControlName="isActive" class="form-control">
-          <option [ngValue]="true">Active</option>
-          <option [ngValue]="false">Inactive</option>
-        </select>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="submitting()">
-          Cancel
-        </button>
-        <button type="submit" class="btn-primary" [disabled]="theatreForm.invalid || submitting()">
-          {{ submitting() ? 'Saving...' : (editingTheatreId() ? 'Update Theatre' : 'Add Theatre') }}
-        </button>
-      </div>
-    </form>
-  </div>
   }
 
-  <!-- Loading State -->
+  <!-- ADD/EDIT FORM -->
+  @if (showForm()) {
+  <section class="form-section">
+    <div class="form-panel">
+      <div class="form-header">
+        <h3>{{ editingTheatreId() ? 'Edit Theatre' : 'Add New Theatre' }}</h3>
+        <button class="btn-close" (click)="cancelForm()">✕</button>
+      </div>
+
+      <form [formGroup]="theatreForm" (ngSubmit)="submitTheatre()" class="form-body">
+        <div class="form-grid">
+          <div class="form-field" [class.error]="isInvalid('name')">
+            <label>Theatre Name *</label>
+            <input type="text" formControlName="name" placeholder="e.g., PVR Icon">
+            @if (isInvalid('name')) {
+              <span class="error-msg">Name is required</span>
+            }
+          </div>
+
+          <div class="form-field" [class.error]="isInvalid('location')">
+            <label>City / Location *</label>
+            <input type="text" formControlName="location" placeholder="e.g., Mumbai">
+            @if (isInvalid('location')) {
+              <span class="error-msg">Location is required</span>
+            }
+          </div>
+
+          <div class="form-field full" [class.error]="isInvalid('address')">
+            <label>Address *</label>
+            <textarea formControlName="address" rows="2" placeholder="Full address"></textarea>
+            @if (isInvalid('address')) {
+              <span class="error-msg">Address is required</span>
+            }
+          </div>
+
+          <div class="form-field" [class.error]="isInvalid('totalScreens')">
+            <label>Total Screens *</label>
+            <input type="number" formControlName="totalScreens" min="1" placeholder="e.g., 5">
+            @if (isInvalid('totalScreens')) {
+              <span class="error-msg">At least 1 screen required</span>
+            }
+          </div>
+
+          <div class="form-field">
+            <label>Status *</label>
+            <select formControlName="isActive">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Inactive</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <label>Theatre Image</label>
+            <input type="file" accept="image/*" (change)="previewFile($event)">
+            <input type="url" formControlName="imageUrl" placeholder="Or enter image URL" (input)="imagePreview.set($any($event.target).value)">
+            @if (imagePreview() && isImage(imagePreview())) {
+              <div class="preview-box">
+                <img [src]="imagePreview()" alt="Theatre preview" class="preview-img">
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" (click)="cancelForm()" [disabled]="submitting()">
+            Cancel
+          </button>
+          <button type="submit" class="btn-save" [disabled]="theatreForm.invalid || submitting()">
+            {{ submitting() ? 'Saving...' : (editingTheatreId() ? 'Update' : 'Add Theatre') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+  }
+
+  <!-- LOADING -->
   @if (loading()) {
-  <div class="loading-state">
+  <section class="loading-state">
     <div class="spinner"></div>
     <p>Loading theatres...</p>
-  </div>
+  </section>
   }
 
-  <!-- Theatres List -->
-  @if (!loading() && filteredTheatres().length > 0) {
-  <div class="theatres-table">
-    <!-- Table Header -->
-    <div class="table-header">
-      <div class="col-name">Theatre Name</div>
-      <div class="col-location">City / Location</div>
-      <div class="col-screens">Screens</div>
-      <div class="col-status">Status</div>
-      <div class="col-actions">Actions</div>
-    </div>
-
-    <!-- Table Rows -->
+  <!-- THEATRES GRID -->
+  @if (!loading() && filteredTheatres().length > 0 && !showForm()) {
+  <section class="theatres-grid">
     @for (theatre of filteredTheatres(); track trackByTheatreId($index, theatre)) {
-    <div class="table-row">
-      <div class="col-name">
-        <div class="theatre-title">{{ theatre.name }}</div>
-        <div class="theatre-address">{{ theatre.address }}</div>
-      </div>
-
-      <div class="col-location">{{ theatre.location }}</div>
-
-      <div class="col-screens">
-        <span class="screen-badge">{{ theatre.totalScreens }} Screens</span>
-      </div>
-
-      <div class="col-status">
+    <div class="theatre-card">
+      <div class="card-header">
+        <h3 class="theatre-name">{{ theatre.name }}</h3>
         <span class="status-pill" [class.active]="theatre.isActive" [class.inactive]="!theatre.isActive">
-          {{ theatre.isActive ? '● Active' : '● Inactive' }}
+          {{ theatre.isActive ? 'ACTIVE' : 'INACTIVE' }}
         </span>
       </div>
-
-      <div class="col-actions">
-        <button class="action-btn screens" (click)="viewScreens(theatre.id)" title="View Screens">
-          🎬
+      
+      <div class="card-info">
+        <span class="info-tag">📍 {{ theatre.location }}</span>
+        <span class="divider">|</span>
+        <span class="info-tag">🎬 {{ theatre.totalScreens || 0 }} Screens</span>
+      </div>
+      
+      <div class="card-address">
+        Address: {{ theatre.address }}
+      </div>
+      
+      <div class="card-actions">
+        <button class="action-btn screens" (click)="viewScreens(theatre.id)">Screens</button>
+        <button class="action-btn edit" (click)="editTheatre(theatre)">Edit</button>
+        <button class="action-btn pause" 
+                (click)="toggleStatus(theatre)"
+                [disabled]="statusUpdatingId() === theatre.id">
+          {{ statusUpdatingId() === theatre.id ? 'Updating...' : (theatre.isActive ? 'Pause' : 'Resume') }}
         </button>
-        <button class="action-btn edit" (click)="editTheatre(theatre)" title="Edit">
-          ✏️
-        </button>
-        <button class="action-btn toggle" (click)="toggleStatus(theatre)" [disabled]="statusUpdatingId() === theatre.id"
-          [title]="theatre.isActive ? 'Deactivate' : 'Activate'">
-          {{ theatre.isActive ? '🚫' : '✓' }}
-        </button>
-        <button class="action-btn delete" (click)="deleteTheatre(theatre)" [disabled]="deletingId() === theatre.id"
-          title="Delete">
-          🗑️
+        <button class="action-btn delete" 
+                (click)="deleteTheatre(theatre)" 
+                [disabled]="deletingId() === theatre.id">
+          {{ deletingId() === theatre.id ? 'Deleting...' : 'Delete' }}
         </button>
       </div>
     </div>
     }
-  </div>
+  </section>
   }
 
-  <!-- Empty State -->
-  @if (!loading() && filteredTheatres().length === 0) {
-  <div class="empty-state">
+  <!-- EMPTY STATE -->
+  @if (!loading() && filteredTheatres().length === 0 && !showForm()) {
+  <section class="empty-state">
     <div class="empty-icon">🎭</div>
     <h3>No Theatres Found</h3>
-    <p>{{ searchTerm() || selectedCity() || selectedStatus() ? 'Try adjusting your filters' : 'Add your first theatre to
-      get started' }}</p>
+    <p>{{ searchTerm() || selectedCity() || selectedStatus() ? 'Try adjusting your filters' : 'Add your first theatre to get started' }}</p>
     @if (!searchTerm() && !selectedCity() && !selectedStatus()) {
-    <button class="btn-primary" (click)="addTheatre()">
+    <button class="btn-add" (click)="addTheatre()">
       <span>+</span>
       <span>Add Theatre</span>
     </button>
     }
-  </div>
+  </section>
   }
 </div>
