@@ -1,484 +1,378 @@
-import { Component, OnInit, signal, computed, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, signal, inject, DestroyRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, Subject } from 'rxjs';
-import { finalize, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ShowtimeService, Showtime, Screen } from '../../../core/services/showtime.service';
-import { MovieService } from '../../../core/services/movie.service';
-import { TheaterService, Theater } from '../../../core/services/theater.service';
+import { environment } from '../../../../environments/environment';
 import { AlertService } from '../../../core/services/alert.service';
-import { Movie } from '../../../core/models/movie.model';
 
-interface SeatSection {
-  name: string;
-  rowStart: string;
-  rowEnd: string;
-  seatsPerRow: number;
-  price: number;
-  type: 'REGULAR' | 'PREMIUM' | 'VIP';
+interface Movie {
+  id: string;
+  title: string;
+  genre: string[];
+  duration: number;
+  rating: number;
+  posterUrl: string;
 }
 
-interface ShowtimeForm {
+interface Theater {
+  id: string;
+  name: string;
+  location: string;
+  address: string;
+  totalScreens: number;
+  isActive: boolean;
+}
+
+interface Screen {
+  id: string;
+  name: string;
+  totalSeats: number;
+  theaterId: string;
+  isActive: boolean;
+}
+
+interface Showtime {
+  id: string;
   movieId: string;
   theaterId: string;
   screen: string;
-  screenId: string;
   showDateTime: string;
-  ticketPrice: number | null;
-  totalSeats: number | null;
-  status: Showtime['status'];
-  seatLayout: SeatSection[];
-  useCustomLayout: boolean;
-  language: string;
-  format: string;
+  ticketPrice: number;
+  totalSeats: number;
+  availableSeats: number;
+  status: string;
+  movie?: {
+    id: string;
+    title: string;
+    posterUrl: string;
+  };
+  theater?: {
+    id: string;
+    name: string;
+    location: string;
+  };
+}
+
+interface SeatCategory {
+  id: string;
+  name: string;
+  price: number;
+  color: string;
+}
+
+interface Seat {
+  row: number;
+  col: number;
+  label: string;
+  disabled: boolean;
+  categoryId: string | null;
 }
 
 @Component({
   selector: 'app-manage-shows',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './manage-shows.component.html',
   styleUrls: ['./manage-shows.component.css']
 })
 export class ManageShowsComponent implements OnInit {
+  private http = inject(HttpClient);
+  private alertService = inject(AlertService);
+  private destroyRef = inject(DestroyRef);
+
   shows = signal<Showtime[]>([]);
   movies = signal<Movie[]>([]);
   theaters = signal<Theater[]>([]);
   screens = signal<Screen[]>([]);
-  availableScreens = computed(() => {
-    const theaterId = this.newShow.theaterId;
-    if (!theaterId) return [];
-    return this.screens().filter(s => s.theaterId === theaterId);
-  });
-
-  searchTerm = signal('');
-  selectedMovieId = signal('');
-  selectedTheaterId = signal('');
-  selectedDate = signal('');
-  showAddForm = signal(false);
-  isEditMode = signal(false);
-  editingShowId = signal<string | null>(null);
+  categories = signal<SeatCategory[]>([
+    { id: '1', name: 'Platinum', price: 350, color: '#8B5CF6' },
+    { id: '2', name: 'Gold', price: 250, color: '#F59E0B' },
+    { id: '3', name: 'Silver', price: 180, color: '#6B7280' }
+  ]);
+  
   loading = signal(false);
-  submitting = signal(false);
-  deleteInProgressId = signal<string | null>(null);
-  toggleStatusInProgressId = signal<string | null>(null);
+  saving = signal(false);
+  showForm = signal(false);
+  editingShowId = signal<string | null>(null);
   
-  private searchSubject = new Subject<string>();
-  private destroyRef = inject(DestroyRef);
-  private showtimeService = inject(ShowtimeService);
-  private movieService = inject(MovieService);
-  private theaterService = inject(TheaterService);
-  private alertService = inject(AlertService);
+  selectedMovieId = '';
+  selectedTheaterId = '';
+  selectedScreenId = '';
+  showDateTime = '';
   
-  filteredShows = computed(() => this.shows());
-  newShow: ShowtimeForm = this.getEmptyForm();
+  rows = signal(10);
+  seatsPerRow = signal(15);
+  seatLayout = signal<Seat[]>([]);
+  
+  selectedScreen = computed(() => 
+    this.screens().find(s => s.id === this.selectedScreenId)
+  );
+  
+  totalSeats = computed(() => this.rows() * this.seatsPerRow());
+  
+  availableSeatsCount = computed(() => 
+    this.seatLayout().filter(s => !s.disabled).length
+  );
+  
+  categoryCounts = computed(() => {
+    const counts = new Map<string, number>();
+    this.seatLayout().forEach(seat => {
+      if (!seat.disabled && seat.categoryId) {
+        counts.set(seat.categoryId, (counts.get(seat.categoryId) || 0) + 1);
+      }
+    });
+    return counts;
+  });
+  
+  totalRevenue = computed(() => {
+    let revenue = 0;
+    const counts = this.categoryCounts();
+    counts.forEach((count, catId) => {
+      const cat = this.categories().find(c => c.id === catId);
+      if (cat) revenue += count * cat.price;
+    });
+    return revenue;
+  });
 
   ngOnInit(): void {
     this.loadData();
-    this.setupSearchDebounce();
-  }
-  
-  private setupSearchDebounce(): void {
-    this.searchSubject.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(() => {
-      this.reloadShowtimes();
-    });
-  }
-  
-  onSearchChange(value: string): void {
-    this.searchTerm.set(value);
-    this.searchSubject.next(value);
-  }
-  
-  onFilterChange(): void {
-    this.reloadShowtimes();
-  }
-  
-  private getEmptyForm(): ShowtimeForm {
-    return {
-      movieId: '',
-      theaterId: '',
-      screen: '',
-      screenId: '',
-      showDateTime: '',
-      ticketPrice: null,
-      totalSeats: null,
-      status: 'ACTIVE',
-      seatLayout: [],
-      useCustomLayout: false,
-      language: 'English',
-      format: '2D'
-    };
   }
 
   loadData(): void {
     this.loading.set(true);
-    forkJoin({
-      movies: this.movieService.getAdminMovies(),
-      theaters: this.theaterService.getAdminTheaters(false),
-      showtimes: this.showtimeService.getAdminShowtimes()
-    })
-      .pipe(
-        finalize(() => this.loading.set(false)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: ({ movies, theaters, showtimes }) => {
-          this.movies.set(movies || []);
-          this.theaters.set(theaters || []);
-          this.shows.set((showtimes || []).map((s: Showtime) => this.mapShowtimeToView(s)));
-        },
-        error: (err: any) => {
-          console.error('Load data error:', err);
-          this.alertService.error('Failed to load movies, theaters, or showtimes.');
-          this.movies.set([]);
-          this.theaters.set([]);
-          this.shows.set([]);
-        }
-      });
-  }
-
-  private reloadShowtimes(): void {
-    this.loading.set(true);
-    const filters: any = {};
     
-    if (this.selectedMovieId()) filters.movieId = this.selectedMovieId();
-    if (this.selectedTheaterId()) filters.theaterId = this.selectedTheaterId();
-    if (this.selectedDate()) filters.date = this.selectedDate();
-    if (this.searchTerm()) filters.search = this.searchTerm();
-    
-    this.showtimeService.getAdminShowtimes(filters)
-      .pipe(
-        finalize(() => this.loading.set(false)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (showtimes: Showtime[]) => {
-          this.shows.set((showtimes || []).map((s: Showtime) => this.mapShowtimeToView(s)));
-        },
-        error: (err: any) => {
-          console.error('Reload showtimes error:', err);
-          this.alertService.error('Unable to refresh showtimes.');
-        }
-      });
-  }
-
-  addNewShow(): void {
-    this.isEditMode.set(false);
-    this.editingShowId.set(null);
-    this.showAddForm.set(true);
-    this.resetForm();
-  }
-
-  resetForm(): void {
-    this.newShow = this.getEmptyForm();
-  }
-
-  addSeatSection(): void {
-    this.newShow.seatLayout.push({
-      name: '',
-      rowStart: 'A',
-      rowEnd: 'A',
-      seatsPerRow: 12,
-      price: 150,
-      type: 'REGULAR'
-    });
-  }
-
-  removeSeatSection(index: number): void {
-    this.newShow.seatLayout.splice(index, 1);
-  }
-
-  calculateTotalSeats(): number {
-    if (!this.newShow.useCustomLayout) {
-      return this.newShow.totalSeats || 0;
-    }
-    return this.newShow.seatLayout.reduce((total, section) => {
-      const rows = section.rowEnd.charCodeAt(0) - section.rowStart.charCodeAt(0) + 1;
-      return total + (rows * section.seatsPerRow);
-    }, 0);
-  }
-
-  saveShow(): void {
-    if (!this.validateForm()) {
-      return;
-    }
-
-    const totalSeats = this.newShow.useCustomLayout ? this.calculateTotalSeats() : Number(this.newShow.totalSeats);
-
-    const payload: any = {
-      movieId: this.newShow.movieId,
-      theaterId: this.newShow.theaterId,
-      screen: this.newShow.screen.trim(),
-      showDateTime: new Date(this.newShow.showDateTime).toISOString(),
-      ticketPrice: Number(this.newShow.ticketPrice),
-      totalSeats: totalSeats,
-      status: this.newShow.status
-    };
-
-    if (this.newShow.useCustomLayout && this.newShow.seatLayout.length > 0) {
-      payload.seatLayout = this.newShow.seatLayout;
-    }
-
-    if (!this.isEditMode()) {
-      payload.availableSeats = payload.totalSeats;
-    }
-
-    this.submitting.set(true);
-
-    const editId = this.editingShowId();
-    const request$ = this.isEditMode() && editId
-      ? this.showtimeService.updateShowtime(editId, payload)
-      : this.showtimeService.createShowtime(payload);
-
-    request$
-      .pipe(
-        finalize(() => this.submitting.set(false)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: () => {
-          this.alertService.success(`Show ${this.isEditMode() ? 'updated' : 'created'} successfully!`);
-          this.cancelAdd();
-          this.reloadShowtimes();
-        },
-        error: () => {
-          this.alertService.error('Unable to save show. Please try again.');
-        }
-      });
-  }
-
-  validateForm(): boolean {
-    if (!this.newShow.movieId) {
-      this.alertService.error('Please select a movie.');
-      return false;
-    }
-
-    if (!this.newShow.theaterId) {
-      this.alertService.error('Please select a theater.');
-      return false;
-    }
-
-    if (!this.newShow.screenId || !this.newShow.screen.trim()) {
-      this.alertService.error('Please select a screen.');
-      return false;
-    }
-
-    if (!this.newShow.showDateTime) {
-      this.alertService.error('Please select a show date and time.');
-      return false;
-    }
-
-    if (!this.newShow.language) {
-      this.alertService.error('Please select a language.');
-      return false;
-    }
-
-    if (!this.newShow.format) {
-      this.alertService.error('Please select a format.');
-      return false;
-    }
-
-    const ticketPrice = Number(this.newShow.ticketPrice);
-    const totalSeats = this.newShow.useCustomLayout ? this.calculateTotalSeats() : Number(this.newShow.totalSeats);
-
-    if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) {
-      this.alertService.error('Ticket price must be greater than 0.');
-      return false;
-    }
-
-    if (!Number.isInteger(totalSeats) || totalSeats <= 0) {
-      this.alertService.error('Total seats must be a positive number.');
-      return false;
-    }
-
-    return true;
-  }
-
-  cancelAdd(): void {
-    this.showAddForm.set(false);
-    this.isEditMode.set(false);
-    this.editingShowId.set(null);
-    this.resetForm();
-  }
-
-  editShow(show: Showtime): void {
-    this.isEditMode.set(true);
-    this.editingShowId.set(show.id);
-    this.showAddForm.set(true);
-
-    this.newShow = {
-      movieId: show.movieId,
-      theaterId: show.theaterId,
-      screen: show.screen,
-      screenId: '',
-      showDateTime: this.toLocalDateTimeInput(show.showDateTime),
-      ticketPrice: show.ticketPrice,
-      totalSeats: show.totalSeats,
-      status: show.status,
-      seatLayout: [],
-      useCustomLayout: false,
-      language: (show.movie?.language || 'English'),
-      format: '2D'
-    };
-
-    this.loadTheaterScreens(show.theaterId);
-  }
-
-  viewBookings(show: Showtime): void {
-    this.alertService.info(`View bookings for: ${show.movie?.title ?? 'this show'}`);
-  }
-
-  deleteShow(show: Showtime): void {
-    const movieTitle = show.movie?.title || 'Unknown Movie';
-    const theaterName = show.theater?.name || 'Unknown Theater';
-    
-    if (!confirm(`Are you sure you want to delete the show "${movieTitle}" at ${theaterName}?`)) {
-      return;
-    }
-
-    this.deleteInProgressId.set(show.id);
-    this.showtimeService.deleteShowtime(show.id)
-      .pipe(
-        finalize(() => this.deleteInProgressId.set(null)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: () => {
-          this.alertService.success('Show deleted successfully!');
-          this.reloadShowtimes();
-        },
-        error: () => {
-          this.alertService.error('Failed to delete show.');
-        }
-      });
-  }
-  
-  toggleShowStatus(show: Showtime): void {
-    this.toggleStatusInProgressId.set(show.id);
-    this.showtimeService.toggleShowtimeStatus(show.id)
-      .pipe(
-        finalize(() => this.toggleStatusInProgressId.set(null)),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe({
-        next: (updated) => {
-          this.alertService.success(`Show status changed to ${updated.status}`);
-          this.reloadShowtimes();
-        },
-        error: () => {
-          this.alertService.error('Failed to update show status.');
-        }
-      });
-  }
-
-  hasFilters(): boolean {
-    return !!(this.searchTerm() || this.selectedMovieId() || this.selectedTheaterId() || this.selectedDate());
-  }
-
-  getEmptyStateMessage(): string {
-    if (this.hasFilters()) {
-      return 'No shows match your current filters. Try adjusting your search criteria.';
-    }
-    return 'No shows scheduled yet. Start by adding your first show.';
-  }
-
-  trackByShowId(_index: number, show: Showtime): string {
-    return show.id;
-  }
-
-  private mapShowtimeToView(showtime: Showtime): Showtime {
-    const movie = showtime.movie ?? this.toMovieSummary(showtime.movieId);
-    const theater = showtime.theater ?? this.toTheaterSummary(showtime.theaterId);
-    return {
-      ...showtime,
-      movie,
-      theater
-    };
-  }
-
-  private toMovieSummary(movieId: string): Showtime['movie'] {
-    const movie = this.movies().find(m => m.id === movieId);
-    return movie
-      ? {
-          id: movie.id,
-          title: movie.title,
-          genre: movie.genre,
-          duration: movie.duration,
-          rating: movie.rating,
-          posterUrl: movie.posterUrl,
-          language: movie.language
-        }
-      : {
-          id: movieId,
-          title: 'Unknown',
-          genre: [],
-          duration: 0,
-          rating: 0,
-          posterUrl: 'assets/images/movies/default-poster.png',
-          language: 'English'
-        };
-  }
-
-  private toTheaterSummary(theaterId: string): Showtime['theater'] {
-    const theater = this.theaters().find(t => t.id === theaterId);
-    return theater
-      ? { id: theater.id, name: theater.name, location: theater.location }
-      : { id: theaterId, name: 'Unknown', location: '' };
-  }
-
-  private toLocalDateTimeInput(dateTime: string): string {
-    const date = new Date(dateTime);
-    const offset = date.getTimezoneOffset();
-    const local = new Date(date.getTime() - offset * 60000);
-    return local.toISOString().slice(0, 16);
-  }
-
-  onImageError(event: Event): void {
-    (event.target as HTMLImageElement).src = 'assets/images/movies/default-poster.png';
-  }
-
-  onTheaterChange(): void {
-    this.newShow.screenId = '';
-    this.newShow.screen = '';
-    if (this.newShow.theaterId) {
-      this.loadTheaterScreens(this.newShow.theaterId);
-    } else {
-      this.screens.set([]);
-    }
-  }
-
-  onScreenChange(): void {
-    const screen = this.screens().find(s => s.id === this.newShow.screenId);
-    if (screen) {
-      this.newShow.screen = screen.name;
-      if (!this.newShow.useCustomLayout && !this.newShow.totalSeats) {
-        this.newShow.totalSeats = screen.totalSeats;
-      }
-    }
-  }
-
-  private loadTheaterScreens(theaterId: string): void {
-    this.theaterService.getTheaterScreens(theaterId)
+    // Load movies
+    this.http.get<any>(`${environment.apiUrl}/admin/movies`)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (screens: Screen[]) => {
-          this.screens.set(screens || []);
+        next: (response) => {
+          const data = response?.data || response;
+          this.movies.set(Array.isArray(data) ? data : []);
         },
-        error: (err: any) => {
-          console.error('Failed to load screens:', err);
+        error: (err) => {
+          console.error('Error loading movies:', err);
+          this.movies.set([]);
+        }
+      });
+    
+    // Load theaters
+    this.http.get<Theater[]>(`${environment.apiUrl}/admin/theatres`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.theaters.set(Array.isArray(data) ? data : []);
+        },
+        error: (err) => {
+          console.error('Error loading theaters:', err);
+          this.theaters.set([]);
+        }
+      });
+    
+    // Load showtimes
+    this.http.get<Showtime[]>(`${environment.apiUrl}/admin/showtimes`)
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (data) => {
+          this.shows.set(Array.isArray(data) ? data : []);
+        },
+        error: (err) => {
+          console.error('Error loading showtimes:', err);
+          this.shows.set([]);
+          this.loading.set(false);
+        }
+      });
+  }
+
+  onTheatreChange(): void {
+    this.selectedScreenId = '';
+    this.screens.set([]);
+    this.seatLayout.set([]);
+    
+    if (!this.selectedTheaterId) return;
+    
+    this.http.get<Screen[]>(`${environment.apiUrl}/admin/screens?theatreId=${this.selectedTheaterId}`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.screens.set(Array.isArray(data) ? data : []);
+        },
+        error: (err) => {
+          console.error('Error loading screens:', err);
           this.screens.set([]);
         }
       });
   }
 
-  trackById(index: number, item: any): string {
-    return item?.id || index.toString();
+  onScreenChange(): void {
+    const screen = this.selectedScreen();
+    if (!screen) return;
+    
+    // Calculate rows and columns based on total seats
+    const totalSeats = screen.totalSeats || 150;
+    const calculatedRows = Math.ceil(Math.sqrt(totalSeats / 1.5));
+    const calculatedCols = Math.ceil(totalSeats / calculatedRows);
+    
+    this.rows.set(calculatedRows);
+    this.seatsPerRow.set(calculatedCols);
+    this.generateSeatLayout();
+  }
+
+  generateSeatLayout(): void {
+    const seats: Seat[] = [];
+    for (let r = 0; r < this.rows(); r++) {
+      const rowLabel = String.fromCharCode(65 + r);
+      for (let c = 0; c < this.seatsPerRow(); c++) {
+        seats.push({
+          row: r,
+          col: c,
+          label: `${rowLabel}${c + 1}`,
+          disabled: false,
+          categoryId: null
+        });
+      }
+    }
+    this.seatLayout.set(seats);
+  }
+
+  applyCategoryToRow(rowIndex: number, categoryId: string): void {
+    if (!categoryId) return;
+    this.seatLayout.update(seats => 
+      seats.map(s => s.row === rowIndex ? { ...s, categoryId, disabled: false } : s)
+    );
+  }
+
+  toggleSeatDisabled(seat: Seat): void {
+    this.seatLayout.update(seats => 
+      seats.map(s => s.label === seat.label ? { ...s, disabled: !s.disabled, categoryId: s.disabled ? s.categoryId : null } : s)
+    );
+  }
+
+  getSeatBackground(seat: Seat): string {
+    if (seat.disabled) return '#ef4444';
+    if (seat.categoryId) {
+      const cat = this.categories().find(c => c.id === seat.categoryId);
+      return cat?.color || '#e5e7eb';
+    }
+    return '#e5e7eb';
+  }
+
+  getRowLabel(rowIndex: number): string {
+    return String.fromCharCode(65 + rowIndex);
+  }
+
+  getSeatsForRow(rowIndex: number): Seat[] {
+    return this.seatLayout().filter(s => s.row === rowIndex);
+  }
+
+  addShow(): void {
+    this.editingShowId.set(null);
+    this.selectedMovieId = '';
+    this.selectedTheaterId = '';
+    this.selectedScreenId = '';
+    this.showDateTime = '';
+    this.seatLayout.set([]);
+    this.screens.set([]);
+    this.showForm.set(true);
+  }
+
+  editShow(show: Showtime): void {
+    this.editingShowId.set(show.id);
+    this.selectedMovieId = show.movieId;
+    this.selectedTheaterId = show.theaterId;
+    this.selectedScreenId = show.screen;
+    this.showDateTime = new Date(show.showDateTime).toISOString().slice(0, 16);
+    
+    this.onTheatreChange();
+    setTimeout(() => {
+      this.onScreenChange();
+      this.showForm.set(true);
+    }, 300);
+  }
+
+  deleteShow(show: Showtime): void {
+    const movieTitle = show.movie?.title || 'this show';
+    if (!confirm(`Delete show for ${movieTitle}?`)) return;
+    
+    this.http.delete(`${environment.apiUrl}/admin/showtimes/${show.id}`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.alertService.success('Show deleted successfully');
+          this.loadData();
+        },
+        error: () => this.alertService.error('Failed to delete show')
+      });
+  }
+
+  saveShow(): void {
+    if (!this.selectedMovieId || !this.selectedTheaterId || !this.selectedScreenId || !this.showDateTime) {
+      this.alertService.error('Please fill all required fields');
+      return;
+    }
+
+    if (this.availableSeatsCount() === 0) {
+      this.alertService.error('Please configure seat categories');
+      return;
+    }
+
+    // Calculate average price from categories
+    const categoriesWithSeats = this.categories().filter(cat => 
+      (this.categoryCounts().get(cat.id) || 0) > 0
+    );
+    const avgPrice = categoriesWithSeats.length > 0
+      ? categoriesWithSeats.reduce((sum, cat) => sum + cat.price, 0) / categoriesWithSeats.length
+      : 200;
+
+    const payload = {
+      movieId: this.selectedMovieId,
+      theaterId: this.selectedTheaterId,
+      screen: this.selectedScreenId,
+      showDateTime: this.showDateTime,
+      ticketPrice: avgPrice,
+      totalSeats: this.availableSeatsCount(),
+      availableSeats: this.availableSeatsCount(),
+      status: 'ACTIVE'
+    };
+
+    this.saving.set(true);
+    const editId = this.editingShowId();
+    const request$ = editId
+      ? this.http.put(`${environment.apiUrl}/admin/showtimes/${editId}`, payload)
+      : this.http.post(`${environment.apiUrl}/admin/showtimes`, payload);
+
+    request$
+      .pipe(
+        finalize(() => this.saving.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: () => {
+          this.alertService.success(`Show ${editId ? 'updated' : 'created'} successfully`);
+          this.cancelForm();
+          this.loadData();
+        },
+        error: (err) => {
+          console.error('Save error:', err);
+          const errorMsg = err?.error?.message || err?.error?.error || 'Failed to save show';
+          this.alertService.error(errorMsg);
+        }
+      });
+  }
+
+  cancelForm(): void {
+    this.showForm.set(false);
+    this.editingShowId.set(null);
+    this.selectedMovieId = '';
+    this.selectedTheaterId = '';
+    this.selectedScreenId = '';
+    this.showDateTime = '';
+    this.seatLayout.set([]);
+    this.screens.set([]);
   }
 
   trackByIndex(index: number): number {

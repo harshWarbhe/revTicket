@@ -39,20 +39,20 @@ export class TheaterService {
   }
 
   createTheater(theater: Partial<Theater>): Observable<Theater> {
-    return this.http.post<Theater>(`${environment.apiUrl}/admin/theaters`, theater);
+    return this.http.post<Theater>(`${environment.apiUrl}/theaters`, theater);
   }
 
   updateTheater(id: string, theater: Partial<Theater>): Observable<Theater> {
-    return this.http.put<Theater>(`${environment.apiUrl}/admin/theaters/${id}`, theater);
+    return this.http.put<Theater>(`${environment.apiUrl}/theaters/${id}`, theater);
   }
 
   updateTheaterStatus(id: string, isActive: boolean): Observable<Theater> {
     const params = new HttpParams().set('active', String(isActive));
-    return this.http.patch<Theater>(`${environment.apiUrl}/admin/theaters/${id}/status`, null, { params });
+    return this.http.patch<Theater>(`${environment.apiUrl}/theaters/${id}/status`, null, { params });
   }
 
   deleteTheater(id: string): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/admin/theaters/${id}`);
+    return this.http.delete<void>(`${environment.apiUrl}/theaters/${id}`);
   }
 
   getTheaterScreens(theaterId: string): Observable<Screen[]> {
@@ -64,7 +64,7 @@ export class TheaterService {
     if (activeOnly) {
       params = params.set('activeOnly', 'true');
     }
-    return this.http.get<Theater[]>(`${environment.apiUrl}/admin/theaters`, { params });
+    return this.http.get<Theater[]>(`${environment.apiUrl}/theaters`, { params });
   }
 }
 

@@ -1,342 +1,161 @@
-<div class="dashboard-page">
-  <!-- HEADER -->
-  <header class="main-header">
-    <div class="header-left">
-      <h1 class="page-title">Manage Shows</h1>
-      <p class="page-sub">Schedule and manage movie showtimes</p>
-    </div>
+<div class="manage-shows-container">
+  <div class="header">
+    <h2>Manage Shows</h2>
+    <button *ngIf="!showForm()" (click)="addShow()" class="btn-primary">+ Add Show</button>
+  </div>
 
-    <div class="header-actions">
-      <button class="refresh-btn" (click)="addNewShow()" [disabled]="loading()">
-        <span>➕</span>
-        <span>Add New Show</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- FILTERS SECTION -->
-  @if (!showAddForm()) {
-  <section class="filters-panel fade-in">
-    <div class="search-wrapper">
-      <input type="text" 
-             class="search-input" 
-             placeholder="Search by movie or theater..." 
-             [value]="searchTerm()" 
-             (input)="onSearchChange($any($event.target).value)">
-      <span class="search-icon">🔍</span>
-    </div>
-
-    <select class="filter-select" 
-            [value]="selectedMovieId()" 
-            (change)="selectedMovieId.set($any($event.target).value); onFilterChange()">
-      <option value="">All Movies</option>
-      @for (movie of movies(); track movie.id) {
-        <option [value]="movie.id">{{ movie.title }}</option>
-      }
-    </select>
-
-    <select class="filter-select" 
-            [value]="selectedTheaterId()" 
-            (change)="selectedTheaterId.set($any($event.target).value); onFilterChange()">
-      <option value="">All Theaters</option>
-      @for (theater of theaters(); track theater.id) {
-        <option [value]="theater.id">{{ theater.name }}</option>
-      }
-    </select>
-
-    <input type="date" 
-           class="filter-select" 
-           [value]="selectedDate()" 
-           (change)="selectedDate.set($any($event.target).value); onFilterChange()">
-  </section>
-  }
-
-  <!-- ADD/EDIT FORM -->
-  @if (showAddForm()) {
-  <section class="form-section fade-in">
-    <div class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">{{ isEditMode() ? '✏️ Edit Show' : '➕ Add New Show' }}</h3>
-        <button class="close-btn" (click)="cancelAdd()" title="Close">×</button>
-      </div>
-
-      <div class="panel-body">
-        <form class="show-form" (ngSubmit)="saveShow()">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Movie *</label>
-              <select [(ngModel)]="newShow.movieId" name="movieId" required>
-                <option value="">Select Movie</option>
-                @for (movie of movies(); track movie.id) {
-                  <option [value]="movie.id">{{ movie.title }}</option>
-                }
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Theater *</label>
-              <select [(ngModel)]="newShow.theaterId" name="theaterId" (ngModelChange)="onTheaterChange()" required>
-                <option value="">Select Theater</option>
-                @for (theater of theaters(); track theater.id) {
-                  <option [value]="theater.id">{{ theater.name }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Screen *</label>
-              <select [(ngModel)]="newShow.screenId" name="screenId" (ngModelChange)="onScreenChange()" required [disabled]="!newShow.theaterId">
-                <option value="">Select Screen</option>
-                @for (screen of availableScreens(); track screen.id) {
-                  <option [value]="screen.id">{{ screen.name }} ({{ screen.totalSeats }} seats)</option>
-                }
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Show Date & Time *</label>
-              <input type="datetime-local" [(ngModel)]="newShow.showDateTime" name="showDateTime" required>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Language *</label>
-              <select [(ngModel)]="newShow.language" name="language" required>
-                <option value="English">English</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Tamil">Tamil</option>
-                <option value="Telugu">Telugu</option>
-                <option value="Malayalam">Malayalam</option>
-                <option value="Kannada">Kannada</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Format *</label>
-              <select [(ngModel)]="newShow.format" name="format" required>
-                <option value="2D">2D</option>
-                <option value="3D">3D</option>
-                <option value="IMAX">IMAX</option>
-                <option value="4DX">4DX</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Ticket Price (₹) *</label>
-              <input type="number" [(ngModel)]="newShow.ticketPrice" name="ticketPrice" min="0" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label>Total Seats *</label>
-              <input type="number" [(ngModel)]="newShow.totalSeats" name="totalSeats" min="1" [disabled]="newShow.useCustomLayout" [value]="calculateTotalSeats()" required>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group full-width">
-              <label class="checkbox-label">
-                <input type="checkbox" [(ngModel)]="newShow.useCustomLayout" name="useCustomLayout">
-                <span>Configure Custom Seat Layout with Dynamic Pricing</span>
-              </label>
-            </div>
-          </div>
-
-          @if (newShow.useCustomLayout) {
-            <div class="seat-layout-config">
-              <div class="config-header">
-                <h3>Seat Layout Configuration</h3>
-                <button type="button" class="btn-add-section" (click)="addSeatSection()">+ Add Section</button>
-              </div>
-
-              @if (newShow.seatLayout.length > 0) {
-                <div class="seat-sections">
-                  @for (section of newShow.seatLayout; track $index) {
-                    <div class="seat-section">
-                      <div class="section-header">
-                        <h4>Section {{ $index + 1 }}</h4>
-                        <button type="button" class="btn-remove" (click)="removeSeatSection($index)">×</button>
-                      </div>
-                      <div class="section-fields">
-                        <div class="field">
-                          <label>Section Name</label>
-                          <input type="text" [(ngModel)]="section.name" [name]="'sectionName' + $index" placeholder="e.g., Regular">
-                        </div>
-                        <div class="field">
-                          <label>Row Start</label>
-                          <input type="text" [(ngModel)]="section.rowStart" [name]="'rowStart' + $index" maxlength="1" placeholder="A">
-                        </div>
-                        <div class="field">
-                          <label>Row End</label>
-                          <input type="text" [(ngModel)]="section.rowEnd" [name]="'rowEnd' + $index" maxlength="1" placeholder="B">
-                        </div>
-                        <div class="field">
-                          <label>Seats Per Row</label>
-                          <input type="number" [(ngModel)]="section.seatsPerRow" [name]="'seatsPerRow' + $index" min="1" max="20">
-                        </div>
-                        <div class="field">
-                          <label>Price (₹)</label>
-                          <input type="number" [(ngModel)]="section.price" [name]="'price' + $index" min="0" step="0.01">
-                        </div>
-                        <div class="field">
-                          <label>Type</label>
-                          <select [(ngModel)]="section.type" [name]="'type' + $index">
-                            <option value="REGULAR">Regular</option>
-                            <option value="PREMIUM">Premium</option>
-                            <option value="VIP">VIP</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </div>
-
-                <div class="total-seats-display">
-                  <strong>Total Seats:</strong> {{ calculateTotalSeats() }}
-                </div>
-              }
-
-              @if (newShow.seatLayout.length === 0) {
-                <div class="empty-sections">
-                  <p>No sections added yet. Click "Add Section" to configure your seat layout.</p>
-                </div>
-              }
-            </div>
-          }
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Status *</label>
-              <select [(ngModel)]="newShow.status" name="status" required>
-                <option value="ACTIVE">Active</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </div>
-            @if (!newShow.useCustomLayout) {
-              <div class="form-group"></div>
-            }
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" (click)="cancelAdd()" [disabled]="submitting()">Cancel</button>
-            <button type="submit" class="btn-save" [disabled]="submitting()">
-              {{ submitting() ? (isEditMode() ? 'Updating...' : 'Saving...') : (isEditMode() ? 'Update Show' : 'Save Show') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-  }
-
-  <!-- LOADING STATE -->
-  @if (loading()) {
-  <section class="loading-state">
+  <div *ngIf="loading()" class="loading">
     <div class="spinner"></div>
     <p>Loading shows...</p>
-  </section>
-  }
+  </div>
 
-  <!-- SHOWS GRID -->
-  @if (!loading() && filteredShows().length > 0 && !showAddForm()) {
-  <section class="shows-grid fade-in">
-    @for (show of filteredShows(); track trackByShowId($index, show)) {
-    <div class="show-card">
-      <div class="card-header">
-        <div class="movie-info">
-          <img [src]="show.movie?.posterUrl" 
-               [alt]="show.movie?.title" 
-               class="movie-poster"
-               (error)="onImageError($event)">
-          <div class="movie-details">
-            <h3 class="movie-title">{{ show.movie?.title }}</h3>
-            <div class="movie-meta">
-              <span class="badge badge-genre">{{ show.movie?.genre?.join(', ') || 'N/A' }}</span>
-              <span class="badge badge-duration">{{ show.movie?.duration || 0 }}m</span>
-              <span class="badge badge-rating">⭐ {{ show.movie?.rating ?? 'N/A' }}</span>
+  <div *ngIf="!showForm() && !loading()" class="shows-list">
+    <div *ngIf="shows().length === 0" class="empty-state">
+      <div class="empty-icon">🎬</div>
+      <h3>No Shows Found</h3>
+      <p>Click "Add Show" to create your first show</p>
+    </div>
+
+    <table *ngIf="shows().length > 0">
+      <thead>
+        <tr>
+          <th>Movie</th>
+          <th>Theater</th>
+          <th>Screen</th>
+          <th>Show Time</th>
+          <th>Price</th>
+          <th>Seats</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let show of shows()">
+          <td>{{ show.movie?.title || 'N/A' }}</td>
+          <td>{{ show.theater?.name || 'N/A' }}</td>
+          <td>{{ show.screen }}</td>
+          <td>{{ show.showDateTime | date:'short' }}</td>
+          <td>₹{{ show.ticketPrice }}</td>
+          <td>{{ show.availableSeats }}/{{ show.totalSeats }}</td>
+          <td>
+            <span class="status-badge" [class.active]="show.status === 'ACTIVE'">
+              {{ show.status }}
+            </span>
+          </td>
+          <td>
+            <button (click)="editShow(show)" class="btn-edit" title="Edit">✏️</button>
+            <button (click)="deleteShow(show)" class="btn-delete" title="Delete">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="showForm()" class="show-form">
+    <h3>{{ editingShowId() ? 'Edit Show' : 'Add New Show' }}</h3>
+    
+    <div class="form-section">
+      <h4>Basic Information</h4>
+      
+      <div class="form-group">
+        <label>Movie *</label>
+        <select [(ngModel)]="selectedMovieId" required>
+          <option value="">Select Movie</option>
+          <option *ngFor="let movie of movies()" [value]="movie.id">
+            {{ movie.title }} ({{ movie.duration }} min)
+          </option>
+        </select>
+        <small *ngIf="movies().length === 0" class="hint">No movies available. Please add movies first.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Theater *</label>
+        <select [(ngModel)]="selectedTheaterId" (change)="onTheatreChange()" required>
+          <option value="">Select Theater</option>
+          <option *ngFor="let theater of theaters()" [value]="theater.id">
+            {{ theater.name }} - {{ theater.location }}
+          </option>
+        </select>
+        <small *ngIf="theaters().length === 0" class="hint">No theaters available. Please add theaters first.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Screen *</label>
+        <select [(ngModel)]="selectedScreenId" (change)="onScreenChange()" [disabled]="!selectedTheaterId" required>
+          <option value="">Select Screen</option>
+          <option *ngFor="let screen of screens()" [value]="screen.id">
+            {{ screen.name }} ({{ screen.totalSeats }} seats)
+          </option>
+        </select>
+        <small *ngIf="selectedTheaterId && screens().length === 0" class="hint">No screens available for this theater.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Show Date & Time *</label>
+        <input type="datetime-local" [(ngModel)]="showDateTime" required>
+      </div>
+    </div>
+
+    <div *ngIf="selectedScreenId" class="seat-configuration">
+      <h4>Seat Configuration</h4>
+      
+      <div class="categories-legend">
+        <div *ngFor="let cat of categories()" class="category-item">
+          <span class="color-box" [style.background-color]="cat.color"></span>
+          <span class="category-name">{{ cat.name }}</span>
+          <span class="category-price">₹{{ cat.price }}</span>
+          <span class="count">({{ categoryCounts().get(cat.id) || 0 }} seats)</span>
+        </div>
+      </div>
+
+      <div class="seat-stats">
+        <div class="stat-item">
+          <span class="stat-label">Total Seats:</span>
+          <span class="stat-value">{{ totalSeats() }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Available:</span>
+          <span class="stat-value">{{ availableSeatsCount() }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Expected Revenue:</span>
+          <span class="stat-value">₹{{ totalRevenue() }}</span>
+        </div>
+      </div>
+
+      <div class="seat-grid-container">
+        <div class="seat-grid-header">
+          <p><strong>Instructions:</strong> Select a category for each row, then click seats to disable them.</p>
+        </div>
+        
+        <div class="seat-grid">
+          <div *ngFor="let rowIndex of [].constructor(rows()); let i = index; trackBy: trackByIndex" class="seat-row">
+            <div class="row-label">{{ getRowLabel(i) }}</div>
+            <div class="row-controls">
+              <select (change)="applyCategoryToRow(i, $any($event.target).value)">
+                <option value="">Select Category</option>
+                <option *ngFor="let cat of categories()" [value]="cat.id">{{ cat.name }}</option>
+              </select>
+            </div>
+            <div class="seats">
+              <div *ngFor="let seat of getSeatsForRow(i)" 
+                   class="seat" 
+                   [style.background-color]="getSeatBackground(seat)"
+                   (click)="toggleSeatDisabled(seat)"
+                   [title]="seat.label + (seat.disabled ? ' (Disabled)' : '')">
+                {{ seat.col + 1 }}
+              </div>
             </div>
           </div>
         </div>
-        <span class="status-badge status-{{ show.status.toLowerCase() }}">
-          {{ show.status }}
-        </span>
-      </div>
-
-      <div class="card-body">
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">🏢 Theater</span>
-            <span class="info-value">{{ show.theater?.name }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">📺 Screen</span>
-            <span class="info-value">{{ show.screen }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">📅 Date & Time</span>
-            <span class="info-value">{{ show.showDateTime | date:'MMM dd, h:mm a' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">💰 Price</span>
-            <span class="info-value price">₹{{ show.ticketPrice }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">💺 Available</span>
-            <span class="info-value">{{ show.availableSeats }}/{{ show.totalSeats }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">🎫 Bookings</span>
-            <span class="info-value">{{ show.totalSeats - show.availableSeats }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card-actions">
-        <button class="action-btn btn-edit" (click)="editShow(show)" title="Edit">
-          ✏️ Edit
-        </button>
-        <button class="action-btn btn-view" (click)="viewBookings(show)" title="View Bookings">
-          👁️ View
-        </button>
-        @if (show.status !== 'COMPLETED') {
-        <button class="action-btn btn-toggle" 
-                (click)="toggleShowStatus(show)"
-                [disabled]="toggleStatusInProgressId() === show.id"
-                title="Toggle Status">
-          {{ toggleStatusInProgressId() === show.id ? '⏳' : (show.status === 'ACTIVE' ? '⏸️' : '▶️') }}
-        </button>
-        <button class="action-btn btn-delete" 
-                (click)="deleteShow(show)" 
-                [disabled]="deleteInProgressId() === show.id"
-                title="Delete">
-          {{ deleteInProgressId() === show.id ? '⏳' : '🗑️' }}
-        </button>
-        }
       </div>
     </div>
-    }
-  </section>
-  }
 
-  <!-- EMPTY STATE -->
-  @if (!loading() && filteredShows().length === 0 && !showAddForm()) {
-  <section class="empty-state fade-in">
-    <div class="panel">
-      <div class="panel-body">
-        <div class="empty-content">
-          <div class="empty-icon">🎬</div>
-          <h3>No Shows Found</h3>
-          <p>{{ getEmptyStateMessage() }}</p>
-          @if (!hasFilters()) {
-          <button class="refresh-btn" (click)="addNewShow()">
-            <span>➕</span>
-            <span>Add First Show</span>
-          </button>
-          }
-        </div>
-      </div>
+    <div class="form-actions">
+      <button (click)="saveShow()" [disabled]="saving() || !selectedMovieId || !selectedTheaterId || !selectedScreenId || !showDateTime" class="btn-primary">
+        {{ saving() ? 'Saving...' : (editingShowId() ? 'Update Show' : 'Create Show') }}
+      </button>
+      <button (click)="cancelForm()" [disabled]="saving()" class="btn-secondary">Cancel</button>
     </div>
-  </section>
-  }
+  </div>
 </div>

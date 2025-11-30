@@ -1,235 +1,263 @@
 <div class="page-wrapper">
-  <!-- HEADER -->
   <header class="page-header">
     <div>
-      <h1 class="page-title">Manage Screens</h1>
-      <p class="page-subtitle">Manage screens and assign movies to each screen</p>
+      <h1 class="page-title">Screen Layout Designer</h1>
+      <p class="page-subtitle">Quick and easy seat category assignment</p>
     </div>
-    <button class="btn-add" (click)="addScreen()" [disabled]="loading()">
-      <span>+</span>
-      <span>Add Screen</span>
-    </button>
   </header>
 
-  <!-- FILTERS -->
-  @if (!showForm()) {
-  <section class="filters-bar">
-    <div class="search-box">
-      <input type="text" 
-             class="search-input" 
-             placeholder="Search screens..." 
-             [value]="searchTerm()" 
-             (input)="onSearchChange($any($event.target).value)">
-      <span class="search-icon">🔍</span>
-    </div>
+  <!-- SELECTION -->
+  <section class="selection-panel">
+    <div class="selection-grid">
+      <div class="selection-field">
+        <label class="selection-label">Select Theatre</label>
+        <select 
+          class="selection-dropdown" 
+          [(ngModel)]="selectedTheatreId"
+          (ngModelChange)="onTheatreChange()"
+          [disabled]="loading()">
+          <option value="">Choose a theatre...</option>
+          @for (theatre of theatres(); track theatre.id) {
+            <option [value]="theatre.id">{{ theatre.name }}</option>
+          }
+        </select>
+      </div>
 
-    <select class="filter-dropdown" 
-            [value]="selectedTheatre()" 
-            (change)="selectedTheatre.set($any($event.target).value); onFilterChange()">
-      <option value="">All Theatres</option>
-      @for (theatre of theatres(); track theatre.id) {
-        <option [value]="theatre.id">{{ theatre.name }}</option>
+      @if (selectedTheatreId() && availableScreens().length > 0) {
+        <div class="selection-field">
+          <label class="selection-label">Select Screen</label>
+          <select 
+            class="selection-dropdown" 
+            [(ngModel)]="selectedScreenNumber"
+            (ngModelChange)="onScreenChange()"
+            [disabled]="loading()">
+            <option [value]="0">Choose a screen...</option>
+            @for (screenNum of availableScreens(); track screenNum) {
+              <option [value]="screenNum">Screen {{ screenNum }}</option>
+            }
+          </select>
+        </div>
       }
-    </select>
-
-    <select class="filter-dropdown" 
-            [value]="selectedStatus()" 
-            (change)="selectedStatus.set($any($event.target).value); onFilterChange()">
-      <option value="">All Status</option>
-      <option value="ACTIVE">Active</option>
-      <option value="INACTIVE">Inactive</option>
-    </select>
-  </section>
-  }
-
-  <!-- ADD/EDIT FORM -->
-  @if (showForm()) {
-  <section class="form-section">
-    <div class="form-panel">
-      <div class="form-header">
-        <h3>{{ editingScreenId() ? 'Edit Screen' : 'Add New Screen' }}</h3>
-        <button class="btn-close" (click)="cancelForm()">✕</button>
-      </div>
-
-      <form [formGroup]="screenForm" (ngSubmit)="submitScreen()" class="form-body">
-        <div class="form-grid">
-          <div class="form-field" [class.error]="isInvalid('screenNumber')">
-            <label>Screen Number *</label>
-            <input type="text" formControlName="screenNumber" placeholder="e.g., Screen 1, IMAX 1">
-            @if (isInvalid('screenNumber')) {
-              <span class="error-msg">Screen number is required</span>
-            }
-          </div>
-
-          <div class="form-field" [class.error]="isInvalid('theatreId')">
-            <label>Theatre *</label>
-            <select formControlName="theatreId">
-              <option value="">Select Theatre</option>
-              @for (theatre of theatres(); track theatre.id) {
-                <option [value]="theatre.id">{{ theatre.name }}</option>
-              }
-            </select>
-            @if (isInvalid('theatreId')) {
-              <span class="error-msg">Theatre is required</span>
-            }
-          </div>
-
-          <div class="form-field" [class.error]="isInvalid('seatingCapacity')">
-            <label>Seating Capacity *</label>
-            <input type="number" formControlName="seatingCapacity" min="1" placeholder="e.g., 150">
-            @if (isInvalid('seatingCapacity')) {
-              <span class="error-msg">Capacity must be at least 1</span>
-            }
-          </div>
-
-          <div class="form-field">
-            <label>Status *</label>
-            <select formControlName="status">
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-          </div>
-
-          <div class="form-field" [class.error]="isInvalid('rows')">
-            <label>Seat Rows *</label>
-            <input type="number" formControlName="rows" min="1" placeholder="e.g., 10">
-            @if (isInvalid('rows')) {
-              <span class="error-msg">Rows must be at least 1</span>
-            }
-          </div>
-
-          <div class="form-field" [class.error]="isInvalid('columns')">
-            <label>Seat Columns *</label>
-            <input type="number" formControlName="columns" min="1" placeholder="e.g., 15">
-            @if (isInvalid('columns')) {
-              <span class="error-msg">Columns must be at least 1</span>
-            }
-          </div>
-
-          <div class="form-field full">
-            <label>Seat Layout Image (Optional)</label>
-            <input type="file" accept="image/*" (change)="previewLayoutFile($event)">
-            <input type="url" formControlName="layoutImageUrl" placeholder="Or enter image URL" (input)="layoutPreview.set($any($event.target).value)">
-            @if (layoutPreview() && isImage(layoutPreview())) {
-              <div class="preview-box">
-                <img [src]="layoutPreview()" alt="Layout preview" class="preview-img">
-              </div>
-            }
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn-cancel" (click)="cancelForm()" [disabled]="submitting()">
-            Cancel
-          </button>
-          <button type="submit" class="btn-save" [disabled]="screenForm.invalid || submitting()">
-            {{ submitting() ? 'Saving...' : (editingScreenId() ? 'Update' : 'Add Screen') }}
-          </button>
-        </div>
-      </form>
     </div>
   </section>
+
+  @if (selectedTheatre()) {
+    <section class="theatre-info-card">
+      <div class="info-header">
+        <div class="info-icon">🎬</div>
+        <div class="info-content">
+          <h3 class="info-title">{{ selectedTheatre()!.name }}</h3>
+          <p class="info-location">{{ selectedTheatre()!.location }}</p>
+        </div>
+      </div>
+    </section>
   }
 
-  <!-- LOADING -->
   @if (loading()) {
-  <section class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading screens...</p>
-  </section>
+    <section class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </section>
   }
 
-  <!-- SCREENS GRID -->
-  @if (!loading() && filteredScreens().length > 0 && !showForm()) {
-  <section class="screens-grid">
-    @for (screen of filteredScreens(); track trackById($index, screen)) {
-    <div class="screen-card">
-      <div class="card-header">
-        <h3 class="screen-name">{{ screen.screenNumber }}</h3>
-        <span class="status-pill" [class.active]="screen.status === 'ACTIVE'" [class.inactive]="screen.status === 'INACTIVE'">
-          {{ screen.status }}
-        </span>
+  @if (selectedScreenNumber() && !loading()) {
+    <!-- QUICK CONFIG -->
+    <section class="config-panel">
+      <h3 class="section-title">Layout Configuration</h3>
+      <div class="config-row">
+        <div class="config-item">
+          <label>Rows</label>
+          <input type="number" [(ngModel)]="rows" (ngModelChange)="updateRows()" min="1" max="26">
+        </div>
+        <div class="config-item">
+          <label>Seats Per Row</label>
+          <input type="number" [(ngModel)]="seatsPerRow" (ngModelChange)="updateSeatsPerRow()" min="1" max="50">
+        </div>
+        <div class="config-item">
+          <label>Total Seats</label>
+          <div class="display-value">{{ totalSeats() }}</div>
+        </div>
+        <div class="config-item">
+          <label>Available</label>
+          <div class="display-value green">{{ availableSeatsCount() }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY MANAGEMENT -->
+    <section class="assignment-panel">
+      <div class="section-header">
+        <h3 class="section-title">Seat Categories</h3>
+        <button class="btn-add-cat" (click)="showAddCategory.set(true)">+ Add Category</button>
       </div>
       
-      <div class="card-info">
-        <span class="info-tag">🏢 {{ screen.theatre.venueName }}</span>
-        <span class="divider">|</span>
-        <span class="info-tag">💺 {{ screen.seatingCapacity }} seats</span>
-      </div>
-      
-      <div class="card-details">
-        <span class="detail-item">📐 Layout: {{ screen.seatLayout.rows }} × {{ screen.seatLayout.columns }}</span>
-        <span class="detail-item">🎬 {{ screen.assignedMovie ? screen.assignedMovie.title : 'No movie assigned' }}</span>
-        @if (screen.showCount !== undefined) {
-          <span class="detail-item">📅 {{ screen.showCount }} shows</span>
+      <div class="pricing-grid">
+        @for (cat of categories(); track cat.id) {
+          <div class="pricing-item">
+            <div class="pricing-color" [style.background]="cat.color"></div>
+            <div class="pricing-info">
+              <label>{{ cat.name }}</label>
+              <input 
+                type="number" 
+                [(ngModel)]="cat.price" 
+                (ngModelChange)="updateCategoryPrice(cat.id, cat.price)"
+                placeholder="Enter price"
+                min="0">
+            </div>
+            <button class="btn-delete-cat" (click)="deleteCategory(cat.id)">✕</button>
+          </div>
         }
       </div>
-      
-      <div class="card-actions">
-        <button class="action-btn assign" (click)="assignMovie(screen)">Assign Movie</button>
-        <button class="action-btn layout" (click)="openLayout(screen.id)">Layout</button>
-        <button class="action-btn edit" (click)="editScreen(screen)">Edit</button>
-        <button class="action-btn pause" 
-                (click)="toggleStatus(screen)"
-                [disabled]="statusUpdatingId() === screen.id">
-          {{ statusUpdatingId() === screen.id ? 'Updating...' : (screen.status === 'ACTIVE' ? 'Pause' : 'Resume') }}
-        </button>
-        <button class="action-btn delete" 
-                (click)="deleteScreen(screen)" 
-                [disabled]="deletingId() === screen.id">
-          {{ deletingId() === screen.id ? 'Deleting...' : 'Delete' }}
-        </button>
-      </div>
-    </div>
-    }
-  </section>
-  }
 
-  <!-- EMPTY STATE -->
-  @if (!loading() && filteredScreens().length === 0 && !showForm()) {
-  <section class="empty-state">
-    <div class="empty-icon">🎬</div>
-    <h3>No Screens Found</h3>
-    <p>{{ searchTerm() || selectedTheatre() || selectedStatus() ? 'Try adjusting your filters' : 'Add your first screen to get started' }}</p>
-    @if (!searchTerm() && !selectedTheatre() && !selectedStatus()) {
-    <button class="btn-add" (click)="addScreen()">
-      <span>+</span>
-      <span>Add Screen</span>
-    </button>
-    }
-  </section>
-  }
-</div>
-
-<!-- ASSIGN MOVIE MODAL -->
-@if (showAssignModal()) {
-<div class="modal-overlay" (click)="closeAssignModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Assign Movie to {{ selectedScreen()?.screenNumber }}</h3>
-      <button class="btn-close" (click)="closeAssignModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      @if (loadingMovies()) {
-        <div class="loading-state">
-          <div class="spinner"></div>
-          <p>Loading movies...</p>
-        </div>
-      } @else if (activeMovies().length === 0) {
-        <p class="no-movies">No active movies available</p>
-      } @else {
-        <div class="movie-list">
-          @for (movie of activeMovies(); track movie.id) {
-            <button class="movie-item" 
-                    (click)="confirmAssignMovie(movie.id)"
-                    [disabled]="assigningMovie()">
-              <span class="movie-title">{{ movie.title }}</span>
-              <span class="movie-arrow">→</span>
-            </button>
-          }
+      @if (showAddCategory()) {
+        <div class="add-category-form">
+          <div class="form-row">
+            <input type="text" [(ngModel)]="newCategoryName" placeholder="Category Name" class="form-input">
+            <input type="number" [(ngModel)]="newCategoryPrice" placeholder="Price" class="form-input" min="0">
+            <input type="color" [(ngModel)]="newCategoryColor" class="form-color">
+            <button class="btn-save-cat" (click)="addCategory()">Add</button>
+            <button class="btn-cancel-cat" (click)="showAddCategory.set(false)">Cancel</button>
+          </div>
         </div>
       }
-    </div>
-  </div>
+    </section>
+
+    <!-- BULK ASSIGNMENT -->
+    <section class="assignment-panel">
+      <h3 class="section-title">Seat Assignment Tools</h3>
+      
+      <div class="quick-actions">
+        <button class="btn-quick danger" (click)="clearAll()">
+          🗑️ Clear All
+        </button>
+      </div>
+
+      <div class="range-builder">
+        <h4>Assign Category by Row Range</h4>
+        
+        @for (range of rowRanges(); track $index) {
+          <div class="range-row">
+            <select [(ngModel)]="range.categoryId" class="range-select">
+              <option value="">Select Category</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }} (₹{{ cat.price }})</option>
+              }
+            </select>
+            
+            <div class="range-inputs">
+              <span>From Row</span>
+              <select [(ngModel)]="range.startRow" class="row-select">
+                @for (r of [].constructor(rows()); track r; let idx = $index) {
+                  <option [value]="idx">{{ getRowLabel(idx) }}</option>
+                }
+              </select>
+              
+              <span>To Row</span>
+              <select [(ngModel)]="range.endRow" class="row-select">
+                @for (r of [].constructor(rows()); track r; let idx = $index) {
+                  <option [value]="idx">{{ getRowLabel(idx) }}</option>
+                }
+              </select>
+            </div>
+            
+            <button class="btn-remove" (click)="removeRowRange($index)">✕</button>
+          </div>
+        }
+        
+        <div class="range-actions">
+          <button class="btn-add-range" (click)="addRowRange()">+ Add Range</button>
+          <button class="btn-apply" (click)="applyRowRanges()" [disabled]="rowRanges().length === 0">
+            Apply Ranges
+          </button>
+        </div>
+      </div>
+
+
+    </section>
+
+    <!-- INTERACTIVE SEAT LAYOUT -->
+    <section class="preview-panel">
+      <h3 class="section-title">Interactive Seat Layout</h3>
+      
+      <div class="screen-indicator">
+        <div class="screen-label">SCREEN</div>
+      </div>
+
+      <div class="legend">
+        @for (cat of categories(); track cat.id) {
+          <div class="legend-item">
+            <div class="legend-box" [style.background]="cat.color"></div>
+            <span>{{ cat.name }} (₹{{ cat.price }})</span>
+          </div>
+        }
+        <div class="legend-item">
+          <div class="legend-box disabled"></div>
+          <span>Disabled</span>
+        </div>
+      </div>
+
+      <div class="instruction-box">
+        <p>💡 <strong>Click any seat</strong> to disable/enable it manually</p>
+      </div>
+
+      <div class="seat-layout">
+        @for (rowIdx of [].constructor(rows()); track rowIdx; let r = $index) {
+          <div class="seat-row-interactive">
+            <span class="row-label-interactive">{{ getRowLabel(r) }}</span>
+            <div class="seats-interactive">
+              @for (seat of getSeatsForRow(r); track seat.label) {
+                <button 
+                  class="seat-interactive"
+                  [class.seat-disabled]="seat.disabled"
+                  [style.background]="getSeatBackground(seat)"
+                  [title]="seat.label + (seat.disabled ? ' (Disabled)' : '')"
+                  (click)="toggleSeatDisabled(seat)">
+                  <span class="seat-label">{{ seat.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat">
+          <strong>Revenue per Show:</strong> ₹{{ totalRevenue() }}
+        </div>
+        @for (cat of categories(); track cat.id) {
+          @if (categoryCounts().get(cat.id)) {
+            <div class="stat">
+              <strong>{{ cat.name }}:</strong> {{ categoryCounts().get(cat.id) }} seats
+            </div>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- SAVE -->
+    <section class="save-section">
+      <button 
+        class="btn-save-main" 
+        (click)="saveScreen()"
+        [disabled]="saving()">
+        {{ saving() ? 'Saving...' : 'Save Screen Layout' }}
+      </button>
+    </section>
+  }
+
+  @if (!selectedTheatreId() && !loading()) {
+    <section class="empty-state">
+      <div class="empty-icon">🎬</div>
+      <h3>Select a Theatre</h3>
+      <p>Choose a theatre to start</p>
+    </section>
+  }
+
+  @if (selectedTheatreId() && !selectedScreenNumber() && !loading()) {
+    <section class="empty-state">
+      <div class="empty-icon">🎞️</div>
+      <h3>Select a Screen</h3>
+      <p>Choose a screen to configure</p>
+    </section>
+  }
 </div>
-}

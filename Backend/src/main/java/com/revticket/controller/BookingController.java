@@ -57,5 +57,26 @@ public class BookingController {
     public ResponseEntity<List<BookingResponse>> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteBooking(@PathVariable("id") String id) {
+        bookingService.deleteBooking(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/scan")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponse> scanBooking(@PathVariable("id") String id) {
+        return ResponseEntity.ok(bookingService.scanBooking(id));
+    }
+
+    @PostMapping("/{id}/resign")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponse> resignBooking(
+            @PathVariable("id") String id,
+            @RequestBody List<String> newSeats) {
+        return ResponseEntity.ok(bookingService.resignBooking(id, newSeats));
+    }
 }
 

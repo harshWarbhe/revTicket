@@ -30,20 +30,14 @@ export interface Screen {
 }
 
 export interface CreateScreenDto {
-  screenNumber: string;
+  name?: string;
+  screenNumber?: string;
   theatreId: string;
-  seatingCapacity: number;
-  seatLayout: SeatLayout;
+  theaterId?: string;
+  seatingCapacity?: number;
+  totalSeats?: number;
+  seatLayout?: SeatLayout;
   status?: 'ACTIVE' | 'INACTIVE';
-  // Optional detailed layout sections compatible with backend SeatLayoutRequest
-  seatLayoutSections?: Array<{
-    name?: string;
-    rowStart?: string;
-    rowEnd?: string;
-    seatsPerRow?: number;
-    price?: number;
-    type?: string;
-  }>;
 }
 
 @Injectable({
@@ -65,11 +59,21 @@ export class ScreenService {
   }
 
   createScreen(screen: CreateScreenDto): Observable<Screen> {
-    return this.http.post<Screen>(`${environment.apiUrl}/admin/screens`, screen);
+    const payload = {
+      name: screen.screenNumber || screen.name,
+      theaterId: screen.theatreId || screen.theaterId,
+      totalSeats: screen.seatingCapacity || screen.totalSeats || 0
+    };
+    return this.http.post<Screen>(`${environment.apiUrl}/admin/screens`, payload);
   }
 
   updateScreen(id: string, screen: Partial<CreateScreenDto>): Observable<Screen> {
-    return this.http.put<Screen>(`${environment.apiUrl}/admin/screens/${id}`, screen);
+    const payload = {
+      name: screen.screenNumber || screen.name,
+      theaterId: screen.theatreId || screen.theaterId,
+      totalSeats: screen.seatingCapacity || screen.totalSeats || 0
+    };
+    return this.http.put<Screen>(`${environment.apiUrl}/admin/screens/${id}`, payload);
   }
 
   assignMovie(screenId: string, movieId: string): Observable<Screen> {

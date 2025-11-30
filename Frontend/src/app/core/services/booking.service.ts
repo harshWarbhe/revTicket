@@ -52,6 +52,22 @@ export class BookingService {
       .pipe(map(bookings => bookings.map(b => this.normalizeBookingDates(b))));
   }
 
+  deleteBooking(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/bookings/${id}`);
+  }
+
+  scanBooking(id: string): Observable<Booking> {
+    return this.http
+      .post<Booking>(`${environment.apiUrl}/bookings/${id}/scan`, {})
+      .pipe(map(booking => this.normalizeBookingDates(booking)));
+  }
+
+  resignBooking(id: string, newSeats: string[]): Observable<Booking> {
+    return this.http
+      .post<Booking>(`${environment.apiUrl}/bookings/${id}/resign`, newSeats)
+      .pipe(map(booking => this.normalizeBookingDates(booking)));
+  }
+
   setCurrentBooking(draft: BookingDraft): void {
     this.bookingDraft = draft;
   }

@@ -2,10 +2,12 @@ import { Component, OnInit, signal, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TheaterService, Theater } from '../../../core/services/theater.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-manage-theatres',
@@ -17,6 +19,7 @@ import { AlertService } from '../../../core/services/alert.service';
 export class ManageTheatresComponent implements OnInit {
   private router = inject(Router);
   private fb = inject(FormBuilder);
+  private http = inject(HttpClient);
   private theaterService = inject(TheaterService);
   private alertService = inject(AlertService);
   private destroyRef = inject(DestroyRef);
@@ -115,6 +118,7 @@ export class ManageTheatresComponent implements OnInit {
   addTheatre(): void {
     this.showForm.set(true);
     this.editingTheatreId.set(null);
+    this.imagePreview.set('');
     this.theatreForm.reset({
       name: '',
       location: '',
@@ -141,11 +145,36 @@ export class ManageTheatresComponent implements OnInit {
 
   submitTheatre(): void {
     this.theatreForm.markAllAsTouched();
+    
+    console.log('Form Valid:', this.theatreForm.valid);
+    console.log('Form Values:', this.theatreForm.value);
+    console.log('Form Errors:', this.theatreForm.errors);
+    
     if (this.theatreForm.invalid) {
+      Object.keys(this.theatreForm.controls).forEach(key => {
+        const control = this.theatreForm.get(key);
+        if (control?.invalid) {
+          console.log(`Invalid field: ${key}`, control.errors);
+        }
+      });
+      this.alertService.error('Please fill all required fields correctly');
       return;
     }
 
-    const payload = this.theatreForm.value;
+    const formValue = this.theatreForm.value;
+    const payload: any = {
+      name: formValue.name,
+      location: formValue.location,
+      address: formValue.address,
+      totalScreens: formValue.totalScreens,
+      isActive: formValue.isActive
+    };
+    
+    if (formValue.imageUrl) {
+      payload.imageUrl = formValue.imageUrl;
+    }
+
+    console.log('Sending payload:', payload);
     this.submitting.set(true);
 
     const editId = this.editingTheatreId();
@@ -159,32 +188,66 @@ export class ManageTheatresComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: () => {
+        next: (response) => {
+          console.log('Theatre saved successfully:', response);
           this.alertService.success(`Theatre ${editId ? 'updated' : 'created'} successfully`);
           this.closeForm();
           this.loadTheatres();
         },
-        error: () => {
-          this.alertService.error('Unable to save theatre');
+        error: (err) => {
+          console.error('Theatre save error:', err);
+          console.error('Error details:', err.error);
+          const errorMsg = err?.error?.message || err?.message || 'Unable to save theatre. Please check console for details.';
+          this.alertService.error(errorMsg);
         }
       });
   }
 
-  toggleStatus(theatre: Theater): void {
-    this.statusUpdatingId.set(theatre.id);
-    this.theaterService.updateTheaterStatus(theatre.id, !theatre.isActive)
+  toggleStatus(id: string, currentStatus: boolean): void {
+    this.statusUpdatingId.set(id);
+    const endpoint = currentStatus ? 'pause' : 'resume';
+    
+    this.http.put<any>(`${environment.apiUrl}/admin/theatres/${id}/${endpoint}`, {})
       .pipe(
         finalize(() => this.statusUpdatingId.set(null)),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
-        next: (updated) => {
-          this.alertService.success(`Theatre ${updated.isActive ? 'activated' : 'deactivated'}`);
-          this.theatres.update(theatres => theatres.map(t => t.id === updated.id ? updated : t));
+        next: () => {
+          this.alertService.success(`Theatre ${!currentStatus ? 'resumed' : 'paused'}`);
+          this.theatres.update(theatres => theatres.map(t => t.id === id ? { ...t, isActive: !currentStatus } : t));
           this.applyFilters();
         },
         error: () => {
           this.alertService.error('Unable to update status');
+        }
+      });
+  }
+
+  goToScreens(id: string): void {
+    this.router.navigate(['/admin/screens'], { queryParams: { theatreId: id } });
+  }
+
+  editTheatreById(id: string): void {
+    this.router.navigate(['/admin/manage-theatres/edit', id]);
+  }
+
+  deleteTheatreById(id: string): void {
+    if (!confirm('Are you sure?')) return;
+    
+    this.deletingId.set(id);
+    this.http.delete(`${environment.apiUrl}/admin/theatres/${id}`)
+      .pipe(
+        finalize(() => this.deletingId.set(null)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: () => {
+          this.alertService.success('Theatre deleted successfully');
+          this.loadTheatres();
+        },
+        error: () => {
+          this.alertService.error('Unable to delete theatre');
         }
       });
   }

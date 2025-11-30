@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/admin/theaters")
+@RequestMapping("/api/admin/theatres")
 @CrossOrigin(origins = {"http://localhost:4200", "*"})
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminTheaterController {
@@ -29,6 +29,32 @@ public class AdminTheaterController {
     public ResponseEntity<List<TheaterResponse>> getAllTheaters(
             @RequestParam(name = "activeOnly", required = false, defaultValue = "false") Boolean activeOnly) {
         return ResponseEntity.ok(theaterService.getAllTheaters(activeOnly));
+    }
+
+    @PostMapping
+    public ResponseEntity<TheaterResponse> createTheater(@RequestBody com.revticket.dto.TheaterRequest theaterRequest) {
+        return ResponseEntity.ok(theaterService.createTheater(theaterRequest));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TheaterResponse> updateTheater(@PathVariable String id, @RequestBody com.revticket.dto.TheaterRequest theaterRequest) {
+        return ResponseEntity.ok(theaterService.updateTheater(id, theaterRequest));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTheater(@PathVariable String id) {
+        theaterService.deleteTheater(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/pause")
+    public ResponseEntity<TheaterResponse> pauseTheater(@PathVariable String id) {
+        return ResponseEntity.ok(theaterService.updateTheaterStatus(id, false));
+    }
+
+    @PutMapping("/{id}/resume")
+    public ResponseEntity<TheaterResponse> resumeTheater(@PathVariable String id) {
+        return ResponseEntity.ok(theaterService.updateTheaterStatus(id, true));
     }
 
     @GetMapping("/{id}/screens")

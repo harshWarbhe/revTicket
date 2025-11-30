@@ -52,6 +52,7 @@ export class SeatBookingComponent implements OnInit {
   }
 
   ngOnInit() {
+    window.scrollTo(0, 0);
     this.showId = +this.route.snapshot.queryParamMap.get('showId')!;
     this.loadShow();
   }

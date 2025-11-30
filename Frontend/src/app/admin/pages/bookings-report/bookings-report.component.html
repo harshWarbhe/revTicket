@@ -1,226 +1,194 @@
-<div class="bookings-report-container">
-  <div class="admin-page-header">
-    <div class="admin-header-background"></div>
-    <div class="admin-header-content">
-      <div class="admin-header-text">
-        <h1>Bookings Report</h1>
-        <p>Comprehensive analytics and booking insights</p>
-      </div>
-      <div class="admin-header-actions">
-        <button class="btn-secondary" (click)="exportReport()">
-          <span class="icon">📊</span>
-          Export Report
-        </button>
-        <button class="btn-primary" (click)="refreshData()">
-          <span class="icon">🔄</span>
-          Refresh
-        </button>
-      </div>
+<div class="dashboard-page">
+  <!-- HEADER -->
+  <header class="main-header">
+    <div class="header-left">
+      <h1 class="page-title">Bookings Report</h1>
+      <p class="page-sub">Comprehensive booking analytics and insights</p>
     </div>
-  </div>
 
-  <div class="loading-state" *ngIf="loading()">
+    <div class="header-actions">
+      <button class="refresh-btn" (click)="exportCSV()" title="Export CSV">
+        <span>📊</span>
+        <span>Export CSV</span>
+      </button>
+      <button class="refresh-btn" (click)="loadData()" [disabled]="loading()" title="Refresh Data">
+        <span [class.spin]="loading()">🔄</span>
+        <span>{{ loading() ? 'Loading...' : 'Refresh' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- LOADING STATE -->
+  @if (loading()) {
+  <section class="loading-state">
     <div class="spinner"></div>
     <p>Loading bookings data...</p>
-  </div>
+  </section>
+  }
 
-  <!-- Summary Cards -->
-  <div class="summary-cards" *ngIf="!loading()">
-    <div class="summary-card">
-      <div class="card-icon total">📊</div>
-      <div class="card-content">
-        <h3>{{ totalBookings() }}</h3>
-        <p>Total Bookings</p>
-        <span class="trend positive">+12% from last month</span>
-      </div>
+  <!-- STATS ROW -->
+  @if (!loading()) {
+  <section class="stats-row fade-in">
+    <div class="stat-card">
+      <div class="stat-meta">Total Bookings</div>
+      <div class="stat-value">{{ summary().totalBookings }}</div>
     </div>
 
-    <div class="summary-card">
-      <div class="card-icon revenue">💰</div>
-      <div class="card-content">
-        <h3>₹{{ totalRevenue() | number:'1.0-0' }}</h3>
-        <p>Total Revenue</p>
-        <span class="trend positive">+8% from last month</span>
-      </div>
+    <div class="stat-card">
+      <div class="stat-meta">Total Revenue</div>
+      <div class="stat-value">{{ formatCurrency(summary().totalRevenue) }}</div>
     </div>
 
-    <div class="summary-card">
-      <div class="card-icon today">📅</div>
-      <div class="card-content">
-        <h3>{{ todayBookings() }}</h3>
-        <p>Today's Bookings</p>
-        <span class="trend neutral">Same as yesterday</span>
-      </div>
+    <div class="stat-card">
+      <div class="stat-meta">Today's Bookings</div>
+      <div class="stat-value">{{ summary().todayBookings }}</div>
     </div>
 
-    <div class="summary-card">
-      <div class="card-icon avg">🎫</div>
-      <div class="card-content">
-        <h3>{{ avgTicketsPerBooking() | number:'1.1-1' }}</h3>
-        <p>Avg Tickets/Booking</p>
-        <span class="trend positive">{{ cancelledBookings() }} cancelled</span>
-      </div>
+    <div class="stat-card">
+      <div class="stat-meta">Cancelled</div>
+      <div class="stat-value">{{ summary().cancelledBookings }}</div>
     </div>
-  </div>
+  </section>
+  }
 
-  <!-- Filters Section -->
-  <div class="filters-section">
-    <div class="date-filters">
-      <div class="date-group">
-        <label>From Date:</label>
-        <input type="date" [(ngModel)]="fromDate">
-      </div>
-      <div class="date-group">
-        <label>To Date:</label>
-        <input type="date" [(ngModel)]="toDate">
-      </div>
+  <!-- FILTERS PANEL -->
+  @if (!loading()) {
+  <section class="panel fade-in" style="margin-bottom: 28px;">
+    <div class="panel-header">
+      <h3 class="panel-title">🔍 Filters</h3>
     </div>
-
-    <div class="filter-controls">
-      <select [(ngModel)]="selectedMovie">
-        <option value="">All Movies</option>
-        <option *ngFor="let movie of movies()" [value]="movie.title">{{ movie.title }}</option>
-      </select>
-
-      <select [(ngModel)]="selectedTheater">
-        <option value="">All Theaters</option>
-        <option *ngFor="let theater of theaters()" [value]="theater.name">{{ theater.name }}</option>
-      </select>
-
-      <select [(ngModel)]="selectedStatus">
-        <option value="">All Status</option>
-        <option value="CONFIRMED">Confirmed</option>
-        <option value="CANCELLED">Cancelled</option>
-        <option value="PENDING">Pending</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Charts Section -->
-  <div class="charts-section" *ngIf="!loading()">
-    <div class="chart-card">
-      <h3>Daily Bookings Trend (Last 7 Days)</h3>
-      <div class="chart-placeholder">
-        <div class="chart-bars" *ngIf="getDailyBookingsData().length > 0">
-          <div class="bar" *ngFor="let count of getDailyBookingsData()" [style.height]="getBarHeight(count)"
-            [title]="count + ' bookings'">
-          </div>
+    <div class="panel-body">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>From Date</label>
+          <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event); onFilterChange()">
         </div>
-        <div class="chart-empty" *ngIf="getDailyBookingsData().length === 0">
-          <p>No booking data available</p>
+
+        <div class="filter-group">
+          <label>To Date</label>
+          <input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event); onFilterChange()">
         </div>
-        <!-- <div class="chart-labels">
-          <span *ngFor="let i of [6,5,4,3,2,1,0]">
-            {{ new Date(new Date().setDate(new Date().getDate() - i)) | date:'EEE' }}
-          </span>
-        </div> -->
-        <div class="chart-labels">
-          <span *ngFor="let label of weekDayLabels()">
-            {{ label }}
-          </span>
+
+        <div class="filter-group">
+          <label>Movie</label>
+          <select [ngModel]="selectedMovie()" (ngModelChange)="selectedMovie.set($event); onFilterChange()">
+            <option value="">All Movies</option>
+            <option *ngFor="let movie of movies()" [value]="movie.id">{{ movie.title }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Theater</label>
+          <select [ngModel]="selectedTheater()" (ngModelChange)="selectedTheater.set($event); onFilterChange()">
+            <option value="">All Theaters</option>
+            <option *ngFor="let theater of theaters()" [value]="theater.id">{{ theater.name }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Status</label>
+          <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event); onFilterChange()">
+            <option value="">All Status</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="PENDING">Pending</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Search</label>
+          <input type="text" placeholder="Search by name, email, ID..." 
+            [ngModel]="searchTerm()" 
+            (ngModelChange)="searchTerm.set($event); onFilterChange()">
         </div>
       </div>
     </div>
+  </section>
+  }
 
-    <div class="chart-card">
-      <h3>Popular Movies</h3>
-      <div class="popular-movies" *ngIf="getPopularMovies().length > 0">
-        <div class="movie-stat" *ngFor="let movie of getPopularMovies()">
-          <span class="movie-name">{{ movie.title }}</span>
-          <div class="progress-bar">
-            <div class="progress" [style.width.%]="movie.percentage"></div>
-          </div>
-          <span class="percentage">{{ movie.bookings }} bookings</span>
-        </div>
-      </div>
-      <div class="chart-empty" *ngIf="getPopularMovies().length === 0">
-        <p>No movie data available</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bookings Table -->
-  <div class="table-section" *ngIf="!loading()">
-    <div class="table-header">
-      <h3>Recent Bookings</h3>
-      <div class="table-actions">
-        <input type="text" placeholder="Search bookings..." [(ngModel)]="searchTerm"
-          class="search-input">
-      </div>
+  <!-- BOOKINGS TABLE -->
+  @if (!loading()) {
+  <section class="panel fade-in">
+    <div class="panel-header">
+      <h3 class="panel-title">📋 Bookings ({{ totalElements() }} total)</h3>
     </div>
 
-    <div class="table-container">
-      <table class="bookings-table">
-        <thead>
-          <tr>
-            <th>Booking ID</th>
-            <th>Customer</th>
-            <th>Movie</th>
-            <th>Theater</th>
-            <th>Show Date</th>
-            <th>Seats</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let booking of paginatedBookings(); trackBy: trackByBookingId">
-            <td class="booking-id">#{{ booking.id }}</td>
-            <td>
-              <div class="customer-info">
-                <strong>{{ booking.customerName }}</strong>
-                <small>{{ booking.customerEmail }}</small>
-              </div>
-            </td>
-            <td>{{ booking.movieTitle }}</td>
-            <td>{{ booking.theaterName }}</td>
-            <td>{{ booking.showtime | date:'MMM dd, yyyy h:mm a' }}</td>
-            <td>
-              <span class="seats-count">
-                {{ booking.seats.length || 0 }} seats
-              </span>
-
-              <small *ngIf="booking.seats.length > 0">
-                {{ booking.seats.join(', ') }}
-              </small>
-            </td>
-            <td class="amount">{{ formatCurrency(booking.totalAmount || 0) }}</td>
-            <td>
-              <span class="status-badge" [class]="'status-' + booking.status.toLowerCase()">
-                {{ booking.status }}
-              </span>
-            </td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn-icon" (click)="viewBooking(booking)" title="View Details">
-                  👁️
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Movie</th>
+              <th>Theater</th>
+              <th>Show Date</th>
+              <th>Seats</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (booking of bookings(); track booking.id) {
+            <tr>
+              <td class="booking-id">#{{ booking.id.substring(0, 8) }}</td>
+              <td>
+                <div class="customer-cell">
+                  <strong>{{ booking.customerName }}</strong>
+                  <small>{{ booking.customerEmail }}</small>
+                </div>
+              </td>
+              <td>{{ booking.movieTitle }}</td>
+              <td>
+                <div class="theater-cell">
+                  <div>{{ booking.theaterName }}</div>
+                  <small>{{ booking.screen }}</small>
+                </div>
+              </td>
+              <td>{{ booking.showtime | date:'MMM dd, h:mm a' }}</td>
+              <td>
+                <div class="seats-cell">
+                  <strong>{{ booking.seats.length }} seats</strong>
+                  <small>{{ booking.seats.join(', ') }}</small>
+                </div>
+              </td>
+              <td class="amount-cell">{{ formatCurrency(booking.totalAmount) }}</td>
+              <td>
+                <span class="status-badge" [class]="'status-' + booking.status.toLowerCase()">
+                  {{ booking.status }}
+                </span>
+              </td>
+              <td>
+                <button class="action-btn delete-btn" (click)="deleteBooking(booking)" title="Delete">
+                  🗑️
                 </button>
-                <button class="btn-icon" (click)="downloadTicket(booking)" title="Download Ticket">
-                  📄
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="9" class="empty-state">No bookings found</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
-    <div class="table-pagination">
-      <span class="pagination-info">
-        Showing {{ (currentPage() - 1) * itemsPerPage() + 1 }} to
-        {{ getEndIndex() }}
-        of {{ filteredBookings().length }} bookings
-      </span>
-      <div class="pagination-controls">
-        <button class="btn-pagination" [disabled]="currentPage() === 1" (click)="previousPage()">
-          Previous
-        </button>
-        <span class="page-info">Page {{ currentPage() }} of {{ totalPages() }}</span>
-        <button class="btn-pagination" [disabled]="currentPage() === totalPages()" (click)="nextPage()">
-          Next
-        </button>
+      <div class="table-footer">
+        <div class="pagination-info">
+          Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ totalElements() }} bookings
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" [disabled]="currentPage() === 0" (click)="previousPage()">
+            Previous
+          </button>
+          <span class="page-info">Page {{ currentPage() + 1 }} of {{ totalPages() }}</span>
+          <button class="page-btn" [disabled]="currentPage() >= totalPages() - 1" (click)="nextPage()">
+            Next
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
+  }
 </div>

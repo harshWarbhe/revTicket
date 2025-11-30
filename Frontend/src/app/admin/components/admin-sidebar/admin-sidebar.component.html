@@ -76,6 +76,14 @@
         <span class="nav-label">Reports</span>
       }
     </a>
+
+    <a routerLink="/admin/settings" routerLinkActive="active" (click)="closeSidebarOnMobile()" class="nav-link"
+      title="Settings">
+      <span class="nav-icon">⚙️</span>
+      @if (sidebarOpen()) {
+        <span class="nav-label">Settings</span>
+      }
+    </a>
   </nav>
 
   <div class="sidebar-footer">

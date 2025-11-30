@@ -149,15 +149,15 @@
       </div>
       
       <div class="card-actions">
-        <button class="action-btn screens" (click)="viewScreens(theatre.id)">Screens</button>
+        <button class="action-btn screens" (click)="goToScreens(theatre.id)">Screens</button>
         <button class="action-btn edit" (click)="editTheatre(theatre)">Edit</button>
         <button class="action-btn pause" 
-                (click)="toggleStatus(theatre)"
+                (click)="toggleStatus(theatre.id, theatre.isActive)"
                 [disabled]="statusUpdatingId() === theatre.id">
           {{ statusUpdatingId() === theatre.id ? 'Updating...' : (theatre.isActive ? 'Pause' : 'Resume') }}
         </button>
         <button class="action-btn delete" 
-                (click)="deleteTheatre(theatre)" 
+                (click)="deleteTheatreById(theatre.id)" 
                 [disabled]="deletingId() === theatre.id">
           {{ deletingId() === theatre.id ? 'Deleting...' : 'Delete' }}
         </button>

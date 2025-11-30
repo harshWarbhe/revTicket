@@ -39,6 +39,15 @@ public class Booking {
     @Column(name = "total_amount", nullable = false)
     private Double totalAmount;
 
+    @Column(name = "ticket_price_snapshot")
+    private Double ticketPriceSnapshot;
+
+    @Column(name = "screen_name")
+    private String screenName;
+
+    @Column(name = "payment_method")
+    private String paymentMethod;
+
     @CreationTimestamp
     @Column(name = "booking_date", nullable = false, updatable = false)
     private LocalDateTime bookingDate;

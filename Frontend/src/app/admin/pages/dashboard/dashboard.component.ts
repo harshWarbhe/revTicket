@@ -84,7 +84,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   groupRevenueData(data: RevenueData[], period: number): RevenueData[] {
     if (period === 7) return data;
-    if (period === 30 || period === 180) return this.groupByWeeks(data);
+    if (period === 30) return this.groupByWeeks(data);
     if (period === 365) return this.groupByMonths(data);
     return data;
   }
@@ -151,7 +151,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     
     if (period === 7) {
       return date.toLocaleDateString('en-US', { weekday: 'short' });
-    } else if (period === 30 || period === 180) {
+    } else if (period === 30) {
       const index = this.revenueData().findIndex(d => d.date === dateStr);
       return `W${index + 1}`;
     } else if (period === 365) {

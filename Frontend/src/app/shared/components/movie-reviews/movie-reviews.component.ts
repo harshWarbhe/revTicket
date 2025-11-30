@@ -17,8 +17,10 @@ export class MovieReviewsComponent implements OnInit {
   
   private fb = inject(FormBuilder);
   private reviewService = inject(ReviewService);
-  private authService = inject(AuthService);
+  protected authService = inject(AuthService);
   private alertService = inject(AlertService);
+  
+  protected readonly Math = Math;
 
   reviewForm!: FormGroup;
   reviews = signal<ReviewResponse[]>([]);

@@ -53,6 +53,7 @@ export class PaymentComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    window.scrollTo(0, 0);
     const draft = this.bookingService.getCurrentBooking();
     this.bookingDraft.set(draft);
     if (!draft) {
