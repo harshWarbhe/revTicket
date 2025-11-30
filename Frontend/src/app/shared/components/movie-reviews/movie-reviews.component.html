@@ -1,0 +1,74 @@
+<div class="reviews-container">
+  <div class="reviews-header">
+    <h3>Reviews & Ratings</h3>
+    <div class="average-rating">
+      <span class="rating-value">{{ averageRating() | number:'1.1-1' }}</span>
+      <div class="stars">
+        @for (star of getStars(Math.round(averageRating())); track $index) {
+          <span class="star">{{ star }}</span>
+        }
+      </div>
+      <span class="review-count">({{ reviews().length }} reviews)</span>
+    </div>
+  </div>
+
+  @if (authService.isAuthenticated()) {
+    <div class="add-review-section">
+      @if (!showReviewForm()) {
+        <button class="add-review-btn" (click)="toggleReviewForm()">
+          Write a Review
+        </button>
+      } @else {
+        <form [formGroup]="reviewForm" (ngSubmit)="onSubmitReview()" class="review-form">
+          <div class="form-group">
+            <label>Rating</label>
+            <select formControlName="rating" class="rating-select">
+              <option value="5">5 Stars - Excellent</option>
+              <option value="4">4 Stars - Good</option>
+              <option value="3">3 Stars - Average</option>
+              <option value="2">2 Stars - Poor</option>
+              <option value="1">1 Star - Terrible</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Comment</label>
+            <textarea 
+              formControlName="comment" 
+              placeholder="Share your thoughts about this movie..."
+              rows="4">
+            </textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" (click)="toggleReviewForm()">Cancel</button>
+            <button type="submit" class="submit-btn" [disabled]="reviewForm.invalid || loading()">
+              {{ loading() ? 'Submitting...' : 'Submit Review' }}
+            </button>
+          </div>
+        </form>
+      }
+    </div>
+  }
+
+  <div class="reviews-list">
+    @if (reviews().length === 0) {
+      <p class="no-reviews">No reviews yet. Be the first to review!</p>
+    } @else {
+      @for (review of reviews(); track review.id) {
+        <div class="review-item">
+          <div class="review-header">
+            <span class="reviewer-name">{{ review.userName }}</span>
+            <div class="review-rating">
+              @for (star of getStars(review.rating); track $index) {
+                <span class="star">{{ star }}</span>
+              }
+            </div>
+            <span class="review-date">{{ review.createdAt | date:'short' }}</span>
+          </div>
+          <p class="review-comment">{{ review.comment }}</p>
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -2,6 +2,7 @@ package com.revticket.controller;
 
 import com.revticket.dto.AuthResponse;
 import com.revticket.dto.LoginRequest;
+import com.revticket.dto.ResetPasswordRequest;
 import com.revticket.dto.SignupRequest;
 import com.revticket.service.AuthService;
 import jakarta.validation.Valid;
@@ -37,13 +38,19 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email is required");
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
         }
         authService.forgotPassword(email);
-        return ResponseEntity.ok().body("Password reset email sent successfully");
+        return ResponseEntity.ok(Map.of("message", "Password reset token generated successfully"));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 }
 

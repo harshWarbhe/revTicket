@@ -61,6 +61,10 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/auth/forgot-password`, { email });
   }
 
+  resetPassword(token: string, newPassword: string): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/auth/reset-password`, { token, newPassword });
+  }
+
   changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
     return this.http.post(`${environment.apiUrl}/auth/change-password`, data);
   }
