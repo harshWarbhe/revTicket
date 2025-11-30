@@ -38,7 +38,7 @@
           </div>
           <div class="detail-item">
             <span class="label">Seats</span>
-            <span class="value">{{ booking()!.seats.join(', ') }}</span>
+            <span class="value">{{ (booking()!.seatLabels || booking()!.seats).join(', ') }}</span>
           </div>
         </div>
       </div>

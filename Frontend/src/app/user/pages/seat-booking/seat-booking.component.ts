@@ -1,23 +1,38 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { BookingService } from '../../../core/services/booking.service';
+import { BookingDraft } from '../../../core/models/booking.model';
 import { environment } from '../../../../environments/environment';
 
-interface SeatItem {
-  type: 'seat' | 'spacer';
-  seatNumber?: number;
-  rowLabel?: string;
-  available?: boolean;
-  price?: number;
-  seatType?: string;
-  seatId?: number;
-  isBlocked?: boolean;
+interface Seat {
+  id: string;
+  row: string;
+  number: number;
+  price: number;
+  type: string;
+  isBooked: boolean;
+  isHeld: boolean;
 }
 
-interface SeatRow {
-  row: string;
-  items: SeatItem[];
+interface Showtime {
+  id: string;
+  movieId: string;
+  theaterId: string;
+  screen: string;
+  showDateTime: string;
+  ticketPrice: number;
+  movie?: { title: string; posterUrl: string };
+  theater?: { name: string; location: string };
+  screenInfo?: { id: string; name: string; totalSeats: number };
+}
+
+interface Screen {
+  id: string;
+  name: string;
+  totalSeats: number;
+  theaterId: string;
 }
 
 @Component({
@@ -31,212 +46,219 @@ export class SeatBookingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private http = inject(HttpClient);
+  private bookingService = inject(BookingService);
 
-  showId!: number;
-  show: any;
-  
-  seats: SeatRow[] = [];
-  selectedSeatsMap = new Map<string, {seatNumber: number, price: number, seatId: number}>();
-  seatDataMap = new Map<string, any>();
-  
-  zoomLevel = 1;
-  
-  isDragging = false;
-  startX = 0;
-  startY = 0;
-  scrollLeft = 0;
-  scrollTop = 0;
+  showtime = signal<Showtime | null>(null);
+  seats = signal<Seat[]>([]);
+  selectedSeats = signal<Set<string>>(new Set());
+  loading = signal(true);
+  error = signal('');
 
-  get selectedSeats(): string[] {
-    return Array.from(this.selectedSeatsMap.keys());
-  }
+  showtimeId = '';
+
+  seatRows = computed(() => {
+    const seatMap = new Map<string, Seat[]>();
+    this.seats().forEach(seat => {
+      if (!seatMap.has(seat.row)) {
+        seatMap.set(seat.row, []);
+      }
+      seatMap.get(seat.row)!.push(seat);
+    });
+    
+    return Array.from(seatMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([row, seats]) => ({
+        row,
+        seats: seats.sort((a, b) => a.number - b.number)
+      }));
+  });
+
+  selectedSeatsList = computed(() => Array.from(this.selectedSeats()));
+  
+  selectedSeatsLabels = computed(() => {
+    const selected = this.selectedSeats();
+    return this.seats()
+      .filter(seat => selected.has(`${seat.row}${seat.number}`))
+      .map(seat => `${seat.row}${seat.number}`)
+      .sort();
+  });
+  
+  totalPrice = computed(() => {
+    const selected = this.selectedSeats();
+    return this.seats()
+      .filter(seat => selected.has(`${seat.row}${seat.number}`))
+      .reduce((total, seat) => total + seat.price, 0);
+  });
 
   ngOnInit() {
-    window.scrollTo(0, 0);
-    this.showId = +this.route.snapshot.queryParamMap.get('showId')!;
-    this.loadShow();
-  }
-
-  loadShow() {
-    this.http.get<any>(`${environment.apiUrl}/shows/${this.showId}`).subscribe({
-      next: (response) => {
-        this.show = response.data;
-        this.loadSeats();
-      }
-    });
-  }
-
-  loadSeats() {
-    this.http.get<any>(`${environment.apiUrl}/seats/show/${this.showId}`).subscribe({
-      next: (response) => {
-        const seatData = response.data || [];
-        
-        let layout: any = {};
-        if (this.show?.screen?.seatLayout) {
-          layout = typeof this.show.screen.seatLayout === 'string' 
-            ? JSON.parse(this.show.screen.seatLayout) 
-            : this.show.screen.seatLayout;
-        }
-        
-        const disabledSeats = new Set(layout.disabledSeats || []);
-        const rows = layout.rows || [];
-        
-        const seatMap = new Map<string, any>();
-        seatData.forEach((seat: any) => {
-          const position = seat.seatNumber < 0 ? Math.abs(seat.seatNumber) : null;
-          if (position) {
-            seatMap.set(`${seat.rowLabel}:${position}`, seat);
-          } else {
-            if (!seatMap.has(`${seat.rowLabel}:bookable`)) {
-              seatMap.set(`${seat.rowLabel}:bookable`, []);
-            }
-            seatMap.get(`${seat.rowLabel}:bookable`)!.push(seat);
-          }
-        });
-        
-        this.seats = rows.map((rowLabel: string) => {
-          const items: SeatItem[] = [];
-          const bookableSeats = seatMap.get(`${rowLabel}:bookable`) || [];
-          let bookableIndex = 0;
-          
-          for (let position = 1; position <= 26; position++) {
-            const positionKey = `${rowLabel}${position}`;
-            
-            if (disabledSeats.has(positionKey)) {
-              items.push({ type: 'spacer' });
-            } else {
-              const seat = bookableSeats[bookableIndex++];
-              if (seat) {
-                const seatKey = `${seat.rowLabel}${seat.seatNumber}`;
-                this.seatDataMap.set(seatKey, seat);
-                
-                items.push({
-                  type: 'seat',
-                  seatNumber: seat.seatNumber,
-                  rowLabel: seat.rowLabel,
-                  available: seat.isAvailable,
-                  price: seat.price,
-                  seatType: seat.seatType,
-                  seatId: seat.seatId,
-                  isBlocked: false
-                });
-              } else {
-                items.push({ type: 'spacer' });
-              }
-            }
-          }
-          
-          return { row: rowLabel, items };
-        });
-      }
-    });
-  }
-
-  toggleSeat(rowLabel: string, seatNumber: number) {
-    const seatKey = `${rowLabel}${seatNumber}`;
-    const seatInfo = this.seatDataMap.get(seatKey);
+    const movieSlug = this.route.snapshot.paramMap.get('movieSlug');
+    const showtimeSlug = this.route.snapshot.paramMap.get('showtimeSlug');
     
-    if (!seatInfo || !seatInfo.isAvailable || seatInfo.isBlocked) return;
+    if (!movieSlug || !showtimeSlug) {
+      this.router.navigate(['/user/home']);
+      return;
+    }
     
-    if (this.selectedSeatsMap.has(seatKey)) {
-      this.selectedSeatsMap.delete(seatKey);
+    // Extract showtime ID from slug (format: theater-name-date-time-uuid)
+    // UUID is the last 36 characters (8-4-4-4-12 format)
+    if (showtimeSlug.length >= 36) {
+      this.showtimeId = showtimeSlug.slice(-36); // Get last 36 chars (full UUID)
     } else {
-      if (this.selectedSeatsMap.size < 10) {
-        this.selectedSeatsMap.set(seatKey, {
-          seatNumber: seatNumber,
-          price: seatInfo.price,
-          seatId: seatInfo.seatId
-        });
-      }
+      this.router.navigate(['/user/home']);
+      return;
+    }
+    
+    this.loadData();
+  }
+
+  private async loadData() {
+    try {
+      this.loading.set(true);
+      
+      await Promise.all([
+        this.loadShowtime(),
+        this.loadSeats()
+      ]);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      this.error.set(`Failed to load booking data: ${error}`);
+    } finally {
+      this.loading.set(false);
     }
   }
 
-  getSeatClass(rowLabel: string, seatNumber: number, available: boolean): string {
-    if (!available) {
-      return 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed';
-    }
-    const seatKey = `${rowLabel}${seatNumber}`;
-    return this.selectedSeatsMap.has(seatKey)
-      ? 'bg-red-600 border-red-500 hover:bg-red-700 cursor-pointer shadow-lg' 
-      : 'bg-transparent border-gray-600 hover:border-red-400 hover:bg-red-900/20 cursor-pointer';
-  }
-
-  getTotalPrice(): number {
-    let total = 0;
-    this.selectedSeatsMap.forEach(seatInfo => {
-      total += seatInfo.price;
+  private loadShowtime(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.http.get<Showtime>(`${environment.apiUrl}/showtimes/${this.showtimeId}`).subscribe({
+        next: (showtime) => {
+          this.showtime.set(showtime);
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error loading showtime:', error);
+          reject(error);
+        }
+      });
     });
-    return total;
   }
 
-  formatShowTime(time: string): string {
-    if (!time) return '';
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
+  private loadSeats(): Promise<void> {
+    return new Promise((resolve) => {
+      this.http.get<Seat[]>(`${environment.apiUrl}/seats/showtime/${this.showtimeId}`).subscribe({
+        next: (seats) => {
+          this.seats.set(seats);
+          resolve();
+        },
+        error: () => {
+          this.seats.set([]);
+          resolve();
+        }
+      });
+    });
   }
 
-  zoomIn() {
-    if (this.zoomLevel < 1.5) this.zoomLevel += 0.1;
-  }
 
-  zoomOut() {
-    if (this.zoomLevel > 0.5) this.zoomLevel -= 0.1;
-  }
 
-  goBack() {
-    this.router.navigate(['/movies']);
-  }
-
-  onMouseDown(event: MouseEvent, container: HTMLElement) {
-    this.isDragging = true;
-    this.startX = event.pageX - container.offsetLeft;
-    this.startY = event.pageY - container.offsetTop;
-    this.scrollLeft = container.scrollLeft;
-    this.scrollTop = container.scrollTop;
-    container.style.cursor = 'grabbing';
-  }
-
-  onMouseMove(event: MouseEvent, container: HTMLElement) {
-    if (!this.isDragging) return;
-    event.preventDefault();
-    const x = event.pageX - container.offsetLeft;
-    const y = event.pageY - container.offsetTop;
-    const walkX = (x - this.startX) * 1.5;
-    const walkY = (y - this.startY) * 1.5;
-    container.scrollLeft = this.scrollLeft - walkX;
-    container.scrollTop = this.scrollTop - walkY;
-  }
-
-  onMouseUp(container: HTMLElement) {
-    this.isDragging = false;
-    container.style.cursor = 'grab';
-  }
-
-  onMouseLeave(container: HTMLElement) {
-    if (this.isDragging) {
-      this.isDragging = false;
-      container.style.cursor = 'grab';
+  toggleSeat(seat: Seat) {
+    if (seat.isBooked || seat.isHeld) return;
+    
+    const seatKey = `${seat.row}${seat.number}`;
+    const selected = new Set(this.selectedSeats());
+    
+    if (selected.has(seatKey)) {
+      selected.delete(seatKey);
+    } else if (selected.size < 10) {
+      selected.add(seatKey);
     }
+    
+    this.selectedSeats.set(selected);
   }
 
-  trackByRow(index: number, row: SeatRow): string {
-    return row.row;
-  }
-
-  trackByItem(index: number, item: SeatItem): string {
-    return item.type === 'seat' ? `${item.rowLabel}${item.seatNumber}` : `spacer-${index}`;
+  getSeatClass(seat: Seat): string {
+    if (seat.isBooked || seat.isHeld) return 'booked';
+    const seatKey = `${seat.row}${seat.number}`;
+    return this.selectedSeats().has(seatKey) ? 'selected' : 'available';
   }
 
   proceedToPayment() {
-    this.router.navigate(['/bookings/payment'], {
-      queryParams: {
-        showId: this.showId,
-        seatNumbers: JSON.stringify(this.selectedSeats),
-        totalAmount: this.getTotalPrice()
+    if (this.selectedSeatsList().length === 0) return;
+    
+    const showtime = this.showtime();
+    if (!showtime) return;
+    
+    const selectedSeatIds: string[] = [];
+    const selected = this.selectedSeats();
+    
+    this.seats().forEach(seat => {
+      const seatKey = `${seat.row}${seat.number}`;
+      if (selected.has(seatKey)) {
+        selectedSeatIds.push(seat.id);
       }
     });
+    
+    const bookingDraft: BookingDraft = {
+      movieId: showtime.movieId,
+      theaterId: showtime.theaterId,
+      showtimeId: this.showtimeId,
+      showDateTime: showtime.showDateTime,
+      seats: selectedSeatIds,
+      seatLabels: this.selectedSeatsLabels(),
+      totalAmount: this.totalPrice(),
+      movieTitle: showtime.movie?.title || 'Movie',
+      moviePosterUrl: showtime.movie?.posterUrl || '',
+      theaterName: showtime.theater?.name || 'Theater',
+      theaterLocation: showtime.theater?.location || '',
+      screen: this.getScreenLabel()
+    };
+    
+    console.log('Setting booking draft:', bookingDraft);
+    this.bookingService.setCurrentBooking(bookingDraft);
+    
+    const movieSlug = this.createSlug(showtime.movie?.title || 'movie');
+    const showtimeSlug = this.createShowtimeSlug(showtime);
+    
+    console.log('Navigating to payment:', ['/user/payment', movieSlug, showtimeSlug]);
+    this.router.navigate(['/user/payment', movieSlug, showtimeSlug]);
+  }
+
+  goBack() {
+    this.router.navigate(['/user/home']);
+  }
+  
+  getTheaterLabel(): string {
+    const showtime = this.showtime();
+    return showtime?.theater?.name || 'Theater';
+  }
+  
+  getScreenLabel(): string {
+    const showtime = this.showtime();
+    return showtime?.screen || 'Screen';
+  }
+  
+  getShowLabel(): string {
+    const showtime = this.showtime();
+    if (showtime?.showDateTime) {
+      const date = new Date(showtime.showDateTime);
+      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${timeStr}`;
+    }
+    return 'Show';
+  }
+  
+  getMovieLabel(): string {
+    const showtime = this.showtime();
+    return showtime?.movie?.title || 'Movie';
+  }
+  
+  private createSlug(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+  
+  private createShowtimeSlug(showtime: Showtime): string {
+    const theaterSlug = (showtime.theater?.name || 'theater').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const date = new Date(showtime.showDateTime);
+    const timeStr = date.toTimeString().slice(0, 5).replace(':', '');
+    const dateStr = date.toISOString().slice(0, 10);
+    return `${theaterSlug}-${dateStr}-${timeStr}-${showtime.id}`;
   }
 }

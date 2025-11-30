@@ -139,7 +139,7 @@
                           [class]="getAvailabilityStatus(show.availableSeats, show.totalSeats)"
                           (click)="selectShowtime(show.id)">
                     <div class="time">{{ show.showDateTime | date:'h:mm a' }}</div>
-                    <div class="screen">{{ show.screen }}</div>
+                    <div class="screen">{{ getScreenLabel(show.id) }}</div>
                     <div class="price">₹{{ show.ticketPrice }}</div>
                     @if (getAvailabilityStatus(show.availableSeats, show.totalSeats) === 'fast-filling') {
                       <div class="badge">Fast Filling</div>

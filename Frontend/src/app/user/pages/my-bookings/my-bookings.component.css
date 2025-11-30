@@ -206,6 +206,11 @@
   color: #721c24;
 }
 
+.status-cancellation_requested {
+  background: #fff3cd;
+  color: #856404;
+}
+
 .booking-id {
   font-size: 0.9rem;
   color: #666;

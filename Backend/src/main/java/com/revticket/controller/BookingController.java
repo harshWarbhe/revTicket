@@ -45,11 +45,25 @@ public class BookingController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{id}/request-cancellation")
+    public ResponseEntity<BookingResponse> requestCancellation(
+            @PathVariable("id") String id,
+            @RequestBody String reason) {
+        return ResponseEntity.ok(bookingService.requestCancellation(id, reason));
+    }
+
     @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BookingResponse> cancelBooking(
             @PathVariable("id") String id,
             @RequestBody(required = false) String reason) {
         return ResponseEntity.ok(bookingService.cancelBooking(id, reason));
+    }
+
+    @GetMapping("/cancellation-requests")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<BookingResponse>> getCancellationRequests() {
+        return ResponseEntity.ok(bookingService.getCancellationRequests());
     }
 
     @GetMapping("/all")

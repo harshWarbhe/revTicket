@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { DisplayUtils } from '../../../core/utils/display-utils';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
@@ -96,22 +97,22 @@ export class ShowtimesComponent implements OnInit {
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
-    const movieId = this.route.snapshot.paramMap.get('movieId');
+    const slug = this.route.snapshot.paramMap.get('slug');
     
-    if (!movieId) {
+    if (!slug) {
       this.alertService.error('Invalid movie');
       this.router.navigate(['/user/home']);
       return;
     }
 
-    this.loadData(movieId);
+    this.loadDataBySlug(slug);
   }
 
   selectDate(date: Date): void {
     this.selectedDate.set(date);
-    const movieId = this.route.snapshot.paramMap.get('movieId');
-    if (movieId) {
-      this.loadShowtimes(movieId);
+    const movie = this.movie();
+    if (movie) {
+      this.loadShowtimes(movie.id);
     }
   }
 
@@ -128,9 +129,17 @@ export class ShowtimesComponent implements OnInit {
   }
 
   selectShowtime(showtimeId: string): void {
-    this.router.navigate(['/user/seat-booking'], {
-      queryParams: { showtimeId }
-    });
+    const movie = this.movie();
+    if (!movie) return;
+    
+    // Find the showtime to get theater info
+    const showtime = this.showtimes().find(s => s.id === showtimeId);
+    if (!showtime) return;
+    
+    const movieSlug = this.createSlug(movie.title);
+    const showtimeSlug = this.createShowtimeSlug(showtime);
+    
+    this.router.navigate(['/user/seat-booking', movieSlug, showtimeSlug]);
   }
 
   getAvailabilityStatus(availableSeats: number, totalSeats: number): string {
@@ -155,13 +164,21 @@ export class ShowtimesComponent implements OnInit {
     return date.toISOString().split('T')[0];
   }
 
-  private loadData(movieId: string): void {
+  private loadDataBySlug(slug: string): void {
     this.loading.set(true);
     
-    this.movieService.getMovieById(movieId).subscribe({
-      next: (movie) => {
-        this.movie.set(movie);
-        this.loadShowtimes(movieId);
+    this.movieService.getMovies().subscribe({
+      next: (movies: Movie[]) => {
+        const movie = movies.find((m: Movie) => this.createSlug(m.title) === slug);
+        if (movie) {
+          this.movie.set(movie);
+          this.loadShowtimes(movie.id);
+        } else {
+          this.error.set('Movie not found');
+          this.loading.set(false);
+          this.alertService.error('Movie not found');
+          this.router.navigate(['/user/home']);
+        }
       },
       error: () => {
         this.error.set('Failed to load movie details');
@@ -170,6 +187,22 @@ export class ShowtimesComponent implements OnInit {
         this.router.navigate(['/user/home']);
       }
     });
+  }
+
+  private createSlug(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+  
+  private createShowtimeSlug(showtime: Showtime): string {
+    const theaterSlug = showtime.theater?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'theater';
+    const time = new Date(showtime.showDateTime).toTimeString().slice(0, 5).replace(':', '');
+    const date = new Date(showtime.showDateTime).toISOString().slice(0, 10);
+    return `${theaterSlug}-${date}-${time}-${showtime.id}`;
+  }
+  
+  getScreenLabel(showtimeId: string): string {
+    const showtime = this.showtimes().find(s => s.id === showtimeId);
+    return showtime?.screen || 'Screen 1';
   }
 
   private loadShowtimes(movieId: string): void {

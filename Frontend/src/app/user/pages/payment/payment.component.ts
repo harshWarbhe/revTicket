@@ -54,9 +54,13 @@ export class PaymentComponent implements OnInit {
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
+    
     const draft = this.bookingService.getCurrentBooking();
+    console.log('Payment component - booking draft:', draft);
+    
     this.bookingDraft.set(draft);
     if (!draft) {
+      console.log('No booking draft found, redirecting to home');
       this.router.navigate(['/user/home']);
       return;
     }
@@ -114,6 +118,7 @@ export class PaymentComponent implements OnInit {
       showtimeId: draft.showtimeId,
       showtime: new Date(draft.showDateTime),
       seats: draft.seats,
+      seatLabels: draft.seatLabels,
       totalAmount: breakdown.total,
       customerName: contact.name,
       customerEmail: contact.email,
@@ -133,11 +138,20 @@ export class PaymentComponent implements OnInit {
           this.bookingService.setLastConfirmedBooking(confirmation);
           this.bookingService.clearCurrentBooking();
           this.alertService.success('Payment successful!');
-          this.router.navigate(['/user/success', booking.id]);
+          
+          // Create booking slug for success page
+          const movieSlug = this.createSlug(draft.movieTitle);
+          const bookingSlug = `booking-${booking.id.slice(-8)}`; // Use last 8 chars of booking ID
+          
+          this.router.navigate(['/user/success', movieSlug, bookingSlug]);
         },
         error: () => {
           this.alertService.error('Payment failed. Please try again.');
         }
       });
+  }
+  
+  private createSlug(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 }

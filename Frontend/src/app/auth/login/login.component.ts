@@ -57,6 +57,15 @@ export class LoginComponent implements OnInit {
         this.loading.set(false);
         this.alertService.success('Login successful! Welcome back.');
 
+        // Check for redirect URL first
+        const redirectUrl = this.authService.getRedirectUrl();
+        if (redirectUrl) {
+          this.authService.clearRedirectUrl();
+          this.router.navigateByUrl(redirectUrl);
+          return;
+        }
+
+        // Default navigation based on role
         if (response.user.role === 'ADMIN') {
           this.router.navigate(['/admin/dashboard']);
         } else {

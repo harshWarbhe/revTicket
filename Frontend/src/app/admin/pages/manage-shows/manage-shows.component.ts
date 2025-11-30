@@ -86,6 +86,7 @@ export class ManageShowsComponent implements OnInit {
   movies = signal<Movie[]>([]);
   theaters = signal<Theater[]>([]);
   screens = signal<Screen[]>([]);
+  allScreens = signal<Screen[]>([]);
   categories = signal<SeatCategory[]>([
     { id: '1', name: 'Platinum', price: 350, color: '#8B5CF6' },
     { id: '2', name: 'Gold', price: 250, color: '#F59E0B' },
@@ -167,6 +168,19 @@ export class ManageShowsComponent implements OnInit {
         error: (err) => {
           console.error('Error loading theaters:', err);
           this.theaters.set([]);
+        }
+      });
+    
+    // Load all screens
+    this.http.get<Screen[]>(`${environment.apiUrl}/admin/screens`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.allScreens.set(Array.isArray(data) ? data : []);
+        },
+        error: (err) => {
+          console.error('Error loading all screens:', err);
+          this.allScreens.set([]);
         }
       });
     
@@ -375,7 +389,16 @@ export class ManageShowsComponent implements OnInit {
     this.screens.set([]);
   }
 
+  getRowIndices(): number[] {
+    return Array.from({ length: this.rows() }, (_, i) => i);
+  }
+
   trackByIndex(index: number): number {
     return index;
+  }
+
+  getScreenName(screenId: string): string {
+    const screen = this.allScreens().find(s => s.id === screenId);
+    return screen?.name || screenId;
   }
 }

@@ -10,7 +10,7 @@
 
       <div class="seat-info">
         <div class="label">Seats</div>
-        <div class="value">{{ bookingDraft()!.seats.join(', ') }}</div>
+        <div class="value">{{ bookingDraft()!.seatLabels?.join(', ') || bookingDraft()!.seats.join(', ') }}</div>
       </div>
 
       <div class="cost-breakdown">

@@ -12,7 +12,11 @@ export class AuthService {
   private http = inject(HttpClient);
   private currentUserSignal = signal<User | null>(null);
   public currentUser = this.currentUserSignal.asReadonly();
-  public isAuthenticated = computed(() => !!this.currentUserSignal());
+  public isAuthenticated = computed(() => {
+    const user = this.currentUserSignal();
+    const token = localStorage.getItem('token');
+    return !!(user && token && this.isTokenValid(token));
+  });
   public isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
 
   constructor() {
@@ -30,6 +34,14 @@ export class AuthService {
           }
         })
       );
+  }
+
+  getRedirectUrl(): string | null {
+    return localStorage.getItem('redirectUrl');
+  }
+
+  clearRedirectUrl(): void {
+    localStorage.removeItem('redirectUrl');
   }
 
   signup(userData: SignupRequest): Observable<AuthResponse> {
@@ -74,12 +86,24 @@ export class AuthService {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
       
-      if (token && userStr) {
+      if (token && userStr && this.isTokenValid(token)) {
         const user = JSON.parse(userStr);
         this.currentUserSignal.set(user);
+      } else {
+        this.logout();
       }
     } catch (error) {
       this.logout();
+    }
+  }
+
+  private isTokenValid(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp > currentTime;
+    } catch (error) {
+      return false;
     }
   }
 }

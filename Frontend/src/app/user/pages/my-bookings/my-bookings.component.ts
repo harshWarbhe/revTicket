@@ -74,8 +74,112 @@ export class MyBookingsComponent implements OnInit {
     this.activeFilter.set(filter);
   }
 
-  downloadTicket(_booking: BookingCard): void {
-    this.alertService.success('Ticket ready to download!');
+  downloadTicket(booking: BookingCard): void {
+    const ticketContent = this.generateTicketHTML(booking);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(ticketContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  }
+
+  private generateTicketHTML(booking: BookingCard): string {
+    const seatDisplay = booking.seatLabels?.length ? booking.seatLabels.join(', ') : booking.seats.join(', ');
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>E-Ticket - ${booking.ticketNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+          .ticket { border: 2px dashed #333; padding: 30px; border-radius: 10px; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+          .header h1 { margin: 0; font-size: 32px; }
+          .ticket-number { background: #f0f0f0; padding: 10px; margin-top: 10px; font-weight: bold; }
+          .movie-title { font-size: 24px; color: #2196f3; text-align: center; margin: 20px 0; }
+          .details { margin: 20px 0; }
+          .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+          .label { font-weight: bold; color: #666; }
+          .value { color: #333; }
+          .seats { background: #e3f2fd; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+          .amount { font-size: 20px; color: #4caf50; font-weight: bold; }
+          .qr-section { text-align: center; margin: 30px 0; padding: 20px; background: #f9f9f9; }
+          .qr-code { width: 150px; height: 150px; margin: 0 auto; border: 2px solid #333; display: flex; align-items: center; justify-content: center; background: white; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #333; text-align: center; font-size: 12px; color: #666; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="ticket">
+          <div class="header">
+            <h1>🎬 E-TICKET</h1>
+            <div class="ticket-number">Ticket #${booking.ticketNumber || 'N/A'}</div>
+          </div>
+          
+          <div class="movie-title">${booking.movieTitle}</div>
+          
+          <div class="details">
+            <div class="row">
+              <span class="label">Theater:</span>
+              <span class="value">${booking.theaterName}</span>
+            </div>
+            <div class="row">
+              <span class="label">Screen:</span>
+              <span class="value">${booking.screen || 'N/A'}</span>
+            </div>
+            <div class="row">
+              <span class="label">Date & Time:</span>
+              <span class="value">${new Date(booking.showtime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+            </div>
+            <div class="row">
+              <span class="label">Seats:</span>
+              <span class="value seats">${seatDisplay}</span>
+            </div>
+            <div class="row">
+              <span class="label">Total Amount:</span>
+              <span class="value amount">₹${booking.totalAmount}</span>
+            </div>
+          </div>
+          
+          <div class="details">
+            <div class="row">
+              <span class="label">Customer Name:</span>
+              <span class="value">${booking.customerName}</span>
+            </div>
+            <div class="row">
+              <span class="label">Email:</span>
+              <span class="value">${booking.customerEmail}</span>
+            </div>
+            <div class="row">
+              <span class="label">Phone:</span>
+              <span class="value">${booking.customerPhone}</span>
+            </div>
+          </div>
+          
+          <div class="qr-section">
+            <div class="qr-code">
+              <div style="font-size: 10px; font-weight: bold;">${booking.qrCode || booking.id}</div>
+            </div>
+            <p style="margin-top: 10px; font-size: 14px;">Show this at theater entrance</p>
+          </div>
+          
+          <div class="footer">
+            <p><strong>Important Instructions:</strong></p>
+            <p>• Please arrive 30 minutes before showtime</p>
+            <p>• Outside food and beverages are not allowed</p>
+            <p>• This ticket is non-transferable</p>
+            <p style="margin-top: 15px;">Booking ID: ${booking.id}</p>
+            <p>Booking Date: ${new Date(booking.bookingDate).toLocaleDateString('en-IN')}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 
   viewTicket(booking: BookingCard): void {
@@ -98,27 +202,39 @@ export class MyBookingsComponent implements OnInit {
     }
     const showtime = new Date(booking.showtime);
     const now = new Date();
-    return showtime.getTime() - now.getTime() > 2 * 60 * 60 * 1000;
+    // Allow cancellation if showtime is in the future (removed 2 hour restriction for now)
+    return showtime.getTime() > now.getTime();
+  }
+
+  isPendingCancellation(booking: BookingCard): boolean {
+    return booking.status === 'CANCELLATION_REQUESTED';
   }
 
   cancelBooking(booking: BookingCard): void {
     const reason = prompt('Please provide a reason for cancellation:');
-    if (!reason) {
+    if (!reason?.trim()) {
       return;
     }
 
-    const confirmMessage = `Cancel booking for ${booking.movieTitle} on ${new Date(booking.showtime).toLocaleString()}?\nSeats: ${booking.seats.join(', ')}\nReason: ${reason}`;
+    const seatDisplay = booking.seatLabels?.length ? booking.seatLabels.join(', ') : booking.seats.join(', ');
+    const confirmMessage = `Cancel booking for ${booking.movieTitle} on ${new Date(booking.showtime).toLocaleString()}?\nSeats: ${seatDisplay}\nReason: ${reason}`;
+    
     if (!confirm(confirmMessage)) {
       return;
     }
 
-    this.bookingService.cancelBooking(booking.id, reason).subscribe({
+    this.bookingService.requestCancellation(booking.id, reason).subscribe({
       next: updated => {
-        const normalized = this.bookingService.normalizeBookingDates(updated);
-        this.bookings.update(bookings => bookings.map(b => (b.id === normalized.id ? normalized : b)));
-        this.alertService.success('Booking cancelled. Refund (if applicable) will be processed shortly.');
+        const normalized = this.bookingService.normalizeBookingDates(updated) as BookingCard;
+        this.bookings.update(bookings => 
+          bookings.map(b => b.id === normalized.id ? { ...b, ...normalized } : b)
+        );
+        this.alertService.success('Cancellation request submitted. Admin will review and process your request.');
       },
-      error: () => this.alertService.error('Unable to cancel booking. Please try again.')
+      error: (err) => {
+        console.error('Cancellation error:', err);
+        this.alertService.error('Unable to submit cancellation request. Please try again.');
+      }
     });
   }
 

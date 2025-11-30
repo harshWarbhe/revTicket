@@ -10,7 +10,7 @@ import { Booking } from '../../../core/models/booking.model';
     <div class="e-ticket" *ngIf="booking">
       <div class="ticket-header">
         <h2>E-TICKET</h2>
-        <div class="ticket-number">{{booking.ticketNumber}}</div>
+        <div class="ticket-number">{{booking.ticketNumber || 'N/A'}}</div>
       </div>
 
       <div class="movie-details">
@@ -20,13 +20,17 @@ import { Booking } from '../../../core/models/booking.model';
             <span class="label">Theater:</span>
             <span>{{booking.theaterName}}</span>
           </div>
+          <div class="info-row" *ngIf="booking.screen">
+            <span class="label">Screen:</span>
+            <span>{{booking.screen}}</span>
+          </div>
           <div class="info-row">
             <span class="label">Date & Time:</span>
             <span>{{formatDateTime(booking.showtime)}}</span>
           </div>
           <div class="info-row">
             <span class="label">Seats:</span>
-            <span class="seats">{{booking.seats.join(', ')}}</span>
+            <span class="seats">{{getSeatDisplay()}}</span>
           </div>
         </div>
       </div>
@@ -66,7 +70,7 @@ import { Booking } from '../../../core/models/booking.model';
         <div class="qr-code">
           <div class="qr-placeholder">
             <div class="qr-pattern"></div>
-            <div class="qr-text">{{booking.qrCode}}</div>
+            <div class="qr-text">{{booking.qrCode || booking.id}}</div>
           </div>
         </div>
         <p class="qr-instruction">Show this QR code at the theater entrance</p>
@@ -88,7 +92,6 @@ import { Booking } from '../../../core/models/booking.model';
       <div class="actions">
         <button (click)="downloadTicket()" class="download-btn">Download PDF</button>
         <button (click)="shareTicket()" class="share-btn">Share</button>
-        <button *ngIf="canCancel()" (click)="cancelTicket()" class="cancel-btn">Cancel Booking</button>
       </div>
     </div>
   `,
@@ -208,6 +211,7 @@ import { Booking } from '../../../core/models/booking.model';
     .status.confirmed { background: #e8f5e8; color: #4caf50; }
     .status.pending { background: #fff3e0; color: #ff9800; }
     .status.cancelled { background: #ffebee; color: #f44336; }
+    .status.cancellation_requested { background: #fff3e0; color: #ff9800; }
     .terms {
       font-size: 10px;
       color: #666;
@@ -234,6 +238,13 @@ import { Booking } from '../../../core/models/booking.model';
 export class ETicketComponent {
   @Input() booking!: Booking;
 
+  getSeatDisplay(): string {
+    if (this.booking.seatLabels && this.booking.seatLabels.length > 0) {
+      return this.booking.seatLabels.join(', ');
+    }
+    return this.booking.seats.join(', ');
+  }
+
   formatDateTime(date: string | Date): string {
     return new Date(date).toLocaleString('en-IN', {
       day: '2-digit',
@@ -252,11 +263,11 @@ export class ETicketComponent {
     if (this.booking.status !== 'CONFIRMED') return false;
     const showTime = new Date(this.booking.showtime);
     const now = new Date();
-    return showTime.getTime() - now.getTime() > 4 * 60 * 60 * 1000; // 4 hours before show
+    const hoursUntilShow = (showTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursUntilShow > 2;
   }
 
   downloadTicket(): void {
-    // Implementation for PDF download
     window.print();
   }
 
@@ -270,9 +281,5 @@ export class ETicketComponent {
     }
   }
 
-  cancelTicket(): void {
-    // Emit event to parent component for cancellation
-    const event = new CustomEvent('cancelBooking', { detail: this.booking.id });
-    document.dispatchEvent(event);
-  }
+
 }

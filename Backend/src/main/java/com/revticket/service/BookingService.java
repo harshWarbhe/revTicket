@@ -38,6 +38,9 @@ public class BookingService {
     @Autowired
     private SeatRepository seatRepository;
 
+    @Autowired
+    private com.revticket.repository.ScreenRepository screenRepository;
+
     @Transactional
     public BookingResponse createBooking(String userId, BookingRequest request) {
 
@@ -61,6 +64,9 @@ public class BookingService {
         booking.setUser(user);
         booking.setShowtime(showtime);
         booking.setSeats(request.getSeats());
+        if (request.getSeatLabels() != null && !request.getSeatLabels().isEmpty()) {
+            booking.setSeatLabels(request.getSeatLabels());
+        }
         booking.setTotalAmount(request.getTotalAmount());
         booking.setTicketPriceSnapshot(showtime.getTicketPrice());
         booking.setScreenName(showtime.getScreen());
@@ -104,13 +110,39 @@ public class BookingService {
     }
 
     @Transactional
+    public BookingResponse requestCancellation(String id, String reason) {
+        Booking booking = bookingRepository.findById(Objects.requireNonNullElse(id, ""))
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
+            throw new RuntimeException("Only confirmed bookings can request cancellation");
+        }
+
+        booking.setStatus(Booking.BookingStatus.CANCELLATION_REQUESTED);
+        booking.setCancellationReason(Objects.requireNonNullElse(reason, ""));
+
+        return mapToResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getCancellationRequests() {
+        return bookingRepository.findAll()
+                .stream()
+                .filter(b -> b.getStatus() == Booking.BookingStatus.CANCELLATION_REQUESTED)
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public BookingResponse cancelBooking(String id, String reason) {
 
         Booking booking = bookingRepository.findById(Objects.requireNonNullElse(id, ""))
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
-        booking.setCancellationReason(Objects.requireNonNullElse(reason, ""));
+        if (reason != null && !reason.isEmpty()) {
+            booking.setCancellationReason(Objects.requireNonNullElse(reason, ""));
+        }
 
         for (String seatId : booking.getSeats()) {
             String safeSeatId = Objects.requireNonNullElse(seatId, "");
@@ -218,6 +250,15 @@ public class BookingService {
         return mapToResponse(bookingRepository.save(booking));
     }
 
+    private String getScreenName(String screenId) {
+        if (screenId == null || screenId.isEmpty()) {
+            return "Screen";
+        }
+        return screenRepository.findById(screenId)
+                .map(screen -> screen.getName())
+                .orElse(screenId);
+    }
+
     private BookingResponse mapToResponse(Booking booking) {
 
         Showtime showtime = booking.getShowtime();
@@ -235,9 +276,10 @@ public class BookingService {
                 .theaterLocation(theater != null ? Objects.requireNonNullElse(theater.getLocation(), "") : "")
                 .showtimeId(Objects.requireNonNullElse(showtime.getId(), ""))
                 .showtime(showtime.getShowDateTime())
-                .screen(Objects.requireNonNullElse(showtime.getScreen(), ""))
+                .screen(getScreenName(showtime.getScreen()))
                 .ticketPrice(showtime.getTicketPrice())
                 .seats(booking.getSeats())
+                .seatLabels(booking.getSeatLabels())
                 .totalAmount(booking.getTotalAmount())
                 .bookingDate(booking.getBookingDate())
                 .status(booking.getStatus())

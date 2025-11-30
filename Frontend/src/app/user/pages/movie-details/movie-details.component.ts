@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
 import { ShowtimeService, Showtime } from '../../../core/services/showtime.service';
 import { Movie } from '../../../core/models/movie.model';
+import { DisplayUtils } from '../../../core/utils/display-utils';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
@@ -47,10 +48,9 @@ export class MovieDetailsComponent implements OnInit {
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
-    const movieId = this.route.snapshot.paramMap.get('movieId') || this.route.snapshot.paramMap.get('id');
-    if (movieId) {
-      this.loadMovie(movieId);
-      this.loadShowtimes(movieId);
+    const slug = this.route.snapshot.paramMap.get('slug');
+    if (slug) {
+      this.loadMovieBySlug(slug);
     }
   }
 
@@ -65,7 +65,7 @@ export class MovieDetailsComponent implements OnInit {
   bookTickets(): void {
     const movie = this.movie();
     if (movie) {
-      this.router.navigate(['/user/movies', this.getSlug(), movie.id, 'showtimes']);
+      this.router.navigate(['/user/movies', this.getSlug(), 'showtimes']);
     }
   }
 
@@ -86,6 +86,30 @@ export class MovieDetailsComponent implements OnInit {
     });
   }
 
+  private loadMovieBySlug(slug: string): void {
+    // First get all movies and find by slug
+    this.movieService.getMovies().subscribe({
+      next: (movies: Movie[]) => {
+        const movie = movies.find((m: Movie) => this.createSlug(m.title) === slug);
+        if (movie) {
+          this.movie.set(movie);
+          this.loadShowtimes(movie.id);
+        } else {
+          this.router.navigate(['/user/home']);
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.router.navigate(['/user/home']);
+      }
+    });
+  }
+
+  private createSlug(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
   private loadShowtimes(movieId: string): void {
     const today = new Date().toISOString().split('T')[0];
     this.showtimeService.getShowtimesByMovie(movieId, today).subscribe({
@@ -94,5 +118,13 @@ export class MovieDetailsComponent implements OnInit {
       },
       error: () => {}
     });
+  }
+  
+  getScreenLabel(screen: string): string {
+    // If screen is a UUID, convert to readable format
+    if (screen && screen.length === 36) {
+      return DisplayUtils.getScreenLabel(screen);
+    }
+    return screen || 'Screen 1';
   }
 }

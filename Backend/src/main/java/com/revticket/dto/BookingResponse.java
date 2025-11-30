@@ -23,6 +23,7 @@ public class BookingResponse {
     String screen;
     Double ticketPrice;
     List<String> seats;
+    List<String> seatLabels;
     Double totalAmount;
     LocalDateTime bookingDate;
     Booking.BookingStatus status;

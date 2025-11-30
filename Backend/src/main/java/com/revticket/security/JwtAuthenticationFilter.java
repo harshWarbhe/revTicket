@@ -43,18 +43,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
                 logger.error("JWT Token parsing error", e);
+                // Clear invalid token from response header
+                response.setHeader("X-Auth-Error", "Invalid or expired token");
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
+            try {
+                if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
 
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    logger.warn("Invalid JWT token for user: " + username);
+                    response.setHeader("X-Auth-Error", "Token validation failed");
+                }
+            } catch (Exception e) {
+                logger.error("Token validation error", e);
+                response.setHeader("X-Auth-Error", "Token validation error");
             }
         }
 

@@ -23,6 +23,8 @@ public class BookingRequest {
     @NotEmpty(message = "At least one seat must be selected")
     private List<String> seats;
 
+    private List<String> seatLabels;
+
     @NotNull(message = "Total amount is required")
     @Positive(message = "Total amount must be positive")
     private Double totalAmount;

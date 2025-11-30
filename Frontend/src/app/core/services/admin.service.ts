@@ -42,91 +42,24 @@ export class AdminService {
   private showtimeService = inject(ShowtimeService);
 
   getDashboardStats(): Observable<DashboardStats> {
-    return forkJoin({
-      movies: this.movieService.getMovies(),
-      bookings: this.bookingService.getAllBookings(),
-      users: this.userService.getAllUsers()
-    }).pipe(
-      map(({ movies, bookings, users }) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const todayBookings = bookings.filter(b => {
-          const bookingDate = new Date(b.bookingDate);
-          bookingDate.setHours(0, 0, 0, 0);
-          return bookingDate.getTime() === today.getTime();
-        });
-
-        const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED');
-        const totalRevenue = confirmedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
-        const cancelledBookings = bookings.filter(b => b.status === 'CANCELLED').length;
-        const activeMovies = movies.filter(m => m.isActive).length;
-
-        return {
-          totalMovies: movies.length,
-          totalBookings: bookings.length,
-          totalRevenue,
-          totalUsers: users.length,
-          todayBookings: todayBookings.length,
-          cancelledBookings,
-          activeMovies
-        };
-      })
-    );
+    return this.http.get<DashboardStats>(`${environment.apiUrl}/admin/dashboard/stats`);
   }
 
   getRevenueData(days: number = 7): Observable<RevenueData[]> {
-    return this.bookingService.getAllBookings().pipe(
-      map(bookings => {
-        const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        let periods: Date[] = [];
-        
-        if (days === 7 || days === 30 || days === 180) {
-          for (let i = days - 1; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            periods.push(date);
-          }
-        } else if (days === 365) {
-          for (let i = 11; i >= 0; i--) {
-            const date = new Date(today);
-            date.setMonth(date.getMonth() - i);
-            date.setDate(1);
-            periods.push(date);
-          }
-        }
+    const toDate = new Date();
+    const fromDate = new Date();
+    fromDate.setDate(toDate.getDate() - days);
 
-        const revenueMap = new Map<string, number>();
-        periods.forEach(date => {
-          const dateStr = date.toISOString().split('T')[0];
-          revenueMap.set(dateStr, 0);
-        });
+    const fromStr = fromDate.toISOString().split('T')[0];
+    const toStr = toDate.toISOString().split('T')[0];
 
-        confirmedBookings.forEach(booking => {
-          const bookingDate = new Date(booking.bookingDate);
-          bookingDate.setHours(0, 0, 0, 0);
-          
-          if (days === 7 || days === 30 || days === 180) {
-            const dateStr = bookingDate.toISOString().split('T')[0];
-            if (revenueMap.has(dateStr)) {
-              revenueMap.set(dateStr, revenueMap.get(dateStr)! + (booking.totalAmount || 0));
-            }
-          } else if (days === 365) {
-            const monthKey = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-01`;
-            if (revenueMap.has(monthKey)) {
-              revenueMap.set(monthKey, revenueMap.get(monthKey)! + (booking.totalAmount || 0));
-            }
-          }
-        });
-
-        return periods.map(date => ({
-          date: date.toISOString().split('T')[0],
-          revenue: revenueMap.get(date.toISOString().split('T')[0]) || 0
-        }));
-      })
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/admin/reports/revenue-trend?fromDate=${fromStr}&toDate=${toStr}`
+    ).pipe(
+      map(data => data.map(item => ({
+        date: item.date,
+        revenue: item.revenue
+      })))
     );
   }
 

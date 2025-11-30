@@ -9,16 +9,18 @@ import { BookingSuccessComponent } from './pages/booking-success/booking-success
 import { MyBookingsComponent } from './pages/my-bookings/my-bookings.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { BookingSummaryComponent } from './pages/booking-summary/booking-summary.component';
+import { MovieService } from '../core/services/movie.service';
 
 export const userRoutes: Routes = [
   { path: 'home', component: HomeComponent },
-  { path: 'movies/:slug/:movieId', component: MovieDetailsComponent },
-  { path: 'movies/:slug/:movieId/showtimes', component: ShowtimesComponent, canActivate: [authGuard] },
-  { path: 'movie/:id/:slug', redirectTo: 'movies/:slug/:id', pathMatch: 'full' },
-  { path: 'movie/:id', redirectTo: 'movies/movie/:id', pathMatch: 'full' },
-  { path: 'seat-booking', component: SeatBookingComponent, canActivate: [authGuard] },
-  { path: 'payment', component: PaymentComponent, canActivate: [authGuard] },
-  { path: 'success/:bookingId', component: BookingSuccessComponent, canActivate: [authGuard] },
+  { path: 'movies/:slug', component: MovieDetailsComponent },
+  { path: 'movies/:slug/showtimes', component: ShowtimesComponent, canActivate: [authGuard] },
+  { path: 'movies/:slug/:movieId', redirectTo: 'movies/:slug', pathMatch: 'full' },
+  { path: 'movie/:id/:slug', redirectTo: 'movies/:slug', pathMatch: 'full' },
+  { path: 'movie/:id', redirectTo: 'movies/:slug', pathMatch: 'full' },
+  { path: 'seat-booking/:movieSlug/:showtimeSlug', component: SeatBookingComponent, canActivate: [authGuard] },
+  { path: 'payment/:movieSlug/:showtimeSlug', component: PaymentComponent, canActivate: [authGuard] },
+  { path: 'success/:movieSlug/:bookingSlug', component: BookingSuccessComponent, canActivate: [authGuard] },
   { path: 'my-bookings', component: MyBookingsComponent, canActivate: [authGuard] },
   { path: 'booking-summary', component: BookingSummaryComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },

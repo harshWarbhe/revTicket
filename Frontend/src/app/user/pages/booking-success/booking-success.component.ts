@@ -14,6 +14,7 @@ interface BookingViewModel {
   screen?: string;
   showtime: Date;
   seats: string[];
+  seatLabels?: string[];
   ticketPrice?: number;
   convenienceFee: number;
   gst: number;
@@ -87,6 +88,7 @@ export class BookingSuccessComponent implements OnInit {
       screen: confirmation.screen,
       showtime: new Date(confirmation.showtime),
       seats: confirmation.seats,
+      seatLabels: confirmation.seatLabels,
       ticketPrice: undefined,
       convenienceFee: 0,
       gst: 0,
@@ -105,6 +107,7 @@ export class BookingSuccessComponent implements OnInit {
       screen: normalized.screen,
       showtime: normalized.showtime as Date,
       seats: normalized.seats,
+      seatLabels: (normalized as any).seatLabels,
       ticketPrice: normalized.ticketPrice,
       convenienceFee: Math.round((normalized.totalAmount || 0) * 0.05),
       gst: Math.round((normalized.totalAmount || 0) * 0.18),

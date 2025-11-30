@@ -37,6 +37,14 @@ export class BookingService {
       .pipe(map(booking => this.normalizeBookingDates(booking)));
   }
 
+  requestCancellation(id: string, reason: string): Observable<Booking> {
+    return this.http
+      .post<Booking>(`${environment.apiUrl}/bookings/${id}/request-cancellation`, `"${reason}"`, {
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .pipe(map(booking => this.normalizeBookingDates(booking)));
+  }
+
   cancelBooking(id: string, reason?: string): Observable<Booking> {
     return this.http
       .post<Booking>(
@@ -44,6 +52,12 @@ export class BookingService {
         reason ? { reason } : {}
       )
       .pipe(map(booking => this.normalizeBookingDates(booking)));
+  }
+
+  getCancellationRequests(): Observable<Booking[]> {
+    return this.http
+      .get<Booking[]>(`${environment.apiUrl}/bookings/cancellation-requests`)
+      .pipe(map(bookings => bookings.map(b => this.normalizeBookingDates(b))));
   }
 
   getAllBookings(): Observable<Booking[]> {
@@ -113,6 +127,7 @@ export class BookingService {
       ticketNumber: response.ticketNumber,
       qrCode: response.qrCode,
       seats: response.seats?.length ? response.seats : draft.seats,
+      seatLabels: draft.seatLabels,
       totalAmount,
       movieTitle: draft.movieTitle,
       moviePosterUrl: draft.moviePosterUrl,
@@ -138,4 +153,6 @@ export class BookingService {
 
     return normalized;
   }
+
+
 }

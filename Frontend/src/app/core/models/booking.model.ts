@@ -12,9 +12,10 @@ export interface Booking {
   screen?: string;
   ticketPrice?: number;
   seats: string[];
+  seatLabels?: string[];
   totalAmount: number;
   bookingDate: string | Date;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'CANCELLATION_REQUESTED';
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -32,6 +33,7 @@ export interface BookingRequest {
   showtimeId: string;
   showtime: Date;
   seats: string[];
+  seatLabels?: string[];
   totalAmount: number;
   customerName: string;
   customerEmail: string;
@@ -54,7 +56,8 @@ export interface BookingDraft {
   theaterName: string;
   theaterLocation?: string;
   screen?: string;
-  seats: string[];
+  seats: string[]; // UUID seat IDs for backend
+  seatLabels?: string[]; // Human-readable labels like A1, B2
   totalAmount: number;
 }
 
@@ -69,7 +72,8 @@ export interface BookingConfirmation {
   bookingId: string;
   ticketNumber?: string;
   qrCode?: string;
-  seats: string[];
+  seats: string[]; // UUID seat IDs
+  seatLabels?: string[]; // Human-readable labels
   totalAmount: number;
   movieTitle: string;
   moviePosterUrl?: string;

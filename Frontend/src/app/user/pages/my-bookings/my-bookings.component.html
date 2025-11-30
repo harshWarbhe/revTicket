@@ -94,7 +94,7 @@
             <div class="detail-row">
               <div class="detail-item">
                 <span class="label">Seats:</span>
-                <span class="value">{{ booking.seats.join(', ') }}</span>
+                <span class="value">{{ (booking.seatLabels || booking.seats).join(', ') }}</span>
               </div>
               <div class="detail-item">
                 <span class="label">Total Amount:</span>
@@ -120,20 +120,19 @@
               </button>
             }
             
-            <button 
-              class="btn-secondary" 
-              (click)="viewDetails(booking)">
-              <span class="icon">👁️</span>
-              View Details
-            </button>
-            
             @if (booking.status === 'CONFIRMED' && canCancel(booking)) {
               <button 
                 class="btn-danger" 
                 (click)="cancelBooking(booking)">
                 <span class="icon">❌</span>
-                Cancel
+                Cancel Booking
               </button>
+            }
+            
+            @if (isPendingCancellation(booking)) {
+              <div class="refund-info">
+                <small>⏳ Cancellation request pending admin approval</small>
+              </div>
             }
             
             @if (booking.status === 'CANCELLED' && getRefundInfo(booking)) {

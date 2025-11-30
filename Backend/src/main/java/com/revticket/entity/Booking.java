@@ -36,6 +36,11 @@ public class Booking {
     @Column(name = "seat_id")
     private List<String> seats = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "booking_seat_labels", joinColumns = @JoinColumn(name = "booking_id"))
+    @Column(name = "seat_label")
+    private List<String> seatLabels = new ArrayList<>();
+
     @Column(name = "total_amount", nullable = false)
     private Double totalAmount;
 
@@ -88,7 +93,7 @@ public class Booking {
     private Payment payment;
 
     public enum BookingStatus {
-        PENDING, CONFIRMED, CANCELLED
+        PENDING, CONFIRMED, CANCELLED, CANCELLATION_REQUESTED
     }
 }
 

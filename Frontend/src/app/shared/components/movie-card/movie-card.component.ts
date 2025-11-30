@@ -20,17 +20,17 @@ export class MovieCardComponent {
 
   viewDetails(): void {
     const slug = this.createSlug(this.movie.title);
-    this.router.navigate(['/user/movies', slug, this.movie.id]);
+    this.router.navigate(['/user/movies', slug]);
   }
 
   bookNow(): void {
     const slug = this.createSlug(this.movie.title);
-    this.router.navigate(['/user/movies', slug, this.movie.id]);
+    this.router.navigate(['/user/movies', slug]);
   }
 
   viewShowtimes(): void {
     const slug = this.createSlug(this.movie.title);
-    this.router.navigate(['/user/movies', slug, this.movie.id, 'showtimes']);
+    this.router.navigate(['/user/movies', slug, 'showtimes']);
   }
 
   private createSlug(title: string): string {

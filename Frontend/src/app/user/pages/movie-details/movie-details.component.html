@@ -132,7 +132,7 @@
             @for (show of showtimes(); track show.id) {
               <div class="showtime-box">
                 <div class="theater-name">{{ show.theater?.name || 'Theater' }}</div>
-                <div class="screen-name">{{ show.screen }}</div>
+                <div class="screen-name">{{ getScreenLabel(show.screen) }}</div>
                 <div class="show-time">{{ show.showDateTime | date:'h:mm a' }}</div>
                 <div class="show-price">₹{{ show.ticketPrice }}</div>
               </div>

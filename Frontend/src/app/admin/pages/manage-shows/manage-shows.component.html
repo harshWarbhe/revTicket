@@ -33,7 +33,7 @@
         <tr *ngFor="let show of shows()">
           <td>{{ show.movie?.title || 'N/A' }}</td>
           <td>{{ show.theater?.name || 'N/A' }}</td>
-          <td>{{ show.screen }}</td>
+          <td>{{ getScreenName(show.screen) }}</td>
           <td>{{ show.showDateTime | date:'short' }}</td>
           <td>₹{{ show.ticketPrice }}</td>
           <td>{{ show.availableSeats }}/{{ show.totalSeats }}</td>
@@ -129,7 +129,7 @@
         </div>
         
         <div class="seat-grid">
-          <div *ngFor="let rowIndex of [].constructor(rows()); let i = index; trackBy: trackByIndex" class="seat-row">
+          <div *ngFor="let rowIndex of getRowIndices(); let i = index; trackBy: trackByIndex" class="seat-row">
             <div class="row-label">{{ getRowLabel(i) }}</div>
             <div class="row-controls">
               <select (change)="applyCategoryToRow(i, $any($event.target).value)">
