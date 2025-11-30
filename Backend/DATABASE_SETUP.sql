@@ -6,6 +6,7 @@ CREATE DATABASE IF NOT EXISTS revticket_db;
 USE revticket_db;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS booking_seats;
 DROP TABLE IF EXISTS payments;
 DROP TABLE IF EXISTS bookings;
@@ -180,6 +181,24 @@ CREATE TABLE payments (
     INDEX idx_booking (booking_id),
     INDEX idx_transaction (transaction_id),
     INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- Reviews Table
+-- ============================================
+CREATE TABLE reviews (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    movie_id VARCHAR(36) NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_movie_review (user_id, movie_id),
+    INDEX idx_movie (movie_id),
+    INDEX idx_user (user_id),
+    INDEX idx_rating (rating)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================

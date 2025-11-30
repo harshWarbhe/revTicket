@@ -1,0 +1,40 @@
+package com.revticket.controller;
+
+import com.revticket.dto.ReviewRequest;
+import com.revticket.dto.ReviewResponse;
+import com.revticket.service.ReviewService;
+import com.revticket.util.SecurityUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/reviews")
+@CrossOrigin(origins = {"http://localhost:4200", "*"})
+public class ReviewController {
+
+    @Autowired
+    private ReviewService reviewService;
+
+    @PostMapping
+    public ResponseEntity<ReviewResponse> addReview(@RequestBody ReviewRequest request) {
+        String userId = SecurityUtil.getCurrentUserId();
+        ReviewResponse response = reviewService.addReview(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/movie/{movieId}")
+    public ResponseEntity<List<ReviewResponse>> getMovieReviews(@PathVariable String movieId) {
+        List<ReviewResponse> reviews = reviewService.getMovieReviews(movieId);
+        return ResponseEntity.ok(reviews);
+    }
+
+    @GetMapping("/movie/{movieId}/average")
+    public ResponseEntity<Map<String, Double>> getAverageRating(@PathVariable String movieId) {
+        Double avgRating = reviewService.getAverageRating(movieId);
+        return ResponseEntity.ok(Map.of("averageRating", avgRating != null ? avgRating : 0.0));
+    }
+}

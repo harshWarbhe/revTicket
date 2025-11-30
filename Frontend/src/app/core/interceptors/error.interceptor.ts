@@ -18,26 +18,32 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       } else {
         switch (error.status) {
           case 400:
-            errorMessage = error.error?.message || 'Bad request';
+            errorMessage = error.error?.message || error.error || 'Bad request';
             break;
           case 401:
-            errorMessage = 'Unauthorized. Please login again.';
+            errorMessage = error.error?.message || 'Unauthorized. Please login again.';
             break;
           case 403:
             errorMessage = 'Access forbidden';
             break;
           case 404:
-            errorMessage = error.error?.message || 'Resource not found';
+            errorMessage = error.error?.message || error.error || 'Resource not found';
             break;
           case 500:
             errorMessage = 'Server error. Please try again later.';
             break;
           default:
-            errorMessage = error.error?.message || `Error: ${error.status} ${error.statusText}`;
+            errorMessage = error.error?.message || error.error || `Error: ${error.status} ${error.statusText}`;
         }
       }
 
-      console.error('HTTP Error:', { status: error.status, message: errorMessage, url: error.url });
+      console.error('HTTP Error:', { 
+        status: error.status, 
+        message: errorMessage, 
+        url: error.url, 
+        fullError: error,
+        errorBody: error.error 
+      });
       alertService.error(errorMessage);
 
       return throwError(() => error);
