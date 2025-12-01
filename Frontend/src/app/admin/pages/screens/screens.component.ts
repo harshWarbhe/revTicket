@@ -211,14 +211,13 @@ export class ScreensComponent implements OnInit {
   }
 
   updateCategory(id: string, field: keyof Category, value: any): void {
-    this.categories.update(cats => cats.map(c => {
-      if (c.id === id) {
-        const updated = { ...c, [field]: value };
-        delete updated.inheriting;
-        return updated;
-      }
-      return c;
-    }));
+    const cats = this.categories();
+    const cat = cats.find(c => c.id === id);
+    if (cat) {
+      (cat as any)[field] = value;
+      delete cat.inheriting;
+      this.categories.set([...cats]);
+    }
     if (field === 'price') this.updateSeatPrices(id);
     this.hasUnsavedChanges.set(true);
   }

@@ -32,6 +32,7 @@ interface Showtime {
   showDateTime: string;
   ticketPrice: number;
   totalSeats: number;
+  availableSeats: number;
   status: string;
   movie?: { title: string };
   theater?: { name: string; location: string };
@@ -150,6 +151,18 @@ export class ManageShowsComponent implements OnInit {
     setTimeout(() => this.showForm.set(true), 100);
   }
 
+  toggleStatus(show: Showtime): void {
+    this.http.patch<Showtime>(`${environment.apiUrl}/admin/showtimes/${show.id}/status`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.alertService.success(`Show ${updated.status === 'ACTIVE' ? 'activated' : 'deactivated'}`);
+          this.shows.update(shows => shows.map(s => s.id === show.id ? updated : s));
+        },
+        error: () => this.alertService.error('Failed to update status')
+      });
+  }
+
   deleteShow(show: Showtime): void {
     if (!confirm(`Delete show for "${show.movie?.title}" at ${this.formatDateTime(show.showDateTime)}?`)) return;
     
@@ -172,20 +185,24 @@ export class ManageShowsComponent implements OnInit {
 
     const screen = this.allScreens().find(s => s.id === this.selectedScreenId);
     const totalSeats = screen?.totalSeats || 0;
+    const editId = this.editingShowId();
 
-    const payload = {
+    const payload: any = {
       movieId: this.selectedMovieId,
       theaterId: this.selectedTheaterId,
       screen: this.selectedScreenId,
-      showDateTime: new Date(this.showDateTime).toISOString(),
+      showDateTime: this.showDateTime,
       ticketPrice: 1,
       totalSeats: totalSeats,
-      availableSeats: totalSeats,
-      status: 'ACTIVE'
+      availableSeats: totalSeats
     };
 
+    // Only set status to ACTIVE when creating new show
+    if (!editId) {
+      payload.status = 'ACTIVE';
+    }
+
     this.saving.set(true);
-    const editId = this.editingShowId();
     const request$ = editId
       ? this.http.put(`${environment.apiUrl}/admin/showtimes/${editId}`, payload)
       : this.http.post(`${environment.apiUrl}/admin/showtimes`, payload);

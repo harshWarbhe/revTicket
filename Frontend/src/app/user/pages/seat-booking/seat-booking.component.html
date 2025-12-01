@@ -82,14 +82,12 @@
         <div class="legend-item">
           <div class="seat-demo available">
             <span class="seat-number">1</span>
-            <span class="seat-price">₹{{ showtime()?.ticketPrice || 0 }}</span>
           </div>
           <span>Available</span>
         </div>
         <div class="legend-item">
           <div class="seat-demo selected">
             <span class="seat-number">2</span>
-            <span class="seat-price">₹{{ showtime()?.ticketPrice || 0 }}</span>
           </div>
           <span>Selected</span>
         </div>
@@ -121,11 +119,8 @@
       </div>
       <div class="price-info">
         <div class="price-breakdown">
-          <div class="price-row">
-            <span>{{ selectedSeatsLabels().length }} × ₹{{ showtime()?.ticketPrice || 0 }}</span>
-          </div>
           <div class="total-row">
-            <span class="total-label">Total:</span>
+            <span class="total-label">Total ({{ selectedSeatsLabels().length }} seats):</span>
             <span class="total-amount">₹{{ totalPrice() }}</span>
           </div>
         </div>

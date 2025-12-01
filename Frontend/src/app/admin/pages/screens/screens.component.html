@@ -118,8 +118,8 @@
           
           <input 
             type="text" 
-            [value]="cat.name"
-            (input)="updateCategory(cat.id, 'name', $any($event.target).value)"
+            [ngModel]="cat.name"
+            (ngModelChange)="updateCategory(cat.id, 'name', $event)"
             placeholder="Category Name" 
             class="cat-name"
             [attr.aria-label]="'Category name: ' + cat.name">
@@ -128,16 +128,16 @@
             <span>₹</span>
             <input 
               type="number" 
-              [value]="cat.price"
-              (input)="updateCategory(cat.id, 'price', +$any($event.target).value)"
+              [ngModel]="cat.price"
+              (ngModelChange)="updateCategory(cat.id, 'price', $event)"
               min="0"
               [attr.aria-label]="'Price for ' + cat.name">
           </div>
           
           <input 
             type="color" 
-            [value]="cat.color"
-            (input)="updateCategory(cat.id, 'color', $any($event.target).value)"
+            [ngModel]="cat.color"
+            (ngModelChange)="updateCategory(cat.id, 'color', $event)"
             class="color-picker"
             [attr.aria-label]="'Color picker for ' + cat.name">
           

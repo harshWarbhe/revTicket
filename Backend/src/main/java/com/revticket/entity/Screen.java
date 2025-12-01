@@ -21,6 +21,12 @@ public class Screen {
     @Column(name = "total_seats", nullable = false)
     private Integer totalSeats;
 
+    @Column(name = "`rows`")
+    private Integer rows;
+
+    @Column(name = "seats_per_row")
+    private Integer seatsPerRow;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "theater_id", nullable = false)
     private Theater theater;

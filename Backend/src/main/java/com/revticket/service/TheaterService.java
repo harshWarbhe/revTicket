@@ -86,6 +86,7 @@ public class TheaterService {
                 .totalScreens(theater.getTotalScreens())
                 .imageUrl(theater.getImageUrl())
                 .isActive(theater.getIsActive())
+                .defaultCategories(null)
                 .build();
     }
 }

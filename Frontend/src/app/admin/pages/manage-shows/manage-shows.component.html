@@ -25,7 +25,7 @@
           <th>Theater</th>
           <th>Screen</th>
           <th>Date & Time</th>
-          <th>Seats</th>
+
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -36,13 +36,16 @@
           <td>{{ show.theater?.name || 'N/A' }}</td>
           <td>{{ getScreenName(show.screen) }}</td>
           <td>{{ formatDateTime(show.showDateTime) }}</td>
-          <td>{{ show.totalSeats }}</td>
           <td>
             <span class="badge" [class.active]="show.status === 'ACTIVE'">
               {{ show.status }}
             </span>
           </td>
           <td>
+            <button (click)="toggleStatus(show)" class="btn-icon"
+              [title]="show.status === 'ACTIVE' ? 'Deactivate' : 'Activate'">
+              {{ show.status === 'ACTIVE' ? '⏸️' : '▶️' }}
+            </button>
             <button (click)="editShow(show)" class="btn-icon" title="Edit">✏️</button>
             <button (click)="deleteShow(show)" class="btn-icon" title="Delete">🗑️</button>
           </td>

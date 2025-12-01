@@ -27,6 +27,7 @@ export class ShowtimesComponent implements OnInit {
   selectedDate = signal(new Date());
   loading = signal(true);
   error = signal('');
+  screenNames = signal<Map<string, string>>(new Map());
   
   selectedLanguage = signal<string>('All');
   selectedFormat = signal<string>('All');
@@ -172,9 +173,8 @@ export class ShowtimesComponent implements OnInit {
 
 
 
-  getScreenLabel(showtimeId: string): string {
-    const showtime = this.showtimes().find(s => s.id === showtimeId);
-    return showtime?.screen || 'Screen 1';
+  getScreenLabel(screenId: string): string {
+    return this.screenNames().get(screenId) || 'Screen 1';
   }
 
   private loadDataById(id: string): void {
@@ -208,6 +208,7 @@ export class ShowtimesComponent implements OnInit {
         });
         
         this.showtimes.set(active);
+        this.loadScreenNames(active);
         this.loading.set(false);
       },
       error: () => {
@@ -216,5 +217,16 @@ export class ShowtimesComponent implements OnInit {
         this.alertService.error('Unable to fetch showtimes');
       }
     });
+  }
+
+  private loadScreenNames(showtimes: Showtime[]): void {
+    const screenIds = [...new Set(showtimes.map(s => s.screen))];
+    const names = new Map<string, string>();
+    
+    screenIds.forEach((screenId, index) => {
+      names.set(screenId, `Screen ${index + 1}`);
+    });
+    
+    this.screenNames.set(names);
   }
 }

@@ -142,7 +142,16 @@ export class SeatBookingComponent implements OnInit {
   private loadShowtime(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.http.get<Showtime>(`${environment.apiUrl}/showtimes/${this.showtimeId}`).subscribe({
-        next: (showtime) => {
+        next: async (showtime) => {
+          // Load screen info
+          if (showtime.screen) {
+            try {
+              const screen = await this.http.get<Screen>(`${environment.apiUrl}/screens/${showtime.screen}`).toPromise();
+              showtime.screenInfo = screen;
+            } catch (e) {
+              console.error('Failed to load screen info:', e);
+            }
+          }
           this.showtime.set(showtime);
           resolve();
         },
@@ -265,7 +274,7 @@ export class SeatBookingComponent implements OnInit {
   
   getScreenLabel(): string {
     const showtime = this.showtime();
-    return showtime?.screen || 'Screen';
+    return showtime?.screenInfo?.name || 'Screen 1';
   }
   
   getShowLabel(): string {

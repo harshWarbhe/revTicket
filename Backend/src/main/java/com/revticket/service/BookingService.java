@@ -116,6 +116,7 @@ public class BookingService {
     public List<BookingResponse> getUserBookings(String userId) {
         return bookingRepository.findByUserId(Objects.requireNonNullElse(userId, ""))
                 .stream()
+                .sorted((b1, b2) -> b2.getBookingDate().compareTo(b1.getBookingDate()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

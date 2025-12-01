@@ -35,9 +35,6 @@ public class ShowtimeService {
     @Autowired
     private SeatService seatService;
 
-    @Autowired
-    private com.revticket.repository.ScreenRepository screenRepository;
-
     @Transactional(readOnly = true)
     public List<ShowtimeResponse> getAllShowtimes() {
         return showtimeRepository.findAllByOrderByShowDateTimeAsc()
@@ -193,9 +190,13 @@ public class ShowtimeService {
         }
 
         showtime.setAvailableSeats(availableSeats);
-        showtime.setStatus(
-                request.getStatus() != null ? request.getStatus() : Showtime.ShowStatus.ACTIVE
-        );
+        
+        if (request.getStatus() != null) {
+            showtime.setStatus(request.getStatus());
+        } else if (isCreate) {
+            showtime.setStatus(Showtime.ShowStatus.ACTIVE);
+        }
+        // If updating and status not provided, keep existing status
     }
 
     public boolean checkShowtimeConflict(String screenId, LocalDateTime showDateTime, String excludeShowId) {
@@ -218,13 +219,12 @@ public class ShowtimeService {
     private ShowtimeResponse mapToResponse(Showtime showtime) {
         Movie movie = showtime.getMovie();
         Theater theater = showtime.getTheater();
-        String screenName = getScreenName(showtime.getScreen());
 
         return ShowtimeResponse.builder()
                 .id(showtime.getId())
                 .movieId(movie.getId())
                 .theaterId(theater.getId())
-                .screen(screenName)
+                .screen(showtime.getScreen())
                 .showDateTime(showtime.getShowDateTime())
                 .ticketPrice(showtime.getTicketPrice())
                 .totalSeats(showtime.getTotalSeats())
@@ -246,12 +246,6 @@ public class ShowtimeService {
                         .totalScreens(theater.getTotalScreens())
                         .build())
                 .build();
-    }
-
-    private String getScreenName(String screenId) {
-        return screenRepository.findById(screenId)
-                .map(screen -> screen.getName())
-                .orElse(screenId);
     }
 }
 
