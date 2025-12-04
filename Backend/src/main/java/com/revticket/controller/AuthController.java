@@ -2,6 +2,7 @@ package com.revticket.controller;
 
 import com.revticket.dto.AuthResponse;
 import com.revticket.dto.LoginRequest;
+import com.revticket.dto.OAuth2LoginRequest;
 import com.revticket.dto.ResetPasswordRequest;
 import com.revticket.dto.SignupRequest;
 import com.revticket.service.AuthService;
@@ -51,6 +52,11 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
+
+    @PostMapping("/oauth2/login")
+    public ResponseEntity<AuthResponse> oauth2Login(@RequestBody OAuth2LoginRequest request) {
+        return ResponseEntity.ok(authService.oauth2Login(request));
     }
 }
 

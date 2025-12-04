@@ -114,7 +114,8 @@ export class ManageMoviesComponent implements OnInit {
     this.loading.set(true);
     this.movieService.getAdminMovies().subscribe({
       next: (movies) => {
-        this.movies.set(movies || []);
+        const sorted = (movies || []).sort((a, b) => b.id.localeCompare(a.id));
+        this.movies.set(sorted);
         this.loading.set(false);
       },
       error: (err) => {

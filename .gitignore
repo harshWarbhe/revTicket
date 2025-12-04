@@ -52,3 +52,30 @@ Thumbs.db
 /dist/
 /.angular/
 /coverage/
+
+# ==========================
+# Documentation (Keep only essential)
+# ==========================
+*_FLOW_*.md
+*_GUIDE.md
+*_SUMMARY.md
+*_SOLUTION.md
+SETUP.md
+BOOKING_FLOW.md
+LOGIN_CREDENTIALS.md
+
+# ==========================
+# Test Files
+# ==========================
+*.spec.ts
+cypress/
+src/test/
+tsconfig.spec.json
+karma.conf.js
+
+# ==========================
+# Archives
+# ==========================
+*.zip
+*.rar
+*.7z

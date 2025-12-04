@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
@@ -27,6 +27,23 @@ export class HomeComponent implements OnInit {
 
   movies = signal<Movie[]>([]);
   loading = signal(true);
+  searchTerm = signal('');
+  selectedGenre = signal('All');
+  genres = computed(() => {
+    const allGenres = this.movies().flatMap(m => m.genre || []);
+    return ['All', ...Array.from(new Set(allGenres))];
+  });
+  filteredMovies = computed(() => {
+    let filtered = this.movies();
+    if (this.selectedGenre() !== 'All') {
+      filtered = filtered.filter(m => m.genre?.includes(this.selectedGenre()));
+    }
+    if (this.searchTerm()) {
+      const term = this.searchTerm().toLowerCase();
+      filtered = filtered.filter(m => m.title.toLowerCase().includes(term));
+    }
+    return filtered;
+  });
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
@@ -46,5 +63,17 @@ export class HomeComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  onSearch(term: string): void {
+    this.searchTerm.set(term);
+  }
+
+  onGenreFilter(genre: string): void {
+    this.selectedGenre.set(genre);
+  }
+
+  viewDetails(movieId: string): void {
+    this.router.navigate(['/user/movie-details', movieId]);
   }
 }

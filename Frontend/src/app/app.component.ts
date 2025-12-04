@@ -5,12 +5,11 @@ import { filter } from 'rxjs/operators';
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
 import { AlertComponent } from './shared/components/alert/alert.component';
-import { AuthDebugComponent } from './shared/components/auth-debug/auth-debug.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, FooterComponent, AlertComponent, AuthDebugComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, FooterComponent, AlertComponent],
   template: `
     @if (!isAdminRoute) {
       <app-navbar></app-navbar>
@@ -20,7 +19,6 @@ import { AuthDebugComponent } from './shared/components/auth-debug/auth-debug.co
       <app-footer></app-footer>
     }
     <app-alert></app-alert>
-    <app-auth-debug></app-auth-debug>
   `,
   styles: []
 })

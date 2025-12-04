@@ -77,6 +77,11 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/auth/reset-password`, { token, newPassword });
   }
 
+  oauth2Login(oauth2Data: any): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/oauth2/login`, oauth2Data)
+      .pipe(tap(response => this.setCurrentUser(response)));
+  }
+
   changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
     return this.http.post(`${environment.apiUrl}/auth/change-password`, data);
   }

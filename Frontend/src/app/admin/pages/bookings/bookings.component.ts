@@ -48,7 +48,10 @@ export class BookingsComponent implements OnInit {
     this.loading.set(true);
     this.bookingService.getAllBookings().subscribe({
       next: (bookings) => {
-        this.bookings.set(bookings);
+        const sorted = bookings.sort((a, b) => 
+          new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime()
+        );
+        this.bookings.set(sorted);
         this.applyFilters();
         this.loading.set(false);
       },

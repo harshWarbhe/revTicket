@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, inject, AfterViewInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Booking } from '../../../core/models/booking.model';
 import * as QRCode from 'qrcode';
@@ -13,32 +13,24 @@ import { AlertService } from '../../../core/services/alert.service';
   templateUrl: './e-ticket.component.html',
   styleUrls: ['./e-ticket.component.css']
 })
-export class ETicketComponent implements OnInit, AfterViewInit {
+export class ETicketComponent implements OnInit {
   @Input() booking!: Booking;
   @ViewChild('ticketContent', { static: false }) ticketContent!: ElementRef;
   
   qrCodeDataUrl: string = '';
   private alertService = inject(AlertService);
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     if (this.booking) {
-      this.generateQRCode();
-    }
-  }
-
-  ngAfterViewInit(): void {
-    // Ensure QR is generated after view is ready
-    if (!this.qrCodeDataUrl && this.booking) {
-      setTimeout(() => this.generateQRCode(), 100);
+      await this.generateQRCode();
     }
   }
 
   async generateQRCode(): Promise<void> {
     try {
-      // Simple booking ID for faster generation
-      const qrData = `REVTICKET:${this.booking.id}`;
+      const ticketInfo = `Ticket: ${this.booking.ticketNumber}\nMovie: ${this.booking.movieTitle}\nTheater: ${this.booking.theaterName}\nShow: ${this.formatDateTime(this.booking.showtime)}\nSeats: ${this.getSeatDisplay()}\nAmount: ${this.formatCurrency(this.booking.totalAmount)}`;
       
-      this.qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+      this.qrCodeDataUrl = await QRCode.toDataURL(ticketInfo, {
         width: 200,
         margin: 1,
         errorCorrectionLevel: 'M'
@@ -89,45 +81,32 @@ export class ETicketComponent implements OnInit, AfterViewInit {
       this.alertService.info('Generating PDF...');
       
       const element = this.ticketContent.nativeElement;
-      const originalHeight = element.style.height;
       
-      // Force full height for capture
-      element.style.height = 'auto';
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for QR code to load
+      if (!this.qrCodeDataUrl) {
+        await this.generateQRCode();
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
       
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         scrollY: -window.scrollY,
         scrollX: -window.scrollX,
-        windowHeight: element.scrollHeight + 100
+        windowHeight: element.scrollHeight,
+        imageTimeout: 0
       });
-      
-      // Restore original height
-      element.style.height = originalHeight;
 
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pageHeight = 297;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       
-      let position = 0;
-      let heightLeft = imgHeight;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       
       pdf.save(`RevTicket_${this.booking.ticketNumber || this.booking.id}.pdf`);
       this.alertService.success('Ticket downloaded successfully!');

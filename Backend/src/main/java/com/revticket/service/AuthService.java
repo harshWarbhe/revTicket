@@ -2,6 +2,7 @@ package com.revticket.service;
 
 import com.revticket.dto.AuthResponse;
 import com.revticket.dto.LoginRequest;
+import com.revticket.dto.OAuth2LoginRequest;
 import com.revticket.dto.SignupRequest;
 import com.revticket.dto.UserDto;
 import com.revticket.entity.User;
@@ -32,6 +33,12 @@ public class AuthService {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired(required = false)
+    private EmailService emailService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:4200}")
+    private String frontendUrl;
 
     public AuthResponse login(LoginRequest request) {
         try {
@@ -106,13 +113,21 @@ public class AuthService {
         user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
         userRepository.save(user);
         
-        System.out.println("\n===========================================\n");
-        System.out.println("PASSWORD RESET TOKEN GENERATED");
-        System.out.println("Email: " + email);
-        System.out.println("Token: " + resetToken);
-        System.out.println("Reset URL: http://localhost:4200/auth/reset-password?token=" + resetToken);
-        System.out.println("Token expires in 1 hour");
-        System.out.println("\n===========================================\n");
+        if (emailService != null) {
+            try {
+                emailService.sendPasswordResetEmail(email, resetToken);
+            } catch (Exception e) {
+                System.out.println("\n=== EMAIL SEND FAILED ===");
+                System.out.println("Reset Token: " + resetToken);
+                System.out.println("Reset URL: " + frontendUrl + "/auth/reset-password?token=" + resetToken);
+                System.out.println("========================\n");
+            }
+        } else {
+            System.out.println("\n=== EMAIL SERVICE NOT CONFIGURED ===");
+            System.out.println("Reset Token: " + resetToken);
+            System.out.println("Reset URL: http://localhost:4200/auth/reset-password?token=" + resetToken);
+            System.out.println("===================================\n");
+        }
     }
 
     public void resetPassword(String token, String newPassword) {
@@ -127,6 +142,22 @@ public class AuthService {
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
         userRepository.save(user);
+    }
+
+    public AuthResponse oauth2Login(OAuth2LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(request.getEmail());
+                    newUser.setName(request.getName());
+                    newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+                    newUser.setRole(User.Role.USER);
+                    return userRepository.save(newUser);
+                });
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        UserDto userDto = convertToDto(user);
+        return new AuthResponse(token, userDto);
     }
 
     private UserDto convertToDto(User user) {

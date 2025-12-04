@@ -65,8 +65,9 @@ export class ManageTheatresComponent implements OnInit {
       )
       .subscribe({
         next: (theatres) => {
-          this.theatres.set(theatres || []);
-          this.extractCities(theatres || []);
+          const sorted = (theatres || []).sort((a, b) => b.id.localeCompare(a.id));
+          this.theatres.set(sorted);
+          this.extractCities(sorted);
           this.applyFilters();
         },
         error: (err) => {

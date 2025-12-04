@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AlertService } from '../../../core/services/alert.service';
 import { BookingService } from '../../../core/services/booking.service';
@@ -61,6 +61,7 @@ export class MyBookingsComponent implements OnInit {
 
   private alertService = inject(AlertService);
   private bookingService = inject(BookingService);
+  private route = inject(ActivatedRoute);
 
   onImageError(event: any): void {
     event.target.src = 'assets/images/movies/default-poster.png';
@@ -68,6 +69,22 @@ export class MyBookingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.fetchBookings();
+    
+    // Check if ticket parameter exists (from QR code scan)
+    this.route.queryParams.subscribe(params => {
+      const ticketId = params['ticket'];
+      if (ticketId) {
+        // Wait for bookings to load, then show the ticket
+        setTimeout(() => {
+          const booking = this.bookings().find(b => b.id === ticketId);
+          if (booking) {
+            this.viewTicket(booking);
+          } else {
+            this.alertService.error('Ticket not found');
+          }
+        }, 1000);
+      }
+    });
   }
 
   setFilter(filter: 'all' | 'upcoming' | 'past' | 'cancelled'): void {
@@ -184,14 +201,16 @@ export class MyBookingsComponent implements OnInit {
 
   viewTicket(booking: BookingCard): void {
     this.selectedBooking.set(booking);
-    this.showTicket.set(true);
-    document.body.style.overflow = 'hidden';
     setTimeout(() => {
-      const modalContent = document.querySelector('.modal-content');
-      if (modalContent) {
-        modalContent.scrollTop = 0;
-      }
-    }, 100);
+      this.showTicket.set(true);
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) {
+          modalContent.scrollTop = 0;
+        }
+      }, 100);
+    }, 50);
   }
 
   closeTicket(): void {

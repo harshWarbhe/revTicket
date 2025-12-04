@@ -10,5 +10,6 @@ import java.util.List;
 public interface SeatRepository extends JpaRepository<Seat, String> {
     List<Seat> findByShowtimeId(String showtimeId);
     List<Seat> findByShowtimeIdAndIsBookedFalse(String showtimeId);
+    void deleteByShowtimeId(String showtimeId);
 }
 

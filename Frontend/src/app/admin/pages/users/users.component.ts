@@ -39,7 +39,10 @@ export class UsersComponent implements OnInit {
     this.loading.set(true);
     this.adminUserService.getAllUsers().subscribe({
       next: (users) => {
-        this.users.set(users || []);
+        const sorted = (users || []).sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        this.users.set(sorted);
         this.applyFilters();
         this.loading.set(false);
       },
