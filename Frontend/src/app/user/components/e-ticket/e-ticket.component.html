@@ -26,7 +26,7 @@
         <div class="movie-info">
           <h2 class="movie-title">{{ booking.movieTitle }}</h2>
           <div class="status-badge" [ngClass]="'status-' + booking.status.toLowerCase()">
-            {{ booking.status === 'CANCELLATION_REQUESTED' ? 'PENDING CANCELLATION' : booking.status }}
+            {{ booking.status === 'CANCEL' ? 'PENDING CANCELLATION' : booking.status }}
           </div>
         </div>
       </div>

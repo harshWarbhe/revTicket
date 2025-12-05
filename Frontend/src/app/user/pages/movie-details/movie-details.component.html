@@ -142,6 +142,11 @@
       </button>
     </section>
     }
+
+    <!-- Reviews & Ratings -->
+    @if (movie()) {
+    <app-movie-reviews [movieId]="movie()!.id"></app-movie-reviews>
+    }
   </div>
   }
 </div>

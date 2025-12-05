@@ -231,7 +231,7 @@ export class MyBookingsComponent implements OnInit {
   }
 
   isPendingCancellation(booking: BookingCard): boolean {
-    return booking.status === 'CANCELLATION_REQUESTED';
+    return booking.status === 'CANCEL';
   }
 
   cancelBooking(booking: BookingCard): void {
@@ -299,7 +299,7 @@ export class MyBookingsComponent implements OnInit {
       'CONFIRMED': 'Confirmed',
       'CANCELLED': 'Cancelled',
       'PENDING': 'Pending',
-      'CANCELLATION_REQUESTED': 'Cancellation Pending'
+      'CANCEL': 'Cancellation Pending'
     };
     return labels[status] || status;
   }

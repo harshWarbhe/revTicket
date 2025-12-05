@@ -15,7 +15,7 @@ export interface Booking {
   seatLabels?: string[];
   totalAmount: number;
   bookingDate: string | Date;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'CANCELLATION_REQUESTED';
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'CANCEL';
   customerName: string;
   customerEmail: string;
   customerPhone: string;

@@ -112,6 +112,10 @@
           title="Edit Movie">
           ✏️
         </button>
+        <button class="action-btn reviews" (click)="viewReviews(movie)" 
+          title="View Reviews">
+          ⭐
+        </button>
         <button class="action-btn" [class.deactivate]="movie.isActive" [class.activate]="!movie.isActive"
           (click)="toggleMovieStatus(movie)" 
           [disabled]="togglingStatusId() === movie.id || deletingId() === movie.id"
@@ -126,6 +130,51 @@
       </div>
     </div>
     }
+  </div>
+  }
+
+  <!-- Reviews Modal -->
+  @if (showReviewsModal()) {
+  <div class="modal-overlay" (click)="closeReviewsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Reviews for {{ selectedMovieTitle() }}</h2>
+        <button class="close-btn" (click)="closeReviewsModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        @if (selectedMovieReviews().length === 0) {
+          <p class="no-reviews">No reviews yet</p>
+        } @else {
+          @for (review of selectedMovieReviews(); track review.id) {
+            <div class="review-item" [class.pending]="!review.approved">
+              <div class="review-header">
+                <div>
+                  <strong>{{ review.userName }}</strong>
+                  @if (!review.approved) {
+                    <span class="pending-badge">Pending</span>
+                  }
+                </div>
+                <div class="rating">
+                  @for (star of getStars(review.rating); track $index) {
+                    <span class="star">{{ star }}</span>
+                  }
+                </div>
+              </div>
+              <p class="review-comment">{{ review.comment }}</p>
+              <div class="review-footer">
+                <span class="date">{{ review.createdAt | date:'short' }}</span>
+                <div class="actions">
+                  @if (!review.approved) {
+                    <button class="btn-approve" (click)="approveReview(review.id)">Approve</button>
+                  }
+                  <button class="btn-delete" (click)="deleteReview(review.id)">Delete</button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
   </div>
   }
 

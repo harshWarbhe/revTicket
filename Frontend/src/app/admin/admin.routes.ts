@@ -10,6 +10,7 @@ import { BookingsComponent } from './pages/bookings/bookings.component';
 import { ManageShowsComponent } from './pages/manage-shows/manage-shows.component';
 import { SettingsComponent } from './pages/settings/settings.component';
 import { VenueManagementComponent } from './pages/venue-management/venue-management.component';
+import { ReviewsComponent } from './pages/reviews/reviews.component';
 
 export const adminRoutes: Routes = [
   {
@@ -29,6 +30,7 @@ export const adminRoutes: Routes = [
       { path: 'bookings', component: BookingsComponent },
       { path: 'users', component: UsersComponent },
       { path: 'bookings-report', component: BookingsReportComponent },
+      { path: 'reviews', component: ReviewsComponent },
       { path: 'settings', component: SettingsComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

@@ -6,11 +6,12 @@ import { ShowtimeService, Showtime } from '../../../core/services/showtime.servi
 import { Movie } from '../../../core/models/movie.model';
 import { DisplayUtils } from '../../../core/utils/display-utils';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { MovieReviewsComponent } from '../../components/movie-reviews/movie-reviews.component';
 
 @Component({
   selector: 'app-movie-details',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, MovieReviewsComponent],
   templateUrl: './movie-details.component.html',
   styleUrls: ['./movie-details.component.css']
 })

@@ -6,6 +6,7 @@ import { forkJoin } from 'rxjs';
 import { MovieService } from '../../../core/services/movie.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { Movie } from '../../../core/models/movie.model';
+import { ReviewService, ReviewResponse } from '../../../core/services/review.service';
 
 @Component({
   selector: 'app-manage-movies',
@@ -18,6 +19,7 @@ export class ManageMoviesComponent implements OnInit {
   private router = inject(Router);
   private movieService = inject(MovieService);
   private alertService = inject(AlertService);
+  private reviewService = inject(ReviewService);
 
   movies = signal<Movie[]>([]);
   searchTerm = signal('');
@@ -28,6 +30,9 @@ export class ManageMoviesComponent implements OnInit {
   sortField = signal<string>('');
   sortDir = signal<'asc' | 'desc'>('asc');
   togglingStatusId = signal<string | null>(null);
+  selectedMovieReviews = signal<ReviewResponse[]>([]);
+  showReviewsModal = signal(false);
+  selectedMovieTitle = signal('');
   
   availableGenres = computed(() => {
     const genres = new Set<string>();
@@ -213,5 +218,49 @@ export class ManageMoviesComponent implements OnInit {
 
   trackById(index: number, item: any): string {
     return item?.id || index.toString();
+  }
+
+  viewReviews(movie: Movie): void {
+    this.selectedMovieTitle.set(movie.title);
+    this.showReviewsModal.set(true);
+    this.reviewService.getAllMovieReviews(movie.id).subscribe({
+      next: (reviews) => this.selectedMovieReviews.set(reviews),
+      error: () => this.alertService.error('Failed to load reviews')
+    });
+  }
+
+  closeReviewsModal(): void {
+    this.showReviewsModal.set(false);
+    this.selectedMovieReviews.set([]);
+  }
+
+  approveReview(reviewId: string): void {
+    this.reviewService.approveReview(reviewId).subscribe({
+      next: () => {
+        this.selectedMovieReviews.update(reviews => 
+          reviews.map(r => r.id === reviewId ? { ...r, approved: true } : r)
+        );
+        this.alertService.success('Review approved');
+      },
+      error: () => this.alertService.error('Failed to approve review')
+    });
+  }
+
+  deleteReview(reviewId: string): void {
+    if (confirm('Delete this review?')) {
+      this.reviewService.deleteReview(reviewId).subscribe({
+        next: () => {
+          this.selectedMovieReviews.update(reviews => 
+            reviews.filter(r => r.id !== reviewId)
+          );
+          this.alertService.success('Review deleted');
+        },
+        error: () => this.alertService.error('Failed to delete review')
+      });
+    }
+  }
+
+  getStars(rating: number): string[] {
+    return Array(5).fill('★').map((star, i) => i < rating ? '★' : '☆');
   }
 }

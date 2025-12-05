@@ -161,15 +161,11 @@ public class BookingService {
             throw new RuntimeException("Cancellation not allowed. Must cancel at least " + cancellationHours + " hours before showtime");
         }
 
-        String cleanReason = Objects.requireNonNullElse(reason, "");
-        bookingRepository.updateCancellationRequest(
-            id, 
-            Booking.BookingStatus.CANCELLATION_REQUESTED, 
-            cleanReason, 
-            LocalDateTime.now()
-        );
-
-        booking = bookingRepository.findById(id).orElseThrow();
+        booking.setStatus(Booking.BookingStatus.CANCEL);
+        booking.setCancellationReason(Objects.requireNonNullElse(reason, ""));
+        booking.setCancellationRequestedAt(LocalDateTime.now());
+        
+        booking = bookingRepository.save(booking);
         return mapToResponse(booking);
     }
 
@@ -177,7 +173,7 @@ public class BookingService {
     public List<BookingResponse> getCancellationRequests() {
         return bookingRepository.findAll()
                 .stream()
-                .filter(b -> b.getStatus() == Booking.BookingStatus.CANCELLATION_REQUESTED)
+                .filter(b -> b.getStatus() == Booking.BookingStatus.CANCEL)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

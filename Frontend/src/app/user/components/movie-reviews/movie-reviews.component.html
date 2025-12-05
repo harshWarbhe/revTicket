@@ -1,0 +1,81 @@
+<div class="reviews-section">
+  <div class="reviews-header">
+    <h3>Reviews & Ratings</h3>
+    @if (averageRating() > 0) {
+      <div class="average-rating">
+        <span class="rating-value">{{ averageRating() | number:'1.1-1' }}</span>
+        <div class="stars">
+          @for (star of getStars(Math.round(averageRating())); track $index) {
+            <span class="star">{{ star }}</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (isLoggedIn() && canReview() && !showReviewForm()) {
+    <button class="btn-add-review" (click)="showReviewForm.set(true)">
+      Write a Review
+    </button>
+  } @else if (isLoggedIn() && !canReview()) {
+    <div class="info-message">
+      <span>ℹ️</span>
+      <p>You can write a review after watching this movie</p>
+    </div>
+  }
+
+  @if (showReviewForm()) {
+    <div class="review-form">
+      <h4>Write Your Review</h4>
+      
+      <div class="rating-input">
+        <label>Your Rating:</label>
+        <div class="star-rating">
+          @for (i of [1,2,3,4,5]; track i) {
+            <span 
+              class="star-btn" 
+              [class.selected]="i <= userRating"
+              (click)="setRating(i)">
+              {{ i <= userRating ? '★' : '☆' }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <div class="comment-input">
+        <label>Your Review:</label>
+        <textarea 
+          [(ngModel)]="userComment" 
+          placeholder="Share your thoughts about this movie..."
+          rows="4">
+        </textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-submit" (click)="submitReview()">Submit Review</button>
+        <button class="btn-cancel" (click)="showReviewForm.set(false)">Cancel</button>
+      </div>
+    </div>
+  }
+
+  <div class="reviews-list">
+    @if (reviews().length === 0) {
+      <p class="no-reviews">No reviews yet. Be the first to review!</p>
+    } @else {
+      @for (review of reviews(); track review.id) {
+        <div class="review-item">
+          <div class="review-header-item">
+            <strong>{{ review.userName }}</strong>
+            <div class="review-rating">
+              @for (star of getStars(review.rating); track $index) {
+                <span class="star">{{ star }}</span>
+              }
+            </div>
+          </div>
+          <p class="review-comment">{{ review.comment }}</p>
+          <span class="review-date">{{ review.createdAt | date:'medium' }}</span>
+        </div>
+      }
+    }
+  </div>
+</div>

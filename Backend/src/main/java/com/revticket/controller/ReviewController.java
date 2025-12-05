@@ -41,4 +41,11 @@ public class ReviewController {
         Double avgRating = reviewService.getAverageRating(movieId);
         return ResponseEntity.ok(Map.of("averageRating", avgRating != null ? avgRating : 0.0));
     }
+
+    @GetMapping("/can-review/{movieId}")
+    public ResponseEntity<Map<String, Boolean>> canReviewMovie(@PathVariable String movieId, Authentication authentication) {
+        String userId = securityUtil.getCurrentUserId(authentication);
+        boolean canReview = reviewService.canUserReviewMovie(userId, movieId);
+        return ResponseEntity.ok(Map.of("canReview", canReview));
+    }
 }
