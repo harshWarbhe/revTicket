@@ -155,12 +155,10 @@ export class UsersComponent implements OnInit {
   toggleRole(user: User): void {
     const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
     
-    if (!confirm(`Change "${user.name}"'s role to ${newRole}?`)) return;
-
     this.updatingRoleId.set(user.id);
     this.adminUserService.updateUserRole(user.id, newRole).subscribe({
       next: () => {
-        this.alertService.success(`"${user.name}" role updated to ${newRole}`);
+        this.alertService.success(`Role updated to ${newRole}`);
         this.users.update(users => users.map(u => u.id === user.id ? { ...u, role: newRole } : u));
         this.applyFilters();
         this.updatingRoleId.set(null);
@@ -175,19 +173,17 @@ export class UsersComponent implements OnInit {
 
   toggleUserStatus(user: User): void {
     const newStatus = user.isActive ? 'BLOCKED' : 'ACTIVE';
-    const action = user.isActive ? 'block' : 'activate';
+    const action = user.isActive ? 'blocked' : 'activated';
     
-    if (!confirm(`Are you sure you want to ${action} "${user.name}"?`)) return;
-
     this.adminUserService.updateUserStatus(user.id, newStatus).subscribe({
       next: () => {
-        this.alertService.success(`"${user.name}" ${action}ed successfully`);
+        this.alertService.success(`User ${action} successfully`);
         this.users.update(users => users.map(u => u.id === user.id ? { ...u, isActive: !user.isActive } : u));
         this.applyFilters();
       },
       error: (err) => {
         console.error('Update status error:', err);
-        this.alertService.error(`Failed to ${action} user`);
+        this.alertService.error(`Failed to ${action.replace('ed', '')} user`);
       }
     });
   }

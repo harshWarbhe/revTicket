@@ -41,15 +41,21 @@ public class BookingService {
     @Autowired
     private com.revticket.repository.ScreenRepository screenRepository;
 
+    @Autowired
+    private SettingsService settingsService;
+
+    @Autowired
+    private EmailService emailService;
+
     @Transactional
     public BookingResponse createBooking(String userId, BookingRequest request) {
-        // Validate request
         if (request.getSeats() == null || request.getSeats().isEmpty()) {
             throw new RuntimeException("No seats selected");
         }
         
-        if (request.getSeats().size() > 10) {
-            throw new RuntimeException("Maximum 10 seats can be booked at once");
+        int maxSeats = settingsService.getMaxSeatsPerBooking();
+        if (request.getSeats().size() > maxSeats) {
+            throw new RuntimeException("Maximum " + maxSeats + " seats can be booked at once");
         }
 
         User user = userRepository.findById(Objects.requireNonNullElse(userId, ""))
@@ -58,18 +64,21 @@ public class BookingService {
         Showtime showtime = showtimeRepository.findById(Objects.requireNonNullElse(request.getShowtimeId(), ""))
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
         
-        // Validate showtime is not in the past
         if (showtime.getShowDateTime().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Cannot book tickets for past showtimes");
         }
 
+        List<Seat> showtimeSeats = seatRepository.findByShowtimeId(showtime.getId());
+        
+        // Validate seats by ID
         for (String seatId : request.getSeats()) {
-            String safeSeatId = Objects.requireNonNullElse(seatId, "");
-            Seat seat = seatRepository.findById(safeSeatId)
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
                     .orElseThrow(() -> new RuntimeException("Seat not found: " + seatId));
-
+            
             if (seat.getIsBooked() || seat.getIsHeld()) {
-                throw new RuntimeException("Seat is no longer available");
+                throw new RuntimeException("Seat is no longer available: " + seat.getRow() + seat.getNumber());
             }
         }
 
@@ -91,22 +100,32 @@ public class BookingService {
         booking.setTicketNumber("TKT" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         booking.setQrCode("QR_" + UUID.randomUUID().toString());
 
-        try {
-            booking = bookingRepository.save(booking);
+        booking = bookingRepository.save(booking);
 
-            for (String seatId : request.getSeats()) {
-                String safeSeatId = Objects.requireNonNullElse(seatId, "");
-                Seat seat = seatRepository.findById(safeSeatId).orElse(null);
-                if (seat != null) {
-                    seat.setIsBooked(true);
-                    seatRepository.save(seat);
-                }
+        // Mark seats as booked
+        for (String seatId : request.getSeats()) {
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (seat != null) {
+                seat.setIsBooked(true);
+                seat.setIsHeld(false);
+                seat.setHoldExpiry(null);
+                seat.setSessionId(null);
+                seatRepository.save(seat);
             }
+        }
 
-            showtime.setAvailableSeats(Math.max(0, showtime.getAvailableSeats() - request.getSeats().size()));
-            showtimeRepository.save(showtime);
-        } catch (Exception e) {
-            throw new RuntimeException("Payment processing failed. Please try again.");
+        showtime.setAvailableSeats(Math.max(0, showtime.getAvailableSeats() - request.getSeats().size()));
+        showtimeRepository.save(showtime);
+
+        if (settingsService.areEmailNotificationsEnabled()) {
+            try {
+                emailService.sendBookingConfirmation(booking);
+            } catch (Exception e) {
+                System.err.println("Failed to send booking confirmation email: " + e.getMessage());
+            }
         }
 
         return mapToResponse(booking);
@@ -136,6 +155,12 @@ public class BookingService {
             throw new RuntimeException("Only confirmed bookings can request cancellation");
         }
 
+        int cancellationHours = settingsService.getCancellationWindowHours();
+        long hoursUntilShow = java.time.Duration.between(LocalDateTime.now(), booking.getShowtime().getShowDateTime()).toHours();
+        if (hoursUntilShow < cancellationHours) {
+            throw new RuntimeException("Cancellation not allowed. Must cancel at least " + cancellationHours + " hours before showtime");
+        }
+
         String cleanReason = Objects.requireNonNullElse(reason, "");
         bookingRepository.updateCancellationRequest(
             id, 
@@ -159,7 +184,6 @@ public class BookingService {
 
     @Transactional
     public BookingResponse cancelBooking(String id, String reason) {
-
         Booking booking = bookingRepository.findById(Objects.requireNonNullElse(id, ""))
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         
@@ -172,11 +196,15 @@ public class BookingService {
             booking.setCancellationReason(Objects.requireNonNullElse(reason, ""));
         }
 
+        List<Seat> showtimeSeats = seatRepository.findByShowtimeId(booking.getShowtime().getId());
         for (String seatId : booking.getSeats()) {
-            String safeSeatId = Objects.requireNonNullElse(seatId, "");
-            Seat seat = seatRepository.findById(safeSeatId).orElse(null);
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
+                    .orElse(null);
             if (seat != null) {
                 seat.setIsBooked(false);
+                seat.setIsHeld(false);
                 seatRepository.save(seat);
             }
         }
@@ -188,7 +216,17 @@ public class BookingService {
         booking.setRefundAmount(calculateRefund(booking));
         booking.setRefundDate(LocalDateTime.now());
 
-        return mapToResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+
+        if (settingsService.areEmailNotificationsEnabled()) {
+            try {
+                emailService.sendCancellationConfirmation(savedBooking);
+            } catch (Exception e) {
+                System.err.println("Failed to send cancellation email: " + e.getMessage());
+            }
+        }
+
+        return mapToResponse(savedBooking);
     }
 
     @Transactional(readOnly = true)
@@ -208,10 +246,15 @@ public class BookingService {
         Booking booking = bookingRepository.findById(Objects.requireNonNullElse(id, ""))
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
+        List<Seat> showtimeSeats = seatRepository.findByShowtimeId(booking.getShowtime().getId());
         for (String seatId : booking.getSeats()) {
-            Seat seat = seatRepository.findById(Objects.requireNonNullElse(seatId, "")).orElse(null);
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
+                    .orElse(null);
             if (seat != null) {
                 seat.setIsBooked(false);
+                seat.setIsHeld(false);
                 seatRepository.save(seat);
             }
         }
@@ -245,8 +288,13 @@ public class BookingService {
             throw new RuntimeException("Cannot reassign seats for cancelled booking");
         }
 
+        List<Seat> showtimeSeats = seatRepository.findByShowtimeId(booking.getShowtime().getId());
+        
         for (String seatId : booking.getSeats()) {
-            Seat seat = seatRepository.findById(Objects.requireNonNullElse(seatId, "")).orElse(null);
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
+                    .orElse(null);
             if (seat != null) {
                 seat.setIsBooked(false);
                 seatRepository.save(seat);
@@ -254,10 +302,12 @@ public class BookingService {
         }
 
         for (String seatId : newSeats) {
-            Seat seat = seatRepository.findById(Objects.requireNonNullElse(seatId, ""))
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
                     .orElseThrow(() -> new RuntimeException("Seat not found: " + seatId));
             if (seat.getIsBooked()) {
-                throw new RuntimeException("Seat " + seatId + " is already booked");
+                throw new RuntimeException("Seat " + seat.getRow() + seat.getNumber() + " is already booked");
             }
         }
 
@@ -268,7 +318,10 @@ public class BookingService {
 
         booking.setSeats(newSeats);
         for (String seatId : newSeats) {
-            Seat seat = seatRepository.findById(Objects.requireNonNullElse(seatId, "")).orElse(null);
+            Seat seat = showtimeSeats.stream()
+                    .filter(s -> seatId.equals(s.getId()))
+                    .findFirst()
+                    .orElse(null);
             if (seat != null) {
                 seat.setIsBooked(true);
                 seatRepository.save(seat);
@@ -288,7 +341,6 @@ public class BookingService {
     }
 
     private BookingResponse mapToResponse(Booking booking) {
-
         Showtime showtime = booking.getShowtime();
         Movie movie = showtime.getMovie();
         Theater theater = showtime.getTheater();

@@ -1,10 +1,13 @@
 package com.revticket.service;
 
+import com.revticket.entity.Booking;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class EmailService {
@@ -37,6 +40,60 @@ public class EmailService {
                resetUrl + "\n\n" +
                "This link will expire in 1 hour.\n\n" +
                "If you did not request this password reset, please ignore this email.\n\n" +
+               "Best regards,\n" +
+               "RevTicket Team";
+    }
+
+    public void sendBookingConfirmation(Booking booking) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(booking.getCustomerEmail());
+        message.setSubject("Booking Confirmed - " + booking.getShowtime().getMovie().getTitle());
+        message.setText(buildBookingConfirmationBody(booking));
+        mailSender.send(message);
+    }
+
+    public void sendCancellationConfirmation(Booking booking) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(booking.getCustomerEmail());
+        message.setSubject("Booking Cancelled - " + booking.getShowtime().getMovie().getTitle());
+        message.setText(buildCancellationBody(booking));
+        mailSender.send(message);
+    }
+
+    private String buildBookingConfirmationBody(Booking booking) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
+        String showtime = booking.getShowtime().getShowDateTime().format(formatter);
+        String seats = booking.getSeatLabels() != null && !booking.getSeatLabels().isEmpty() 
+            ? String.join(", ", booking.getSeatLabels()) 
+            : String.join(", ", booking.getSeats());
+
+        return "Dear " + booking.getCustomerName() + ",\n\n" +
+               "Your booking has been confirmed!\n\n" +
+               "Booking Details:\n" +
+               "Ticket Number: " + booking.getTicketNumber() + "\n" +
+               "Movie: " + booking.getShowtime().getMovie().getTitle() + "\n" +
+               "Theater: " + booking.getShowtime().getTheater().getName() + "\n" +
+               "Screen: " + booking.getScreenName() + "\n" +
+               "Showtime: " + showtime + "\n" +
+               "Seats: " + seats + "\n" +
+               "Total Amount: ₹" + booking.getTotalAmount() + "\n\n" +
+               "Please arrive 30 minutes before showtime.\n\n" +
+               "View your ticket: " + frontendUrl + "/user/my-bookings\n\n" +
+               "Enjoy your movie!\n\n" +
+               "Best regards,\n" +
+               "RevTicket Team";
+    }
+
+    private String buildCancellationBody(Booking booking) {
+        return "Dear " + booking.getCustomerName() + ",\n\n" +
+               "Your booking has been cancelled.\n\n" +
+               "Booking Details:\n" +
+               "Ticket Number: " + booking.getTicketNumber() + "\n" +
+               "Movie: " + booking.getShowtime().getMovie().getTitle() + "\n" +
+               "Refund Amount: ₹" + (booking.getRefundAmount() != null ? booking.getRefundAmount() : 0) + "\n\n" +
+               "The refund will be processed within 5-7 business days.\n\n" +
                "Best regards,\n" +
                "RevTicket Team";
     }

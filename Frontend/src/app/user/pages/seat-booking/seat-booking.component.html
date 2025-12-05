@@ -68,7 +68,7 @@
                 [title]="getSeatTooltip(seat)"
                 [attr.data-price]="seat.price">
                 <span class="seat-number">{{ seat.number }}</span>
-                <span class="seat-price" *ngIf="isSeatClickable(seat)">₹{{ seat.price }}</span>
+                <span class="seat-price" *ngIf="isSeatClickable(seat)">{{ settingsService.currencySymbol() }}{{ seat.price }}</span>
               </button>
               <div *ngIf="!seat" class="seat-gap"></div>
             </ng-container>
@@ -80,28 +80,16 @@
       <!-- Legend -->
       <div class="legend">
         <div class="legend-item">
-          <div class="seat-demo available">
-            <span class="seat-number">1</span>
-          </div>
+          <div class="seat-demo available"></div>
           <span>Available</span>
         </div>
         <div class="legend-item">
-          <div class="seat-demo selected">
-            <span class="seat-number">2</span>
-          </div>
+          <div class="seat-demo selected"></div>
           <span>Selected</span>
         </div>
         <div class="legend-item">
-          <div class="seat-demo booked">
-            <span class="seat-number">3</span>
-          </div>
+          <div class="seat-demo booked"></div>
           <span>Booked</span>
-        </div>
-        <div class="legend-item">
-          <div class="seat-demo disabled">
-            <span class="seat-number">🚫</span>
-          </div>
-          <span>Not Available</span>
         </div>
       </div>
     </main>
@@ -121,7 +109,7 @@
         <div class="price-breakdown">
           <div class="total-row">
             <span class="total-label">Total ({{ selectedSeatsLabels().length }} seats):</span>
-            <span class="total-amount">₹{{ totalPrice() }}</span>
+            <span class="total-amount">{{ settingsService.currencySymbol() }}{{ totalPrice() }}</span>
           </div>
         </div>
         <button (click)="proceedToPayment()" class="btn-primary">

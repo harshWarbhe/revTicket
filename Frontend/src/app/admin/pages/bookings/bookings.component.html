@@ -155,9 +155,12 @@
 
       <div class="card-actions">
         @if (booking.status === 'CONFIRMED') {
-          <button class="action-btn btn-danger" (click)="cancelBooking(booking)">
+          <button class="action-btn btn-danger" 
+                  (click)="cancelBooking(booking)"
+                  [disabled]="!canCancelBooking(booking)"
+                  [title]="canCancelBooking(booking) ? 'Cancel this booking' : 'Cannot cancel - show has passed'">
             <span class="btn-icon">❌</span>
-            <span class="btn-text">Cancel Booking</span>
+            <span class="btn-text">{{ canCancelBooking(booking) ? 'Cancel Booking' : 'Show Completed' }}</span>
           </button>
         }
         @if (booking.status === 'CANCELLATION_REQUESTED') {

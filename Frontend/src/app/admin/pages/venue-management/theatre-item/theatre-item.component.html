@@ -1,0 +1,121 @@
+<div class="theatre-card" [class.expanded]="expanded">
+  <!-- MAIN THEATRE INFO -->
+  <div class="theatre-main">
+    <div class="theatre-header">
+      <div class="theatre-info">
+        <h3 class="theatre-name">{{ theatre.name }}</h3>
+        <div class="theatre-meta">
+          <span class="location">📍 {{ theatre.location }}</span>
+          <span class="divider">•</span>
+          <span class="screens">🎬 {{ theatre.totalScreens || 0 }} Screens</span>
+        </div>
+        <p class="theatre-address">{{ theatre.address }}</p>
+      </div>
+      <div class="theatre-status">
+        <span class="status-badge" [class.active]="theatre.isActive" [class.inactive]="!theatre.isActive">
+          {{ theatre.isActive ? '✅ ACTIVE' : '❌ INACTIVE' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="theatre-actions">
+      <button class="action-btn view-screens" 
+              (click)="toggleScreens.emit(theatre.id)"
+              [class.active]="expanded">
+        <span class="icon">{{ expanded ? '🔼' : '🎬' }}</span>
+        <span>{{ expanded ? 'Hide Screens' : 'View Screens' }}</span>
+      </button>
+      
+      <button class="action-btn edit" (click)="edit.emit(theatre)">
+        <span class="icon">✏️</span>
+        <span>Edit</span>
+      </button>
+      
+      <button class="action-btn status" 
+              (click)="toggleStatus.emit({id: theatre.id, currentStatus: theatre.isActive})"
+              [disabled]="statusUpdating()"
+              [class.loading]="statusUpdating()">
+        @if (statusUpdating()) {
+          <span class="icon">⏳</span>
+          <span>Updating...</span>
+        } @else {
+          <span class="icon">{{ theatre.isActive ? '⏸️' : '▶️' }}</span>
+          <span>{{ theatre.isActive ? 'Pause' : 'Resume' }}</span>
+        }
+      </button>
+      
+      <button class="action-btn delete" 
+              (click)="delete.emit(theatre.id)"
+              [disabled]="deleting()"
+              [class.loading]="deleting()">
+        @if (deleting()) {
+          <span class="icon">⏳</span>
+          <span>Deleting...</span>
+        } @else {
+          <span class="icon">🗑️</span>
+          <span>Delete</span>
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- EXPANDED SCREENS SECTION -->
+  @if (expanded) {
+  <div class="screens-section">
+    <div class="screens-header">
+      <h4>Screens in {{ theatre.name }}</h4>
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <span class="screens-count">{{ screens.length }} screens</span>
+        <button class="btn-add-screen" (click)="configureScreen.emit({theatreId: theatre.id, screenId: 'new'})">
+          <span class="icon">➕</span>
+          <span>Add Screen</span>
+        </button>
+      </div>
+    </div>
+    
+    @if (screens.length > 0) {
+      <div class="screens-grid">
+        @for (screen of screens; track screen.id) {
+        <div class="screen-card">
+          <div class="screen-info">
+            <h5 class="screen-name">{{ screen.name }}</h5>
+            <div class="screen-details">
+              <span class="seats-count">💺 {{ screen.totalSeats }} seats</span>
+              <span class="screen-status" [class.active]="screen.isActive">
+                {{ screen.isActive ? '✅ Active' : '❌ Inactive' }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="screen-actions">
+            <button class="screen-btn preview" 
+                    (click)="previewScreen.emit({theatreId: theatre.id, screenId: screen.id})"
+                    title="Preview Layout">
+              <span class="icon">👁️</span>
+              <span>Preview</span>
+            </button>
+            
+            <button class="screen-btn configure" 
+                    (click)="configureScreen.emit({theatreId: theatre.id, screenId: screen.id})"
+                    title="Configure Layout">
+              <span class="icon">⚙️</span>
+              <span>Configure</span>
+            </button>
+          </div>
+        </div>
+        }
+      </div>
+    } @else {
+      <div class="no-screens">
+        <div class="no-screens-icon">🎭</div>
+        <p>No screens configured yet</p>
+        <button class="btn-add-screen" 
+                (click)="configureScreen.emit({theatreId: theatre.id, screenId: 'new'})">
+          <span class="icon">➕</span>
+          <span>Add First Screen</span>
+        </button>
+      </div>
+    }
+  </div>
+  }
+</div>

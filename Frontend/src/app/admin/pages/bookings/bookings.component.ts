@@ -121,7 +121,19 @@ export class BookingsComponent implements OnInit {
     });
   }
 
+  canCancelBooking(booking: BookingData): boolean {
+    if (booking.status !== 'CONFIRMED') return false;
+    const showtime = new Date(booking.showtime);
+    const now = new Date();
+    return showtime > now;
+  }
+
   cancelBooking(booking: BookingData): void {
+    if (!this.canCancelBooking(booking)) {
+      this.alertService.error('Cannot cancel booking. Show has already started or passed.');
+      return;
+    }
+
     const confirmMsg = `Cancel booking for ${booking.customerName}?\n\nMovie: ${booking.movieTitle}\nSeats: ${(booking.seatLabels || booking.seats).join(', ')}\nAmount: ${this.formatCurrency(booking.totalAmount)}`;
     
     if (!confirm(confirmMsg)) return;

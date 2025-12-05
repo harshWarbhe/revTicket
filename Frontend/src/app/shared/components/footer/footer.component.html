@@ -2,7 +2,7 @@
   <div class="footer-content">
     <div class="footer-section">
       <div class="brand">
-        <h3>RevTicket</h3>
+        <h3>{{ settingsService.siteName() }}</h3>
         <p>Your ultimate movie booking destination</p>
       </div>
       <div class="social-links">
@@ -56,11 +56,11 @@
       <div class="contact-info">
         <div class="contact-item">
           <span class="icon">📧</span>
-          <span>support&#64;revticket.com</span>
+          <span>{{ settingsService.siteEmail() }}</span>
         </div>
         <div class="contact-item">
           <span class="icon">📞</span>
-          <span>+91 1234567890</span>
+          <span>{{ settingsService.sitePhone() }}</span>
         </div>
         <div class="contact-item">
           <span class="icon">📍</span>
@@ -72,7 +72,7 @@
 
   <div class="footer-bottom">
     <div class="footer-bottom-content">
-      <p>&copy; {{ currentYear }} RevTicket. All rights reserved.</p>
+      <p>&copy; {{ currentYear }} {{ settingsService.siteName() }}. All rights reserved.</p>
       <div class="payment-methods">
         <span>We Accept:</span>
         <div class="payment-icons">

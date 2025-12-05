@@ -1,0 +1,384 @@
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+    transform: translateY(0);
+  }
+}
+
+.theatre-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+
+  &.expanded {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #667eea;
+  }
+}
+
+.theatre-main {
+  padding: 1.5rem;
+}
+
+.theatre-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.theatre-info {
+  flex: 1;
+}
+
+.theatre-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.theatre-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+
+  .divider {
+    color: #cbd5e1;
+  }
+}
+
+.theatre-address {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.theatre-status {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  &.active {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+    border: 1px solid #10b981;
+  }
+
+  &.inactive {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    border: 1px solid #ef4444;
+  }
+}
+
+.theatre-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  &.loading {
+    pointer-events: none;
+  }
+
+  .icon {
+    font-size: 1rem;
+  }
+
+  &.view-screens {
+    background: #f1f5f9;
+    color: #475569;
+
+    &:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+  }
+
+  &.edit {
+    background: #dbeafe;
+    color: #1e40af;
+
+    &:hover:not(:disabled) {
+      background: #bfdbfe;
+    }
+  }
+
+  &.status {
+    background: #fef3c7;
+    color: #92400e;
+
+    &:hover:not(:disabled) {
+      background: #fde68a;
+    }
+  }
+
+  &.delete {
+    background: #fee2e2;
+    color: #991b1b;
+
+    &:hover:not(:disabled) {
+      background: #fecaca;
+    }
+  }
+}
+
+.screens-section {
+  border-top: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  padding: 1.5rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.screens-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+  }
+
+  .screens-count {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+    background: #f1f5f9;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+  }
+}
+
+.screens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.screen-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+.screen-info {
+  margin-bottom: 1rem;
+}
+
+.screen-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 0.5rem 0;
+}
+
+.screen-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+
+  .seats-count {
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .screen-status {
+    font-weight: 600;
+
+    &.active {
+      color: #059669;
+    }
+
+    &:not(.active) {
+      color: #dc2626;
+    }
+  }
+}
+
+.screen-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.screen-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  .icon {
+    font-size: 0.875rem;
+  }
+
+  &.preview {
+    background: #f0f9ff;
+    color: #0369a1;
+
+    &:hover {
+      background: #e0f2fe;
+    }
+  }
+
+  &.configure {
+    background: #f0fdf4;
+    color: #166534;
+
+    &:hover {
+      background: #dcfce7;
+    }
+  }
+}
+
+.no-screens {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+
+  .no-screens-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    font-weight: 500;
+  }
+}
+
+.btn-add-screen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+  }
+
+  .icon {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .theatre-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .theatre-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .screens-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .theatre-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .action-btn {
+    justify-content: center;
+  }
+}

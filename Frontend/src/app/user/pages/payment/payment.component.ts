@@ -6,6 +6,7 @@ import { BookingDraft, BookingCostBreakdown, BookingRequest } from '../../../cor
 import { BookingService } from '../../../core/services/booking.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { SettingsService } from '../../../core/services/settings.service';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -22,6 +23,7 @@ export class PaymentComponent implements OnInit {
   private bookingService = inject(BookingService);
   private authService = inject(AuthService);
   private alertService = inject(AlertService);
+  readonly settingsService = inject(SettingsService);
 
   paymentMethod = signal('card');
   cardForm: FormGroup;

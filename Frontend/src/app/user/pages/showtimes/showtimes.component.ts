@@ -7,6 +7,7 @@ import { ShowtimeService, Showtime } from '../../../core/services/showtime.servi
 import { AlertService } from '../../../core/services/alert.service';
 import { Movie } from '../../../core/models/movie.model';
 import { FormsModule } from '@angular/forms';
+import { SettingsService } from '../../../core/services/settings.service';
 
 interface TheaterGroup {
   theaterId: string;
@@ -132,6 +133,7 @@ export class ShowtimesComponent implements OnInit {
   private movieService = inject(MovieService);
   private showtimeService = inject(ShowtimeService);
   private alertService = inject(AlertService);
+  readonly settingsService = inject(SettingsService);
 
   ngOnInit(): void {
     window.scrollTo(0, 0);

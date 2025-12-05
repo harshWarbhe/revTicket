@@ -102,7 +102,7 @@
           class="pay-button" 
           (click)="processPayment()" 
           [disabled]="processing()">
-          <span *ngIf="!processing()">Pay ₹{{ costBreakdown()!.total }}</span>
+          <span *ngIf="!processing()">Pay {{ settingsService.currencySymbol() }}{{ costBreakdown()!.total }}</span>
           <span *ngIf="processing()">⏳ Processing Payment...</span>
         </button>
         <p class="secure-note">
@@ -133,19 +133,19 @@
       <div class="cost-breakdown">
         <div class="row">
           <span>Tickets ({{ bookingDraft()!.seats.length }})</span>
-          <span>₹{{ costBreakdown()!.baseAmount }}</span>
+          <span>{{ settingsService.currencySymbol() }}{{ costBreakdown()!.baseAmount }}</span>
         </div>
         <div class="row">
-          <span>Convenience Fee</span>
-          <span>₹{{ costBreakdown()!.convenienceFee }}</span>
+          <span>Convenience Fee ({{ settingsService.convenienceFee() }}%)</span>
+          <span>{{ settingsService.currencySymbol() }}{{ costBreakdown()!.convenienceFee }}</span>
         </div>
         <div class="row">
-          <span>GST (18%)</span>
-          <span>₹{{ costBreakdown()!.gst }}</span>
+          <span>GST ({{ settingsService.gst() }}%)</span>
+          <span>{{ settingsService.currencySymbol() }}{{ costBreakdown()!.gst }}</span>
         </div>
         <div class="row total">
           <span>Amount Payable</span>
-          <span>₹{{ costBreakdown()!.total }}</span>
+          <span>{{ settingsService.currencySymbol() }}{{ costBreakdown()!.total }}</span>
         </div>
       </div>
     </section>

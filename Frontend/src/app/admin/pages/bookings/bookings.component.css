@@ -217,30 +217,30 @@
 
 /* BOOKINGS GRID */
 .bookings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   margin-bottom: 20px;
 }
 
 .booking-card {
   background: #fff;
-  border-radius: 10px;
-  padding: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   border: 1px solid #e2e8f0;
   transition: all 200ms;
 }
 
 .booking-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
   transform: translateY(-2px);
 }
 
 .card-content {
   display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 24px;
+  margin-bottom: 16px;
 }
 
 .poster-section {
@@ -248,16 +248,18 @@
 }
 
 .movie-poster {
-  width: 80px;
-  height: 120px;
-  border-radius: 8px;
+  width: 100px;
+  height: 150px;
+  border-radius: 10px;
   object-fit: cover;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .details-section {
   flex: 1;
   min-width: 0;
+  display: flex;
+  gap: 24px;
 }
 
 .card-header {
@@ -306,37 +308,36 @@
 }
 
 .card-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .detail-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   font-size: 0.85rem;
 }
 
 .detail-label {
   color: #64748b;
   font-weight: 500;
+  font-size: 0.75rem;
 }
 
 .detail-value {
   color: #1a202c;
   font-weight: 600;
-  text-align: right;
-  max-width: 60%;
+  max-width: 100%;
 }
 
 .detail-value.seats-container {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  justify-content: flex-end;
-  max-width: 65%;
+  max-width: 100%;
 }
 
 .seat-badge {
@@ -357,23 +358,24 @@
 
 .user-info {
   background: #f8f9fa;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-top: 12px;
+  padding: 16px;
+  border-radius: 10px;
   font-size: 0.85rem;
+  min-width: 280px;
 }
 
 .user-info-title {
   font-weight: 700;
   color: #1a202c;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-size: 0.8rem;
 }
 
 .user-info-row {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
 }
 
 .user-info-row:last-child {
@@ -383,12 +385,12 @@
 .user-label {
   color: #64748b;
   font-weight: 500;
+  font-size: 0.75rem;
 }
 
 .user-value {
   color: #1a202c;
   font-weight: 600;
-  text-align: right;
 }
 
 .card-actions {
@@ -413,8 +415,14 @@
   border: none;
 }
 
-.action-btn:hover {
+.action-btn:hover:not(:disabled) {
   transform: translateY(-2px);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #94a3b8;
 }
 
 .btn-danger {
@@ -423,9 +431,14 @@
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
   background: #dc2626;
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger:disabled {
+  background: #94a3b8;
+  box-shadow: none;
 }
 
 .btn-success {
@@ -524,8 +537,16 @@
     width: 100%;
   }
 
-  .bookings-grid {
+  .card-content {
+    flex-direction: column;
+  }
+
+  .card-details {
     grid-template-columns: 1fr;
+  }
+
+  .user-info {
+    min-width: auto;
   }
 }
 

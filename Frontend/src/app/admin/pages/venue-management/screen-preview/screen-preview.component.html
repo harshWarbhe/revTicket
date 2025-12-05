@@ -1,0 +1,73 @@
+<div class="preview-overlay" (click)="close.emit()">
+  <div class="preview-container" (click)="$event.stopPropagation()">
+    <div class="preview-header">
+      <h2>{{ config()?.name || 'Screen Preview' }}</h2>
+      <button class="btn-close" (click)="close.emit()">✕</button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading">Loading preview...</div>
+    } @else if (config()) {
+      <div class="preview-content">
+        <div class="screen-indicator">
+          <div class="screen-line"></div>
+          <span>SCREEN THIS WAY</span>
+        </div>
+
+        <div class="seats-grid">
+          @for (rowSeats of seatGrid(); track $index; let rowIdx = $index) {
+            <div class="seat-row">
+              <span class="row-label">{{ getRowLabel(rowIdx) }}</span>
+              <div class="seats">
+                @for (seat of rowSeats; track $index; let colIdx = $index) {
+                  @if (seat) {
+                    <div 
+                      class="seat"
+                      [class.disabled]="seat.status === 'disabled'"
+                      [style.background]="seat.status !== 'disabled' ? getSeatCategory(seat)?.color : '#ccc'"
+                      [title]="seat.label + (seat.status === 'disabled' ? ' (Disabled)' : '')">
+                      {{ colIdx + 1 }}
+                    </div>
+                  } @else {
+                    <div class="seat-gap"></div>
+                  }
+                }
+              </div>
+              <span class="row-label">{{ getRowLabel(rowIdx) }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="legend">
+          @for (cat of config()?.categories; track cat.id) {
+            <div class="legend-item">
+              <div class="legend-color" [style.background]="cat.color"></div>
+              <span>{{ cat.name }} - ₹{{ cat.price }}</span>
+            </div>
+          }
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ccc"></div>
+            <span>Disabled</span>
+          </div>
+        </div>
+
+        <div class="preview-stats">
+          <div class="stat">
+            <span class="stat-label">Total Rows:</span>
+            <span class="stat-value">{{ config()?.rows }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Seats per Row:</span>
+            <span class="stat-value">{{ config()?.seatsPerRow }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Total Seats:</span>
+            <span class="stat-value">{{ config()?.totalSeats }}</span>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="error">Failed to load preview</div>
+    }
+  </div>
+</div>

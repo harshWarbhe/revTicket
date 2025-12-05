@@ -10,12 +10,14 @@ import {
   BookingRequest
 } from '../models/booking.model';
 import { environment } from '../../../environments/environment';
+import { SettingsService } from './settings.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookingService {
   private http = inject(HttpClient);
+  private settingsService = inject(SettingsService);
   private bookingDraft: BookingDraft | null = null;
   private bookingConfirmation: BookingConfirmation | null = null;
 
@@ -105,13 +107,12 @@ export class BookingService {
   }
 
   calculateCostBreakdown(baseAmount: number): BookingCostBreakdown {
-    const convenienceFee = Math.round(baseAmount * 0.05);
-    const gst = Math.round((baseAmount + convenienceFee) * 0.18);
+    const pricing = this.settingsService.calculatePrice(baseAmount);
     return {
-      baseAmount,
-      convenienceFee,
-      gst,
-      total: baseAmount + convenienceFee + gst
+      baseAmount: pricing.base,
+      convenienceFee: pricing.convenienceFee,
+      gst: pricing.gst,
+      total: pricing.total
     };
   }
 

@@ -35,33 +35,28 @@
 
   <div class="search-filters">
     <div class="container">
-      <div class="search-bar">
-        <input type="text" placeholder="Search theaters..." [(ngModel)]="searchTerm" (ngModelChange)="onSearch($event)">
-        <span class="search-icon">🔍</span>
-      </div>
-      <div class="filters">
-        <select [(ngModel)]="selectedLanguage" (ngModelChange)="selectLanguage($event)">
-          @for (lang of languages(); track lang) {
-          <option [value]="lang">{{ lang }}</option>
-          }
-        </select>
-        <select [(ngModel)]="priceRange" (ngModelChange)="selectPriceRange($event)">
-          <option value="All">All Prices</option>
-          <option value="0-200">₹0-200</option>
-          <option value="200-400">₹200-400</option>
-          <option value="400-1000">₹400+</option>
-        </select>
-        <select [(ngModel)]="selectedFormat" (ngModelChange)="selectFormat($event)">
-          <option value="All">All Formats</option>
-          <option value="2D">2D</option>
-          <option value="3D">3D</option>
-          <option value="IMAX">IMAX</option>
-        </select>
-        <select [(ngModel)]="sortBy" (ngModelChange)="sortBy.set($event)">
-          <option value="time">Sort by Time</option>
-          <option value="price">Sort by Price</option>
-          <option value="name">Sort by Theater</option>
-        </select>
+      <div class="filter-row">
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search theaters..." [(ngModel)]="searchTerm" (ngModelChange)="onSearch($event)">
+        </div>
+        <div class="filters">
+          <div class="filter-group">
+            <label>Language:</label>
+            <select [(ngModel)]="selectedLanguage" (ngModelChange)="selectLanguage($event)">
+              @for (lang of languages(); track lang) {
+              <option [value]="lang">{{ lang }}</option>
+              }
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Sort:</label>
+            <select [(ngModel)]="sortBy" (ngModelChange)="sortBy.set($event)">
+              <option value="time">Time</option>
+              <option value="name">Theater</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -81,7 +76,6 @@
           @for (show of theater.showtimes; track show.id) {
           <button class="showtime-btn" (click)="selectShowtime(show.id)">
             <div class="time">{{ show.showDateTime | date:'h:mm a' }}</div>
-            <div class="price">₹{{ show.ticketPrice }}</div>
           </button>
           }
         </div>

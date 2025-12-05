@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { BookingService } from '../../../core/services/booking.service';
 import { BookingDraft } from '../../../core/models/booking.model';
 import { environment } from '../../../../environments/environment';
+import { SettingsService } from '../../../core/services/settings.service';
 
 interface Seat {
   id: string;
@@ -48,6 +49,7 @@ export class SeatBookingComponent implements OnInit {
   private router = inject(Router);
   private http = inject(HttpClient);
   private bookingService = inject(BookingService);
+  readonly settingsService = inject(SettingsService);
 
   showtime = signal<Showtime | null>(null);
   seats = signal<Seat[]>([]);
@@ -121,20 +123,19 @@ export class SeatBookingComponent implements OnInit {
     this.showtimeId = showtimeId;
     this.loadData();
     
-    // Refresh seats every 30 seconds to catch admin updates
+    // Refresh seats every 5 seconds to catch booking/cancellation updates
     setInterval(() => {
       this.loadSeats();
-    }, 30000);
+    }, 5000);
   }
 
   private async loadData() {
     try {
       this.loading.set(true);
       
-      await Promise.all([
-        this.loadShowtime(),
-        this.loadSeats()
-      ]);
+      // Load showtime first, then seats
+      await this.loadShowtime();
+      await this.loadSeats();
     } catch (error) {
       console.error('Failed to load data:', error);
       this.error.set(`Failed to load booking data: ${error}`);
@@ -167,64 +168,125 @@ export class SeatBookingComponent implements OnInit {
     });
   }
 
-  private loadSeats(): Promise<void> {
-    return new Promise((resolve) => {
-      this.http.get<Seat[]>(`${environment.apiUrl}/seats/showtime/${this.showtimeId}`).subscribe({
-        next: (seats) => {
-          this.seats.set(seats);
-          resolve();
-        },
-        error: () => {
-          this.seats.set([]);
-          resolve();
-        }
-      });
-    });
+  private async loadSeats(): Promise<void> {
+    const showtime = this.showtime();
+    if (!showtime?.screen) {
+      console.error('No showtime or screen ID available');
+      this.seats.set([]);
+      return;
+    }
+
+    try {
+      console.log('Loading screen config for:', showtime.screen);
+      // Load screen configuration
+      const screenConfig: any = await this.http.get(`${environment.apiUrl}/screens/${showtime.screen}/config`).toPromise();
+      
+      if (!screenConfig || !screenConfig.seatMap || !screenConfig.categories) {
+        console.error('Invalid screen configuration');
+        this.seats.set([]);
+        return;
+      }
+
+      // Load booked seats for this showtime
+      const bookedSeats: any[] = await this.http.get<any[]>(`${environment.apiUrl}/seats/showtime/${this.showtimeId}`).toPromise() || [];
+      console.log('Booked seats from API:', bookedSeats);
+      console.log('Seats marked as booked:', bookedSeats.filter(s => s.isBooked));
+      const bookedSeatIds = new Set(bookedSeats.filter(s => s.isBooked === true || s.isBooked === 1).map(s => s.id));
+
+      // Generate seats from screen configuration, excluding disabled seats
+      const seats: Seat[] = screenConfig.seatMap
+        .filter((seatData: any) => seatData.status !== 'disabled')
+        .map((seatData: any) => {
+          const category = screenConfig.categories.find((c: any) => c.id === seatData.categoryId);
+          const seatLabel = `${String.fromCharCode(65 + seatData.row)}${seatData.col + 1}`;
+          // Find matching seat from database
+          const dbSeat = bookedSeats.find(bs => bs.row === String.fromCharCode(65 + seatData.row) && bs.number === (seatData.col + 1));
+          
+          return {
+            id: dbSeat?.id || seatLabel,
+            row: String.fromCharCode(65 + seatData.row),
+            number: seatData.col + 1,
+            price: category?.price || showtime.ticketPrice || 100,
+            type: category?.name || 'Standard',
+            isBooked: bookedSeatIds.has(dbSeat?.id),
+            isHeld: false,
+            isDisabled: false
+          };
+        });
+
+      console.log('✅ VENUE-TO-BOOKING TEST:');
+      console.log('Screen Config Loaded:', screenConfig.name);
+      console.log('Total Seats Generated:', seats.length);
+      console.log('Categories:', screenConfig.categories.map((c: any) => `${c.name}: ₹${c.price}`));
+      console.log('Sample Seats:', seats.slice(0, 5).map(s => `${s.row}${s.number} (${s.type} - ₹${s.price})`));
+      console.log('Disabled Seats:', seats.filter(s => s.isDisabled).length);
+      console.log('Booked Seats:', seats.filter(s => s.isBooked).length);
+
+      this.seats.set(seats);
+    } catch (error) {
+      console.error('Failed to load seats:', error);
+      this.seats.set([]);
+    }
   }
 
 
 
   toggleSeat(seat: Seat) {
-    // Prevent selection of booked, held, or disabled seats
-    if (seat.isBooked || seat.isHeld || seat.isDisabled) {
+    if (seat.isBooked || seat.isHeld) {
       console.log('Seat cannot be selected:', seat);
       return;
     }
     
+    const maxSeats = this.settingsService.maxSeats();
     const seatKey = `${seat.row}${seat.number}`;
     const selected = new Set(this.selectedSeats());
     
     if (selected.has(seatKey)) {
       selected.delete(seatKey);
       console.log('Seat deselected:', seatKey);
-    } else if (selected.size < 10) {
+    } else if (selected.size < maxSeats) {
       selected.add(seatKey);
       console.log('Seat selected:', seatKey);
     } else {
-      console.log('Maximum 10 seats can be selected');
+      console.log(`Maximum ${maxSeats} seats can be selected`);
     }
     
     this.selectedSeats.set(selected);
   }
 
   getSeatClass(seat: Seat): string {
-    // Priority order: disabled > booked/held > selected > available
-    if (seat.isDisabled) return 'disabled';
     if (seat.isBooked || seat.isHeld) return 'booked';
     
     const seatKey = `${seat.row}${seat.number}`;
     return this.selectedSeats().has(seatKey) ? 'selected' : 'available';
   }
 
+  goBack(): void {
+    const showtime = this.showtime();
+    if (showtime?.movieId) {
+      this.router.navigate(['/user/showtimes', showtime.movieId]);
+    } else {
+      this.router.navigate(['/user/home']);
+    }
+  }
+
+  getTheaterLabel(): string {
+    return this.showtime()?.theater?.name || 'Theater';
+  }
+
+  getScreenLabel(): string {
+    return this.showtime()?.screenInfo?.name || 'Screen';
+  }
+
   isSeatClickable(seat: Seat): boolean {
-    return !seat.isBooked && !seat.isHeld && !seat.isDisabled;
+    return !seat.isBooked && !seat.isHeld;
   }
 
   getSeatTooltip(seat: Seat): string {
-    if (seat.isDisabled) return 'This seat is disabled';
     if (seat.isBooked) return 'This seat is already booked';
     if (seat.isHeld) return 'This seat is on hold';
-    return `${seat.row}${seat.number} - ₹${seat.price}`;
+    const symbol = this.settingsService.currencySymbol();
+    return `${seat.row}${seat.number} - ${symbol}${seat.price}`;
   }
 
   proceedToPayment() {
@@ -242,6 +304,9 @@ export class SeatBookingComponent implements OnInit {
         selectedSeatIds.push(seat.id);
       }
     });
+    
+    console.log('Selected seat IDs being sent:', selectedSeatIds);
+    console.log('Selected seat labels:', this.selectedSeatsLabels());
     
     const bookingDraft: BookingDraft = {
       movieId: showtime.movieId,
@@ -263,34 +328,5 @@ export class SeatBookingComponent implements OnInit {
     
     console.log('Navigating to payment:', ['/user/payment', this.showtimeId]);
     this.router.navigate(['/user/payment', this.showtimeId]);
-  }
-
-  goBack() {
-    this.router.navigate(['/user/home']);
-  }
-  
-  getTheaterLabel(): string {
-    const showtime = this.showtime();
-    return showtime?.theater?.name || 'Theater';
-  }
-  
-  getScreenLabel(): string {
-    const showtime = this.showtime();
-    return showtime?.screenInfo?.name || 'Screen 1';
-  }
-  
-  getShowLabel(): string {
-    const showtime = this.showtime();
-    if (showtime?.showDateTime) {
-      const date = new Date(showtime.showDateTime);
-      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-      return `${timeStr}`;
-    }
-    return 'Show';
-  }
-  
-  getMovieLabel(): string {
-    const showtime = this.showtime();
-    return showtime?.movie?.title || 'Movie';
   }
 }

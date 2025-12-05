@@ -1,4 +1,4 @@
-import { Component, input, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, input, OnInit, ViewChild, ElementRef, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Booking } from '../../../core/models/booking.model';
 import * as QRCode from 'qrcode';
@@ -19,27 +19,28 @@ export class ETicketComponent implements OnInit {
   
   qrCodeDataUrl: string = '';
   private alertService = inject(AlertService);
+  private cdr = inject(ChangeDetectorRef);
 
-  async ngOnInit(): Promise<void> {
-    if (this.booking()) {
-      await this.generateQRCode();
-    }
+  ngOnInit(): void {
+    this.generateQRCode();
   }
 
-  async generateQRCode(): Promise<void> {
-    try {
-      const booking = this.booking();
-      const ticketInfo = `Ticket: ${booking.ticketNumber}\nMovie: ${booking.movieTitle}\nTheater: ${booking.theaterName}\nShow: ${this.formatDateTime(booking.showtime)}\nSeats: ${this.getSeatDisplay()}\nAmount: ${this.formatCurrency(booking.totalAmount)}`;
-      
-      this.qrCodeDataUrl = await QRCode.toDataURL(ticketInfo, {
-        width: 200,
-        margin: 1,
-        errorCorrectionLevel: 'M'
-      });
-    } catch (error) {
+  generateQRCode(): void {
+    const booking = this.booking();
+    const ticketInfo = `Ticket: ${booking.ticketNumber}\nMovie: ${booking.movieTitle}\nTheater: ${booking.theaterName}\nShow: ${this.formatDateTime(booking.showtime)}\nSeats: ${this.getSeatDisplay()}\nAmount: ${this.formatCurrency(booking.totalAmount)}`;
+    
+    QRCode.toDataURL(ticketInfo, {
+      width: 200,
+      margin: 1,
+      errorCorrectionLevel: 'M'
+    }).then(url => {
+      this.qrCodeDataUrl = url;
+      this.cdr.detectChanges();
+    }).catch(error => {
       console.error('QR Code generation failed:', error);
       this.qrCodeDataUrl = '';
-    }
+      this.cdr.detectChanges();
+    });
   }
 
   getSeatDisplay(): string {

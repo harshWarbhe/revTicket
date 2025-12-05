@@ -37,19 +37,11 @@
       }
     </a>
 
-    <a routerLink="/admin/manage-theatres" routerLinkActive="active" (click)="closeSidebarOnMobile()" class="nav-link"
-      title="Manage Theatres">
+    <a routerLink="/admin/venues" routerLinkActive="active" (click)="closeSidebarOnMobile()" class="nav-link"
+      title="Venue Management">
       <span class="nav-icon">🏢</span>
       @if (sidebarOpen()) {
-        <span class="nav-label">Theatres</span>
-      }
-    </a>
-
-    <a routerLink="/admin/screens" routerLinkActive="active" (click)="closeSidebarOnMobile()" class="nav-link"
-      title="Manage Screens">
-      <span class="nav-icon">🎭</span>
-      @if (sidebarOpen()) {
-        <span class="nav-label">Screens</span>
+        <span class="nav-label">Venues</span>
       }
     </a>
 

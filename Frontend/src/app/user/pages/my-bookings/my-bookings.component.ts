@@ -6,6 +6,7 @@ import { AlertService } from '../../../core/services/alert.service';
 import { BookingService } from '../../../core/services/booking.service';
 import { Booking } from '../../../core/models/booking.model';
 import { ETicketComponent } from '../../components/e-ticket/e-ticket.component';
+import { SettingsService } from '../../../core/services/settings.service';
 
 type BookingCard = Booking & {
   moviePosterUrl?: string;
@@ -62,6 +63,7 @@ export class MyBookingsComponent implements OnInit {
   private alertService = inject(AlertService);
   private bookingService = inject(BookingService);
   private route = inject(ActivatedRoute);
+  private settingsService = inject(SettingsService);
 
   onImageError(event: any): void {
     event.target.src = 'assets/images/movies/default-poster.png';
@@ -201,16 +203,14 @@ export class MyBookingsComponent implements OnInit {
 
   viewTicket(booking: BookingCard): void {
     this.selectedBooking.set(booking);
+    this.showTicket.set(true);
+    document.body.style.overflow = 'hidden';
     setTimeout(() => {
-      this.showTicket.set(true);
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => {
-        const modalContent = document.querySelector('.modal-content');
-        if (modalContent) {
-          modalContent.scrollTop = 0;
-        }
-      }, 100);
-    }, 50);
+      const modalContent = document.querySelector('.modal-content');
+      if (modalContent) {
+        modalContent.scrollTop = 0;
+      }
+    }, 100);
   }
 
   closeTicket(): void {
@@ -227,11 +227,7 @@ export class MyBookingsComponent implements OnInit {
     if (booking.status !== 'CONFIRMED') {
       return false;
     }
-    const showtime = new Date(booking.showtime);
-    const now = new Date();
-    // Allow cancellation if showtime is at least 1 hour in the future
-    const hoursDiff = (showtime.getTime() - now.getTime()) / (1000 * 60 * 60);
-    return hoursDiff > 1;
+    return this.settingsService.canCancelBooking(booking.showtime);
   }
 
   isPendingCancellation(booking: BookingCard): boolean {
@@ -328,11 +324,7 @@ export class MyBookingsComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
+    return this.settingsService.formatCurrency(amount);
   }
 
   getSeatLabels(booking: BookingCard): string[] {

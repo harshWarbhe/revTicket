@@ -1,0 +1,207 @@
+<div class="venue-wrapper">
+  <!-- HEADER -->
+  <header class="venue-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="page-title">🏢 Venue Management</h1>
+        <p class="page-subtitle">{{ filteredTheatres().length }} of {{ theatres().length }} venues</p>
+      </div>
+      <button class="btn-primary" (click)="addTheatre()" [disabled]="loading()">
+        <span class="icon">➕</span>
+        <span>Add Theatre</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- FILTERS -->
+  @if (!showTheatreForm() && !configTheatreId()) {
+  <section class="filters-section">
+    <div class="filters-container">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Search theatres, cities, or addresses..." 
+          [value]="searchTerm()" 
+          (input)="onSearchChange($any($event.target).value)">
+        @if (searchTerm()) {
+        <button class="clear-search" (click)="searchTerm.set(''); onFilterChange()" title="Clear search">
+          ✕
+        </button>
+        }
+      </div>
+
+      <select class="filter-select" 
+              [value]="selectedCity()" 
+              (change)="selectedCity.set($any($event.target).value); onFilterChange()">
+        <option value="">📍 All Cities</option>
+        @for (city of cities(); track city) {
+          <option [value]="city">{{ city }}</option>
+        }
+      </select>
+
+      <select class="filter-select" 
+              [value]="selectedStatus()" 
+              (change)="selectedStatus.set($any($event.target).value); onFilterChange()">
+        <option value="">🔘 All Status</option>
+        <option value="active">✅ Active</option>
+        <option value="inactive">❌ Inactive</option>
+      </select>
+
+      @if (searchTerm() || selectedCity() || selectedStatus()) {
+      <button class="btn-clear" (click)="searchTerm.set(''); selectedCity.set(''); selectedStatus.set(''); onFilterChange()">
+        <span>🔄</span>
+        <span>Clear Filters</span>
+      </button>
+      }
+    </div>
+  </section>
+  }
+
+  <!-- THEATRE FORM -->
+  @if (showTheatreForm()) {
+  <section class="form-section">
+    <div class="form-card">
+      <div class="form-header">
+        <h3>{{ editingTheatreId() ? 'Edit Theatre' : 'Add New Theatre' }}</h3>
+        <button class="btn-close" (click)="cancelTheatreForm()">✕</button>
+      </div>
+
+      <form [formGroup]="theatreForm" (ngSubmit)="submitTheatre()" class="theatre-form">
+        <div class="form-grid">
+          <div class="form-group" [class.error]="isInvalid('name')">
+            <label>Theatre Name *</label>
+            <input type="text" formControlName="name" placeholder="e.g., PVR Icon">
+            @if (isInvalid('name')) {
+              <span class="error-text">Name is required</span>
+            }
+          </div>
+
+          <div class="form-group" [class.error]="isInvalid('location')">
+            <label>City / Location *</label>
+            <input type="text" formControlName="location" placeholder="e.g., Mumbai">
+            @if (isInvalid('location')) {
+              <span class="error-text">Location is required</span>
+            }
+          </div>
+
+          <div class="form-group full-width" [class.error]="isInvalid('address')">
+            <label>Address *</label>
+            <textarea formControlName="address" rows="2" placeholder="Full address"></textarea>
+            @if (isInvalid('address')) {
+              <span class="error-text">Address is required</span>
+            }
+          </div>
+
+          <div class="form-group" [class.error]="isInvalid('totalScreens')">
+            <label>Total Screens *</label>
+            <input type="number" formControlName="totalScreens" min="1" placeholder="e.g., 5">
+            @if (isInvalid('totalScreens')) {
+              <span class="error-text">At least 1 screen required</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label>Status *</label>
+            <select formControlName="isActive">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Inactive</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Theatre Image</label>
+            <input type="file" accept="image/*" (change)="previewFile($event)">
+            <input type="url" formControlName="imageUrl" placeholder="Or enter image URL" (input)="imagePreview.set($any($event.target).value)">
+            @if (imagePreview() && isImage(imagePreview())) {
+              <div class="image-preview">
+                <img [src]="imagePreview()" alt="Theatre preview" class="preview-img">
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelTheatreForm()" [disabled]="submitting()">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="theatreForm.invalid || submitting()">
+            {{ submitting() ? 'Saving...' : (editingTheatreId() ? 'Update Theatre' : 'Add Theatre') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+  }
+
+
+
+  <!-- LOADING STATE -->
+  @if (loading()) {
+  <section class="loading-section">
+    <div class="loading-spinner"></div>
+    <p>Loading venues...</p>
+  </section>
+  }
+
+  <!-- THEATRES LIST -->
+  @if (!loading() && filteredTheatres().length > 0 && !showTheatreForm() && !configTheatreId()) {
+  <section class="theatres-section">
+    @for (theatre of filteredTheatres(); track trackByTheatreId($index, theatre)) {
+    <app-theatre-item 
+      [theatre]="theatre"
+      [expanded]="expandedTheatreId() === theatre.id"
+      [screens]="screens()[theatre.id] || []"
+      (edit)="editTheatre($event)"
+      (toggleStatus)="toggleTheatreStatus($event.id, $event.currentStatus)"
+      (delete)="deleteTheatre($event)"
+      (toggleScreens)="toggleScreens($event)"
+      (configureScreen)="openScreenConfig($event.theatreId, $event.screenId)"
+      (previewScreen)="previewScreen($event.theatreId, $event.screenId)">
+    </app-theatre-item>
+    }
+  </section>
+  }
+
+  <!-- EMPTY STATE -->
+  @if (!loading() && filteredTheatres().length === 0 && !showTheatreForm() && !configTheatreId()) {
+  <section class="empty-section">
+    <div class="empty-content">
+      <div class="empty-icon">🎭</div>
+      <h3>No Venues Found</h3>
+      @if (searchTerm() || selectedCity() || selectedStatus()) {
+        <p>No venues match your current filters</p>
+        <button class="btn-clear" (click)="searchTerm.set(''); selectedCity.set(''); selectedStatus.set(''); onFilterChange()">
+          <span>🔄</span>
+          <span>Clear All Filters</span>
+        </button>
+      } @else if (theatres().length === 0) {
+        <p>Add your first theatre to get started</p>
+        <button class="btn-primary" (click)="addTheatre()">
+          <span>➕</span>
+          <span>Add Theatre</span>
+        </button>
+      }
+    </div>
+  </section>
+  }
+
+  <!-- SCREEN CONFIGURATION MODAL -->
+  @if (configTheatreId() && configScreenId()) {
+    <app-screen-config
+      [theatreId]="configTheatreId()!"
+      [screenId]="configScreenId()!"
+      (close)="closeScreenConfig()"
+      (saved)="onConfigSaved()">
+    </app-screen-config>
+  }
+
+  <!-- SCREEN PREVIEW MODAL -->
+  @if (previewScreenId()) {
+    <app-screen-preview
+      [screenId]="previewScreenId()!"
+      (close)="closePreview()">
+    </app-screen-preview>
+  }
+</div>

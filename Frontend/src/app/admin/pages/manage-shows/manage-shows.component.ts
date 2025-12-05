@@ -101,10 +101,23 @@ export class ManageShowsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
+          const now = new Date();
           const sorted = (Array.isArray(data) ? data : []).sort((a, b) => {
-            if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
-            if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1;
-            return new Date(b.showDateTime).getTime() - new Date(a.showDateTime).getTime();
+            const aDate = new Date(a.showDateTime);
+            const bDate = new Date(b.showDateTime);
+            const aUpcoming = aDate > now;
+            const bUpcoming = bDate > now;
+            
+            // Upcoming shows first
+            if (aUpcoming && !bUpcoming) return -1;
+            if (!aUpcoming && bUpcoming) return 1;
+            
+            // Within same category (upcoming/past), sort by date
+            if (aUpcoming && bUpcoming) {
+              return aDate.getTime() - bDate.getTime(); // Nearest first
+            } else {
+              return bDate.getTime() - aDate.getTime(); // Most recent first
+            }
           });
           this.shows.set(sorted);
           this.loading.set(false);
@@ -152,12 +165,14 @@ export class ManageShowsComponent implements OnInit {
   }
 
   toggleStatus(show: Showtime): void {
-    this.http.patch<Showtime>(`${environment.apiUrl}/admin/showtimes/${show.id}/status`, {})
+    const newStatus = show.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    
+    this.http.patch<Showtime>(`${environment.apiUrl}/admin/showtimes/${show.id}/status`, { status: newStatus })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
-          this.alertService.success(`Show ${updated.status === 'ACTIVE' ? 'activated' : 'deactivated'}`);
-          this.shows.update(shows => shows.map(s => s.id === show.id ? updated : s));
+          this.alertService.success(`Show ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}`);
+          this.shows.update(shows => shows.map(s => s.id === show.id ? { ...s, status: newStatus } : s));
         },
         error: () => this.alertService.error('Failed to update status')
       });
@@ -197,12 +212,21 @@ export class ManageShowsComponent implements OnInit {
       availableSeats: totalSeats
     };
 
-    // Set status to ACTIVE for new shows, preserve existing status for updates
+    // Determine status based on date
+    const showDate = new Date(this.showDateTime);
+    const now = new Date();
+    
     if (!editId) {
-      payload.status = 'ACTIVE';
+      // New show: ACTIVE if future, INACTIVE if past
+      payload.status = showDate > now ? 'ACTIVE' : 'INACTIVE';
     } else {
+      // Editing: preserve status unless date changed to past
       const existingShow = this.shows().find(s => s.id === editId);
-      payload.status = existingShow?.status || 'ACTIVE';
+      if (showDate < now) {
+        payload.status = 'INACTIVE';
+      } else {
+        payload.status = existingShow?.status || 'ACTIVE';
+      }
     }
 
     this.saving.set(true);

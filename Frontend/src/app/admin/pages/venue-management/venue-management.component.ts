@@ -1,6 +1,6 @@
-import { Component, OnInit, signal, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
@@ -8,38 +8,88 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TheaterService, Theater } from '../../../core/services/theater.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { environment } from '../../../../environments/environment';
+import { TheatreItemComponent } from './theatre-item/theatre-item.component';
+import { ScreenConfigComponent } from './screen-config/screen-config.component';
+import { ScreenPreviewComponent } from './screen-preview/screen-preview.component';
+import { VenueService } from './venue.service';
+
+export interface Category {
+  id: string;
+  name: string;
+  price: number;
+  color: string;
+  inheriting?: boolean;
+}
+
+export interface SeatData {
+  seatId: string;
+  label: string;
+  row: number;
+  col: number;
+  categoryId: string | null;
+  status: 'available' | 'booked' | 'disabled';
+}
+
+export interface ScreenConfig {
+  id?: string;
+  name: string;
+  theatreId: string;
+  rows: number;
+  seatsPerRow: number;
+  totalSeats: number;
+  categories: Category[];
+  seatMap: SeatData[];
+}
+
+export interface ScreenListItem {
+  id: string;
+  name: string;
+  totalSeats: number;
+  theaterId: string;
+  isActive: boolean;
+}
 
 @Component({
-  selector: 'app-manage-theatres',
+  selector: 'app-venue-management',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
-  templateUrl: './manage-theatres.component.html',
-  styleUrls: ['./manage-theatres.component.css']
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, TheatreItemComponent, ScreenConfigComponent, ScreenPreviewComponent],
+  templateUrl: './venue-management.component.html',
+  styleUrls: ['./venue-management.component.css']
 })
-export class ManageTheatresComponent implements OnInit {
+export class VenueManagementComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
   private theaterService = inject(TheaterService);
   private alertService = inject(AlertService);
   private destroyRef = inject(DestroyRef);
+  private venueService = inject(VenueService);
 
+  // Theatre management
   theatres = signal<Theater[]>([]);
   filteredTheatres = signal<Theater[]>([]);
   theatreForm: FormGroup;
   
-  showForm = signal(false);
+  // UI state
+  showTheatreForm = signal(false);
   loading = signal(false);
   submitting = signal(false);
-  deletingId = signal<string | null>(null);
-  statusUpdatingId = signal<string | null>(null);
   editingTheatreId = signal<string | null>(null);
+  expandedTheatreId = signal<string | null>(null);
+  configTheatreId = signal<string | null>(null);
+  configScreenId = signal<string | null>(null);
+  previewScreenId = signal<string | null>(null);
   
+  // Filters
   searchTerm = signal('');
   selectedCity = signal('');
   selectedStatus = signal('');
   cities = signal<string[]>([]);
   imagePreview = signal<string>('');
+
+  // Screen data
+  screens = signal<Record<string, ScreenListItem[]>>({});
 
   constructor() {
     this.theatreForm = this.fb.group({
@@ -54,6 +104,25 @@ export class ManageTheatresComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTheatres();
+    this.handleRouteParams();
+  }
+
+  private handleRouteParams(): void {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      if (params['theatreId']) {
+        this.expandedTheatreId.set(params['theatreId']);
+        this.loadScreens(params['theatreId']);
+        
+        if (params['screenId']) {
+          if (params['preview'] === 'true') {
+            this.previewScreenId.set(params['screenId']);
+          } else {
+            this.configTheatreId.set(params['theatreId']);
+            this.configScreenId.set(params['screenId']);
+          }
+        }
+      }
+    });
   }
 
   loadTheatres(): void {
@@ -121,7 +190,7 @@ export class ManageTheatresComponent implements OnInit {
   }
 
   addTheatre(): void {
-    this.showForm.set(true);
+    this.showTheatreForm.set(true);
     this.editingTheatreId.set(null);
     this.imagePreview.set('');
     this.theatreForm.reset({
@@ -135,7 +204,7 @@ export class ManageTheatresComponent implements OnInit {
   }
 
   editTheatre(theatre: Theater): void {
-    this.showForm.set(true);
+    this.showTheatreForm.set(true);
     this.editingTheatreId.set(theatre.id);
     this.theatreForm.patchValue({
       name: theatre.name,
@@ -151,17 +220,7 @@ export class ManageTheatresComponent implements OnInit {
   submitTheatre(): void {
     this.theatreForm.markAllAsTouched();
     
-    console.log('Form Valid:', this.theatreForm.valid);
-    console.log('Form Values:', this.theatreForm.value);
-    console.log('Form Errors:', this.theatreForm.errors);
-    
     if (this.theatreForm.invalid) {
-      Object.keys(this.theatreForm.controls).forEach(key => {
-        const control = this.theatreForm.get(key);
-        if (control?.invalid) {
-          console.log(`Invalid field: ${key}`, control.errors);
-        }
-      });
       this.alertService.error('Please fill all required fields correctly');
       return;
     }
@@ -179,7 +238,6 @@ export class ManageTheatresComponent implements OnInit {
       payload.imageUrl = formValue.imageUrl;
     }
 
-    console.log('Sending payload:', payload);
     this.submitting.set(true);
 
     const editId = this.editingTheatreId();
@@ -194,32 +252,26 @@ export class ManageTheatresComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          console.log('Theatre saved successfully:', response);
           this.alertService.success(`Theatre ${editId ? 'updated' : 'created'} successfully`);
-          this.closeForm();
+          this.closeTheatreForm();
           this.loadTheatres();
         },
         error: (err) => {
           console.error('Theatre save error:', err);
-          console.error('Error details:', err.error);
           const errorMsg = err?.error?.message || err?.message || 'Unable to save theatre. Please check console for details.';
           this.alertService.error(errorMsg);
         }
       });
   }
 
-  toggleStatus(id: string, currentStatus: boolean): void {
+  toggleTheatreStatus(id: string, currentStatus: boolean): void {
     const theatre = this.theatres().find(t => t.id === id);
     const theatreName = theatre?.name || 'Theatre';
     
-    this.statusUpdatingId.set(id);
     const endpoint = currentStatus ? 'pause' : 'resume';
     
     this.http.put<any>(`${environment.apiUrl}/admin/theatres/${id}/${endpoint}`, {})
-      .pipe(
-        finalize(() => this.statusUpdatingId.set(null)),
-        takeUntilDestroyed(this.destroyRef)
-      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           const action = !currentStatus ? 'activated' : 'deactivated';
@@ -234,26 +286,14 @@ export class ManageTheatresComponent implements OnInit {
       });
   }
 
-  goToScreens(id: string): void {
-    this.router.navigate(['/admin/screens'], { queryParams: { theatreId: id } });
-  }
-
-  editTheatreById(id: string): void {
-    this.router.navigate(['/admin/manage-theatres/edit', id]);
-  }
-
-  deleteTheatreById(id: string): void {
+  deleteTheatre(id: string): void {
     const theatre = this.theatres().find(t => t.id === id);
     const theatreName = theatre?.name || 'this theatre';
     
     if (!confirm(`Delete "${theatreName}"?\n\nThis action cannot be undone and will remove all associated screens.`)) return;
     
-    this.deletingId.set(id);
     this.http.delete(`${environment.apiUrl}/admin/theatres/${id}`)
-      .pipe(
-        finalize(() => this.deletingId.set(null)),
-        takeUntilDestroyed(this.destroyRef)
-      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.alertService.success(`"${theatreName}" deleted successfully`);
@@ -267,39 +307,82 @@ export class ManageTheatresComponent implements OnInit {
       });
   }
 
-  deleteTheatre(theatre: Theater): void {
-    if (!confirm(`Delete ${theatre.name}? This action cannot be undone.`)) {
-      return;
+  toggleScreens(theatreId: string): void {
+    if (this.expandedTheatreId() === theatreId) {
+      this.expandedTheatreId.set(null);
+    } else {
+      this.expandedTheatreId.set(theatreId);
+      this.loadScreens(theatreId);
     }
+  }
 
-    this.deletingId.set(theatre.id);
-    this.theaterService.deleteTheater(theatre.id)
-      .pipe(
-        finalize(() => this.deletingId.set(null)),
-        takeUntilDestroyed(this.destroyRef)
-      )
+  loadScreens(theatreId: string): void {
+    this.venueService.getScreensByTheatre(theatreId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
-          this.alertService.success('Theatre deleted successfully');
-          this.theatres.update(theatres => theatres.filter(t => t.id !== theatre.id));
-          this.applyFilters();
+        next: (data) => {
+          this.screens.update(s => ({ ...s, [theatreId]: data }));
         },
         error: () => {
-          this.alertService.error('Unable to delete theatre');
+          this.alertService.error('Failed to load screens');
         }
       });
   }
 
-  viewScreens(theatreId: string): void {
-    this.router.navigate(['/admin/screens'], { queryParams: { theatreId } });
+  openScreenConfig(theatreId: string, screenId: string): void {
+    this.configTheatreId.set(theatreId);
+    this.configScreenId.set(screenId);
+    this.router.navigate(['/admin/venues'], { 
+      queryParams: { 
+        theatreId: theatreId,
+        screenId: screenId 
+      } 
+    });
   }
 
-  cancelForm(): void {
-    this.closeForm();
+  previewScreen(theatreId: string, screenId: string): void {
+    this.previewScreenId.set(screenId);
+    this.router.navigate(['/admin/venues'], { 
+      queryParams: { 
+        theatreId: theatreId,
+        screenId: screenId,
+        preview: 'true'
+      } 
+    });
   }
 
-  private closeForm(): void {
-    this.showForm.set(false);
+  closeScreenConfig(): void {
+    this.configTheatreId.set(null);
+    this.configScreenId.set(null);
+    const theatreId = this.expandedTheatreId();
+    if (theatreId) {
+      this.loadScreens(theatreId);
+      this.router.navigate(['/admin/venues'], { queryParams: { theatreId } });
+    } else {
+      this.router.navigate(['/admin/venues']);
+    }
+  }
+
+  closePreview(): void {
+    this.previewScreenId.set(null);
+    const theatreId = this.expandedTheatreId();
+    if (theatreId) {
+      this.router.navigate(['/admin/venues'], { queryParams: { theatreId } });
+    } else {
+      this.router.navigate(['/admin/venues']);
+    }
+  }
+
+  onConfigSaved(): void {
+    this.closeScreenConfig();
+  }
+
+  cancelTheatreForm(): void {
+    this.closeTheatreForm();
+  }
+
+  private closeTheatreForm(): void {
+    this.showTheatreForm.set(false);
     this.editingTheatreId.set(null);
     this.theatreForm.reset();
   }

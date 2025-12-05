@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
   selector: 'app-navbar',
@@ -13,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class NavbarComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  settingsService = inject(SettingsService);
   
   currentUser = this.authService.currentUser;
   showUserMenu = signal(false);

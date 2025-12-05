@@ -31,23 +31,23 @@
       <div class="panel-body">
         <div class="form-group">
           <label>Site Name</label>
-          <input type="text" [(ngModel)]="settings().siteName" placeholder="RevTicket">
+          <input type="text" [ngModel]="getSetting('siteName')" (ngModelChange)="updateSetting('siteName', $event)" placeholder="RevTicket">
         </div>
 
         <div class="form-group">
           <label>Support Email</label>
-          <input type="email" [(ngModel)]="settings().siteEmail" placeholder="support@revticket.com">
+          <input type="email" [ngModel]="getSetting('siteEmail')" (ngModelChange)="updateSetting('siteEmail', $event)" placeholder="support@revticket.com">
         </div>
 
         <div class="form-group">
           <label>Support Phone</label>
-          <input type="tel" [(ngModel)]="settings().sitePhone" placeholder="+91 1234567890">
+          <input type="tel" [ngModel]="getSetting('sitePhone')" (ngModelChange)="updateSetting('sitePhone', $event)" placeholder="+91 1234567890">
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Currency</label>
-            <select [(ngModel)]="settings().currency">
+            <select [ngModel]="getSetting('currency')" (ngModelChange)="updateSetting('currency', $event)">
               <option value="INR">INR (₹)</option>
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
@@ -57,7 +57,7 @@
 
           <div class="form-group">
             <label>Timezone</label>
-            <select [(ngModel)]="settings().timezone">
+            <select [ngModel]="getSetting('timezone')" (ngModelChange)="updateSetting('timezone', $event)">
               <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
               <option value="America/New_York">America/New_York (EST)</option>
               <option value="Europe/London">Europe/London (GMT)</option>
@@ -76,25 +76,25 @@
       <div class="panel-body">
         <div class="form-group">
           <label>Cancellation Window (Hours)</label>
-          <input type="number" [(ngModel)]="settings().bookingCancellationHours" min="0" max="48">
+          <input type="number" [ngModel]="getSetting('bookingCancellationHours')" (ngModelChange)="updateSetting('bookingCancellationHours', +$event)" min="0" max="48">
           <small>Users can cancel bookings up to this many hours before showtime</small>
         </div>
 
         <div class="form-group">
           <label>Max Seats Per Booking</label>
-          <input type="number" [(ngModel)]="settings().maxSeatsPerBooking" min="1" max="20">
+          <input type="number" [ngModel]="getSetting('maxSeatsPerBooking')" (ngModelChange)="updateSetting('maxSeatsPerBooking', +$event)" min="1" max="20">
           <small>Maximum number of seats a user can book in one transaction</small>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Convenience Fee (%)</label>
-            <input type="number" [(ngModel)]="settings().convenienceFeePercent" min="0" max="20" step="0.1">
+            <input type="number" [ngModel]="getSetting('convenienceFeePercent')" (ngModelChange)="updateSetting('convenienceFeePercent', +$event)" min="0" max="20" step="0.1">
           </div>
 
           <div class="form-group">
             <label>GST (%)</label>
-            <input type="number" [(ngModel)]="settings().gstPercent" min="0" max="30" step="0.1">
+            <input type="number" [ngModel]="getSetting('gstPercent')" (ngModelChange)="updateSetting('gstPercent', +$event)" min="0" max="30" step="0.1">
           </div>
         </div>
 
@@ -133,29 +133,29 @@
               <small>Master switch for all notifications</small>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="settings().enableNotifications">
+              <input type="checkbox" [ngModel]="getSetting('enableNotifications')" (ngModelChange)="updateSetting('enableNotifications', $event)">
               <span class="toggle-slider"></span>
             </label>
           </div>
 
-          <div class="toggle-item" [class.disabled]="!settings().enableNotifications">
+          <div class="toggle-item" [class.disabled]="!getSetting('enableNotifications')">
             <div class="toggle-info">
               <strong>Email Notifications</strong>
               <small>Send booking confirmations and updates via email</small>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="settings().enableEmailNotifications" [disabled]="!settings().enableNotifications">
+              <input type="checkbox" [ngModel]="getSetting('enableEmailNotifications')" (ngModelChange)="updateSetting('enableEmailNotifications', $event)" [disabled]="!getSetting('enableNotifications')">
               <span class="toggle-slider"></span>
             </label>
           </div>
 
-          <div class="toggle-item" [class.disabled]="!settings().enableNotifications">
+          <div class="toggle-item" [class.disabled]="!getSetting('enableNotifications')">
             <div class="toggle-info">
               <strong>SMS Notifications</strong>
               <small>Send booking confirmations and updates via SMS</small>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="settings().enableSMSNotifications" [disabled]="!settings().enableNotifications">
+              <input type="checkbox" [ngModel]="getSetting('enableSMSNotifications')" (ngModelChange)="updateSetting('enableSMSNotifications', $event)" [disabled]="!getSetting('enableNotifications')">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -176,7 +176,7 @@
               <small>Temporarily disable the site for maintenance</small>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="settings().maintenanceMode">
+              <input type="checkbox" [ngModel]="getSetting('maintenanceMode')" (ngModelChange)="updateSetting('maintenanceMode', $event)">
               <span class="toggle-slider"></span>
             </label>
           </div>
