@@ -21,13 +21,16 @@ pipeline {
             }
         }
         stage('Docker Build & Tag') {
-            when { branch 'master' }
-            steps {
-                script {
-                    dockerImage = docker.build("revticket:latest")
-                }
+    when { branch 'master' }
+    steps {
+        dir('Backend') {
+            script {
+                dockerImage = docker.build("revticket:latest")
             }
         }
+    }
+}
+
 
                 stage('archive artifacts') {
             when { expression { env.BRANCH_NAME == 'master' } }
