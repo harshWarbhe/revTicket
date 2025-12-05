@@ -3,14 +3,16 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
 import { ShowtimeService, Showtime } from '../../../core/services/showtime.service';
+import { ReviewService, MovieRating } from '../../../core/services/review.service';
 import { Movie } from '../../../core/models/movie.model';
 import { DisplayUtils } from '../../../core/utils/display-utils';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { MovieReviewsComponent } from '../../components/movie-reviews/movie-reviews.component';
 
 @Component({
   selector: 'app-movie-details',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, MovieReviewsComponent],
   templateUrl: './movie-details.component.html',
   styleUrls: ['./movie-details.component.css']
 })
@@ -19,10 +21,12 @@ export class MovieDetailsComponent implements OnInit {
   private router = inject(Router);
   private movieService = inject(MovieService);
   private showtimeService = inject(ShowtimeService);
+  private reviewService = inject(ReviewService);
   private sanitizer = inject(DomSanitizer);
   
   movie = signal<Movie | null>(null);
   showtimes = signal<Showtime[]>([]);
+  movieRating = signal<MovieRating>({ averageRating: 0, reviewCount: 0 });
   loading = signal(true);
   activeTab = signal('overview');
   showTrailer = signal(false);
@@ -81,6 +85,7 @@ export class MovieDetailsComponent implements OnInit {
       next: (movie) => {
         this.movie.set(movie);
         this.loadShowtimes(movie.id);
+        this.loadMovieRating(movie.id);
         this.loading.set(false);
       },
       error: () => {
@@ -88,6 +93,26 @@ export class MovieDetailsComponent implements OnInit {
         this.router.navigate(['/user/home']);
       }
     });
+  }
+
+  private loadMovieRating(movieId: string): void {
+    this.reviewService.getMovieRating(movieId).subscribe({
+      next: (rating) => {
+        this.movieRating.set(rating);
+      },
+      error: () => {}
+    });
+  }
+
+  getDynamicRating(): number {
+    const reviewRating = this.movieRating().averageRating;
+    const staticRating = this.movie()?.rating || 0;
+    return reviewRating > 0 ? reviewRating : staticRating;
+  }
+
+  getRatingDisplay(): string {
+    const rating = this.getDynamicRating();
+    return rating > 0 ? rating.toFixed(1) : 'N/A';
   }
 
   private loadMovieBySlug(slug: string): void {

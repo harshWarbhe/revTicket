@@ -119,7 +119,10 @@ public class MovieService {
         dto.setDescription(movie.getDescription());
         dto.setGenre(movie.getGenre());
         dto.setDuration(movie.getDuration());
+        
+        // Use static rating as fallback, but MongoDB reviews will override this in frontend
         dto.setRating(movie.getRating());
+        
         dto.setDirector(movie.getDirector());
         dto.setCrew(movie.getCrew());
         dto.setReleaseDate(movie.getReleaseDate());

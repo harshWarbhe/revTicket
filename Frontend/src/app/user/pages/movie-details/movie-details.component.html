@@ -21,8 +21,11 @@
         <div class="rating-meta">
           <div class="rating-badge">
             <span class="star">★</span>
-            <span class="score">{{ movie()!.rating || 'N/A' }}</span>
-            <span class="max">/10</span>
+            <span class="score">{{ getRatingDisplay() }}</span>
+            <span class="max">/5</span>
+            @if (movieRating().reviewCount > 0) {
+              <span class="review-count">({{ movieRating().reviewCount }} reviews)</span>
+            }
           </div>
           <div class="meta-info">
             <span>{{ movie()!.duration }} mins</span>
@@ -72,7 +75,7 @@
           </div>
           <div class="info-card">
             <span class="info-label">Rating</span>
-            <span class="info-value">{{ movie()!.rating || 'N/A' }}/10</span>
+            <span class="info-value">{{ getRatingDisplay() }}/5 @if (movieRating().reviewCount > 0) { ({{ movieRating().reviewCount }} reviews) }</span>
           </div>
         </div>
       </div>
@@ -122,6 +125,12 @@
       </div>
     </section>
     }
+
+    <!-- Reviews Section -->
+    <section class="content-section">
+      <h2 class="section-heading">Reviews & Ratings</h2>
+      <app-movie-reviews [movieId]="movie()!.id"></app-movie-reviews>
+    </section>
 
     <!-- Showtimes Preview -->
     @if (showtimes().length > 0) {

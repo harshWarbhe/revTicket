@@ -1,38 +1,41 @@
 package com.revticket.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "reviews")
+@Document(collection = "reviews")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Review {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id", nullable = false)
-    private Movie movie;
-
-    @Column(nullable = false)
-    private Integer rating;
-
-    @Column(length = 1000)
+    
+    @Indexed
+    private String movieId;
+    
+    @Indexed
+    private String userId;
+    
+    private String userName;
+    private Double rating;
     private String comment;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    
+    public Review(String movieId, String userId, String userName, Double rating, String comment) {
+        this.movieId = movieId;
+        this.userId = userId;
+        this.userName = userName;
+        this.rating = rating;
+        this.comment = comment != null ? comment.trim() : "";
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 }

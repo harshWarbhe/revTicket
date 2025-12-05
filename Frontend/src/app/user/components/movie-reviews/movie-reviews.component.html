@@ -1,0 +1,114 @@
+<div class="reviews-section">
+  <!-- Rating Summary -->
+  <div class="rating-summary">
+    <div class="average-rating">
+      <div class="rating-number">{{ movieRating().averageRating | number:'1.1-1' }}</div>
+      <div class="stars">
+        @for (star of getStarArray(movieRating().averageRating); track $index) {
+          <span class="star" [class.filled]="star">★</span>
+        }
+      </div>
+      <div class="review-count">{{ movieRating().reviewCount }} reviews</div>
+    </div>
+    
+    @if (isAuthenticated()) {
+      @if (canReview()) {
+        <button class="write-review-btn" (click)="toggleReviewForm()">
+          {{ showReviewForm() ? 'Cancel' : 'Write Review' }}
+        </button>
+      } @else {
+        <div class="cannot-review-msg">
+          <span class="lock-icon">🔒</span>
+          <span>Watch this movie to write a review</span>
+        </div>
+      }
+    } @else {
+      <div class="login-required-msg">
+        <span>Login to write reviews</span>
+      </div>
+    }
+  </div>
+
+  <!-- Review Form -->
+  @if (showReviewForm()) {
+    <div class="review-form-card">
+      <h3>Write Your Review</h3>
+      <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+        <div class="rating-input">
+          <label>Rating:</label>
+          <div class="star-rating-simple">
+            @for (i of [1,2,3,4,5]; track i) {
+              <button 
+                type="button" 
+                class="star-btn" 
+                [class.active]="i <= reviewForm.get('rating')?.value"
+                (click)="setRating(i)">
+                ★
+              </button>
+            }
+          </div>
+          <div class="rating-display">Selected: {{ reviewForm.get('rating')?.value }}/5 stars</div>
+        </div>
+        
+        <div class="comment-input">
+          <label for="comment">Comment (optional):</label>
+          <textarea 
+            id="comment" 
+            formControlName="comment" 
+            placeholder="Share your thoughts about this movie..."
+            rows="4">
+          </textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" (click)="toggleReviewForm()">Cancel</button>
+          <button type="submit" class="submit-btn" [disabled]="submitting() || reviewForm.invalid">
+            {{ submitting() ? 'Submitting...' : 'Submit Review' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Reviews List -->
+  <div class="reviews-list">
+    <h3>Reviews ({{ reviews().length }})</h3>
+    
+    @if (loading()) {
+      <div class="loading">Loading reviews...</div>
+    } @else if (reviews().length === 0) {
+      <div class="no-reviews">No reviews yet. Be the first to review!</div>
+    } @else {
+      @for (review of reviews(); track review.id) {
+        <div class="review-card">
+          <div class="review-header">
+            <div class="user-info">
+              <div class="user-avatar">{{ review.userName.charAt(0).toUpperCase() }}</div>
+              <div class="user-details">
+                <div class="user-name">{{ review.userName }}</div>
+                <div class="review-date">{{ formatDate(review.createdAt) }}</div>
+              </div>
+            </div>
+            <div class="review-rating">
+              @for (star of getStarArray(review.rating); track $index) {
+                <span class="star" [class.filled]="star">★</span>
+              }
+              <span class="rating-value">{{ review.rating }}/5</span>
+            </div>
+          </div>
+          
+          @if (review.comment && review.comment.trim()) {
+            <div class="review-comment">
+              <div class="comment-icon">💬</div>
+              <div class="comment-text">{{ review.comment }}</div>
+            </div>
+          } @else {
+            <div class="no-comment">
+              <em>No comment provided</em>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

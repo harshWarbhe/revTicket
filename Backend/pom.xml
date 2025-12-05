@@ -62,6 +62,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- MongoDB -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+
         <!-- JSON Web Token (JJWT 0.12.3) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

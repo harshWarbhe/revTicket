@@ -68,5 +68,7 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     @Modifying
     @Query("UPDATE Booking b SET b.status = :status, b.cancellationReason = :reason, b.cancellationRequestedAt = :timestamp WHERE b.id = :id")
     int updateCancellationRequest(@Param("id") String id, @Param("status") Booking.BookingStatus status, @Param("reason") String reason, @Param("timestamp") LocalDateTime timestamp);
+    
+    boolean existsByUserIdAndShowtimeMovieIdAndShowtimeShowDateTimeBefore(String userId, String movieId, LocalDateTime dateTime);
 }
 
