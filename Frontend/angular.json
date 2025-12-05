@@ -24,7 +24,9 @@
               "html2canvas",
               "qrcode",
               "raf",
-              "rgbcolor"
+              "rgbcolor",
+              "canvg",
+              "core-js"
             ]
           },
           "configurations": {

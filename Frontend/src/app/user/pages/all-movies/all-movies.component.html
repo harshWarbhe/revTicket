@@ -36,7 +36,7 @@
                 <span class="language">{{ movie.language }}</span>
               </div>
               <div class="movie-genres">
-                @for (genre of movie.genre?.slice(0, 2); track genre) {
+                @for (genre of movie.genre.slice(0, 2); track genre) {
                   <span class="genre-tag">{{ genre }}</span>
                 }
               </div>
