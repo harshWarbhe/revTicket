@@ -1,21 +1,22 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: revticket-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: Admin123
-      MYSQL_DATABASE: revticket_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Admin123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-revticket_db}
+      MYSQL_USER: ${MYSQL_USER:-revticket}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Admin123}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pAdmin123"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Admin123}"]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 30s
     networks:
       - revticket-network
 
@@ -28,9 +29,10 @@ services:
       - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 30s
     networks:
       - revticket-network
 
@@ -41,15 +43,25 @@ services:
       - "8080:8080"
     environment:
       MYSQL_HOST: mysql
-      MYSQL_DATABASE: revticket_db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-revticket_db}
       MYSQL_USER: root
-      MYSQL_PASSWORD: Admin123
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Admin123}
       MONGODB_URI: mongodb://mongodb:27017/revticket_reviews
     depends_on:
       mysql:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+    networks:
+      - revticket-network
+
+  frontend:
+    build: ./Frontend
+    container_name: revticket-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
     networks:
       - revticket-network
 
