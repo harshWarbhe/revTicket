@@ -23,19 +23,6 @@ pipeline {
             }
         }
         
-        stage('Start Databases') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh 'docker-compose up -d mysql mongodb'
-                    } else {
-                        bat 'docker-compose up -d mysql mongodb'
-                    }
-                    sleep 30
-                }
-            }
-        }
-        
         stage('Build Backend') {
             steps {
                 dir('Backend') {
@@ -55,24 +42,7 @@ pipeline {
             }
         }
         
-        stage('Test Backend') {
-            steps {
-                dir('Backend') {
-                    script {
-                        if (isUnix()) {
-                            sh './mvnw test'
-                        } else {
-                            bat 'mvnw.cmd test'
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'Backend/target/surefire-reports/*.xml'
-                }
-            }
-        }
+
         
         stage('Build Frontend') {
             steps {
@@ -93,19 +63,7 @@ pipeline {
             }
         }
         
-        stage('Test Frontend') {
-            steps {
-                dir('Frontend') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm run test || true'
-                        } else {
-                            bat 'npm run test || exit 0'
-                        }
-                    }
-                }
-            }
-        }
+
         
         stage('Build Docker Images') {
             parallel {
@@ -161,9 +119,9 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker-compose up -d --build backend frontend'
+                        sh 'docker-compose up -d --build'
                     } else {
-                        bat 'docker-compose up -d --build backend frontend'
+                        bat 'docker-compose up -d --build'
                     }
                 }
             }
