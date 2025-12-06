@@ -1,9 +1,14 @@
 pipeline {
     agent any
     
+    tools {
+        jdk 'JDK17'
+    }
+    
     environment {
         DOCKER_IMAGE = 'revticket-backend'
         DOCKER_TAG = "${BUILD_NUMBER}"
+        JAVA_HOME = "${tool 'JDK17'}"
     }
     
     stages {
@@ -13,9 +18,16 @@ pipeline {
             }
         }
         
+        stage('Clean Cache') {
+            steps {
+                sh 'rm -rf ~/.m2/repository/org/projectlombok'
+            }
+        }
+        
         stage('Build') {
             steps {
                 dir('Backend') {
+                    sh 'java -version'
                     sh './mvnw clean install -U -DskipTests'
                 }
             }
