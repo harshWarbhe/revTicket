@@ -12,7 +12,7 @@ pipeline {
     agent any
     
     environment {
-        // Docker Hub Configuration
+        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_USERNAME = 'harshwarbhe'
         BACKEND_IMAGE = "${DOCKERHUB_USERNAME}/revticket-backend"
         FRONTEND_IMAGE = "${DOCKERHUB_USERNAME}/revticket-frontend"
