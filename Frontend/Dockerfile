@@ -22,7 +22,7 @@ RUN npm run build
 FROM nginx:alpine
 
 # Copy built Angular app from build stage
-COPY --from=build /app/dist/rev-ticket/browser /usr/share/nginx/html
+COPY --from=build /app/dist/rev-ticket /usr/share/nginx/html
 
 # Configure Nginx:
 # - Serve Angular app on port 80
