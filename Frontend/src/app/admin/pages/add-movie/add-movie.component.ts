@@ -118,17 +118,17 @@ export class AddMovieComponent implements OnInit {
       this.submitting.set(true);
       const formValue = this.movieForm.value;
 
-      const movieData: Partial<Movie> = {
+      const movieData: any = {
         title: formValue.title,
         description: formValue.description,
         duration: parseInt(formValue.duration),
         rating: parseFloat(formValue.rating),
-        director: formValue.director || undefined,
+        director: formValue.director || null,
         genre: this.selectedGenres(),
         language: formValue.language,
         releaseDate: new Date(formValue.releaseDate),
-        posterUrl: formValue.posterUrl || undefined,
-        trailerUrl: formValue.trailerUrl || undefined,
+        posterUrl: formValue.posterUrl || null,
+        trailerUrl: formValue.trailerUrl || null,
         isActive: true
       };
 

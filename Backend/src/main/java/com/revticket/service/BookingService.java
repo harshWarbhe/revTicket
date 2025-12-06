@@ -91,7 +91,7 @@ public class BookingService {
         }
         booking.setTotalAmount(request.getTotalAmount());
         booking.setTicketPriceSnapshot(showtime.getTicketPrice());
-        booking.setScreenName(showtime.getScreen());
+        booking.setScreenName(getScreenName(showtime.getScreen()));
         booking.setPaymentMethod("ONLINE");
         booking.setCustomerName(Objects.requireNonNullElse(request.getCustomerName(), ""));
         booking.setCustomerEmail(Objects.requireNonNullElse(request.getCustomerEmail(), ""));
@@ -120,12 +120,20 @@ public class BookingService {
         showtime.setAvailableSeats(Math.max(0, showtime.getAvailableSeats() - request.getSeats().size()));
         showtimeRepository.save(showtime);
 
-        if (settingsService.areEmailNotificationsEnabled()) {
+        // Send email notification
+        boolean emailEnabled = settingsService.areEmailNotificationsEnabled();
+        System.out.println("Email notifications enabled: " + emailEnabled);
+        if (emailEnabled) {
             try {
+                System.out.println("Sending booking confirmation to: " + booking.getCustomerEmail());
                 emailService.sendBookingConfirmation(booking);
+                System.out.println("✓ Booking confirmation email sent successfully");
             } catch (Exception e) {
-                System.err.println("Failed to send booking confirmation email: " + e.getMessage());
+                System.err.println("✗ Failed to send booking confirmation email: " + e.getMessage());
+                e.printStackTrace();
             }
+        } else {
+            System.out.println("Email notifications are disabled in settings");
         }
 
         return mapToResponse(booking);
@@ -161,11 +169,20 @@ public class BookingService {
             throw new RuntimeException("Cancellation not allowed. Must cancel at least " + cancellationHours + " hours before showtime");
         }
 
-        booking.setStatus(Booking.BookingStatus.CANCEL);
+        booking.setStatus(Booking.BookingStatus.CANCELLATION_PENDING);
         booking.setCancellationReason(Objects.requireNonNullElse(reason, ""));
         booking.setCancellationRequestedAt(LocalDateTime.now());
         
         booking = bookingRepository.save(booking);
+
+        if (settingsService.areEmailNotificationsEnabled()) {
+            try {
+                emailService.sendAdminCancellationRequestNotification(booking, reason);
+            } catch (Exception e) {
+                System.err.println("Failed to send admin cancellation notification: " + e.getMessage());
+            }
+        }
+
         return mapToResponse(booking);
     }
 
@@ -173,7 +190,7 @@ public class BookingService {
     public List<BookingResponse> getCancellationRequests() {
         return bookingRepository.findAll()
                 .stream()
-                .filter(b -> b.getStatus() == Booking.BookingStatus.CANCEL)
+                .filter(b -> b.getStatus() == Booking.BookingStatus.CANCELLATION_PENDING)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

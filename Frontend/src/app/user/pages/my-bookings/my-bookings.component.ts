@@ -231,10 +231,15 @@ export class MyBookingsComponent implements OnInit {
   }
 
   isPendingCancellation(booking: BookingCard): boolean {
-    return booking.status === 'CANCEL';
+    return booking.status === 'CANCELLATION_PENDING';
   }
 
   cancelBooking(booking: BookingCard): void {
+    if (!this.canCancel(booking)) {
+      this.alertService.error('This booking cannot be cancelled.');
+      return;
+    }
+
     const reason = prompt('Please provide a reason for cancellation:');
     if (!reason?.trim()) {
       return;
@@ -247,8 +252,10 @@ export class MyBookingsComponent implements OnInit {
       return;
     }
 
+    console.log('Requesting cancellation for booking:', booking.id, 'Reason:', reason);
     this.bookingService.requestCancellation(booking.id, reason).subscribe({
       next: updated => {
+        console.log('Cancellation response:', updated);
         const normalized = this.bookingService.normalizeBookingDates(updated) as BookingCard;
         this.bookings.update(bookings => 
           bookings.map(b => b.id === normalized.id ? { ...b, ...normalized } : b)
@@ -257,7 +264,8 @@ export class MyBookingsComponent implements OnInit {
       },
       error: (err) => {
         console.error('Cancellation error:', err);
-        this.alertService.error('Unable to submit cancellation request. Please try again.');
+        const errorMsg = err.error?.message || err.message || 'Unable to submit cancellation request';
+        this.alertService.error(errorMsg);
       }
     });
   }
@@ -299,7 +307,7 @@ export class MyBookingsComponent implements OnInit {
       'CONFIRMED': 'Confirmed',
       'CANCELLED': 'Cancelled',
       'PENDING': 'Pending',
-      'CANCEL': 'Cancellation Pending'
+      'CANCELLATION_PENDING': 'Cancellation Pending'
     };
     return labels[status] || status;
   }

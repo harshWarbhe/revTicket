@@ -472,6 +472,21 @@
 .pending-alert {
   background: #fef3c7;
   color: #92400e;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alert-reason {
+  font-size: 12px;
+  font-weight: 500;
+  color: #78350f;
+  font-style: italic;
 }
 
 .cancelled-info {

@@ -47,6 +47,15 @@ public class RazorpayService {
     @Autowired
     private com.revticket.repository.SeatRepository seatRepository;
 
+    @Autowired
+    private SettingsService settingsService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private com.revticket.repository.ScreenRepository screenRepository;
+
     public RazorpayOrderResponse createOrder(RazorpayOrderRequest request) throws RazorpayException {
         RazorpayClient razorpayClient = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
 
@@ -120,6 +129,7 @@ public class RazorpayService {
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
         booking.setTicketNumber("TKT-" + System.currentTimeMillis());
         booking.setPaymentMethod("RAZORPAY");
+        booking.setScreenName(getScreenName(showtime.getScreen()));
 
         booking = bookingRepository.save(booking);
 
@@ -135,6 +145,21 @@ public class RazorpayService {
         payment.setTransactionId(request.getRazorpayPaymentId());
 
         paymentRepository.save(payment);
+
+        // Send email notifications
+        if (settingsService.areEmailNotificationsEnabled()) {
+            try {
+                System.out.println("Sending booking confirmation to: " + booking.getCustomerEmail());
+                emailService.sendBookingConfirmation(booking);
+                System.out.println("✓ Booking confirmation email sent successfully");
+                
+                emailService.sendAdminNewBookingNotification(booking);
+                System.out.println("✓ Admin notification email sent successfully");
+            } catch (Exception e) {
+                System.err.println("✗ Failed to send email notifications: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
 
         return booking;
     }
@@ -170,5 +195,14 @@ public class RazorpayService {
                 paymentRepository.save(payment);
             }
         }
+    }
+
+    private String getScreenName(String screenId) {
+        if (screenId == null || screenId.isEmpty()) {
+            return "Screen";
+        }
+        return screenRepository.findById(screenId)
+                .map(screen -> screen.getName())
+                .orElse("Screen");
     }
 }

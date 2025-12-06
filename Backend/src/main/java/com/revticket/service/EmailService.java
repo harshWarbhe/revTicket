@@ -21,6 +21,9 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Autowired
+    private SettingsService settingsService;
+
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
         String resetUrl = frontendUrl + "/auth/reset-password?token=" + resetToken;
         
@@ -96,5 +99,58 @@ public class EmailService {
                "The refund will be processed within 5-7 business days.\n\n" +
                "Best regards,\n" +
                "RevTicket Team";
+    }
+
+    public void sendAdminNewUserNotification(String userName, String userEmail) {
+        String adminEmail = settingsService.getSetting("siteEmail");
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(adminEmail);
+        message.setSubject("New User Registration - RevTicket");
+        message.setText("New user registered:\n\n" +
+                       "Name: " + userName + "\n" +
+                       "Email: " + userEmail + "\n\n" +
+                       "Login to admin panel to view details.");
+        mailSender.send(message);
+    }
+
+    public void sendAdminNewBookingNotification(Booking booking) {
+        String adminEmail = settingsService.getSetting("siteEmail");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
+        String showtime = booking.getShowtime().getShowDateTime().format(formatter);
+        String seats = booking.getSeatLabels() != null && !booking.getSeatLabels().isEmpty() 
+            ? String.join(", ", booking.getSeatLabels()) 
+            : String.join(", ", booking.getSeats());
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(adminEmail);
+        message.setSubject("New Booking - " + booking.getShowtime().getMovie().getTitle());
+        message.setText("New booking received:\n\n" +
+                       "Ticket Number: " + booking.getTicketNumber() + "\n" +
+                       "Customer: " + booking.getCustomerName() + " (" + booking.getCustomerEmail() + ")\n" +
+                       "Movie: " + booking.getShowtime().getMovie().getTitle() + "\n" +
+                       "Theater: " + booking.getShowtime().getTheater().getName() + "\n" +
+                       "Screen: " + booking.getScreenName() + "\n" +
+                       "Showtime: " + showtime + "\n" +
+                       "Seats: " + seats + "\n" +
+                       "Amount: ₹" + booking.getTotalAmount() + "\n\n" +
+                       "Login to admin panel to view details.");
+        mailSender.send(message);
+    }
+
+    public void sendAdminCancellationRequestNotification(Booking booking, String reason) {
+        String adminEmail = settingsService.getSetting("siteEmail");
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(adminEmail);
+        message.setSubject("Cancellation Request - " + booking.getTicketNumber());
+        message.setText("Cancellation request received:\n\n" +
+                       "Ticket Number: " + booking.getTicketNumber() + "\n" +
+                       "Customer: " + booking.getCustomerName() + " (" + booking.getCustomerEmail() + ")\n" +
+                       "Movie: " + booking.getShowtime().getMovie().getTitle() + "\n" +
+                       "Reason: " + reason + "\n\n" +
+                       "Login to admin panel to approve/reject.");
+        mailSender.send(message);
     }
 }

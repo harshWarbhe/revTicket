@@ -37,6 +37,9 @@ public class AuthService {
     @Autowired(required = false)
     private EmailService emailService;
 
+    @Autowired(required = false)
+    private SettingsService settingsService;
+
     @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:4200}")
     private String frontendUrl;
 
@@ -97,6 +100,14 @@ public class AuthService {
         user.setRole(User.Role.USER);
 
         user = userRepository.save(user);
+
+        if (emailService != null && settingsService != null && settingsService.areEmailNotificationsEnabled()) {
+            try {
+                emailService.sendAdminNewUserNotification(user.getName(), user.getEmail());
+            } catch (Exception e) {
+                System.out.println("Failed to send admin notification: " + e.getMessage());
+            }
+        }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
         UserDto userDto = convertToDto(user);

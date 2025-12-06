@@ -15,7 +15,7 @@
         <span class="stat-label">Confirmed</span>
       </div>
       <div class="stat-card pending">
-        <span class="stat-value">{{ getStatusCount('CANCELLATION_REQUESTED') }}</span>
+        <span class="stat-value">{{ getStatusCount('CANCELLATION_PENDING') }}</span>
         <span class="stat-label">Pending</span>
       </div>
     </div>
@@ -46,10 +46,10 @@
         <span class="tab-count">{{ getStatusCount('CONFIRMED') }}</span>
       </button>
       <button class="filter-tab" 
-              [class.active]="filterStatus() === 'CANCELLATION_REQUESTED'"
-              (click)="filterByStatus('CANCELLATION_REQUESTED')">
+              [class.active]="filterStatus() === 'CANCELLATION_PENDING'"
+              (click)="filterByStatus('CANCELLATION_PENDING')">
         <span class="tab-text">Pending</span>
-        <span class="tab-count">{{ getStatusCount('CANCELLATION_REQUESTED') }}</span>
+        <span class="tab-count">{{ getStatusCount('CANCELLATION_PENDING') }}</span>
       </button>
       <button class="filter-tab" 
               [class.active]="filterStatus() === 'CANCELLED'"
@@ -79,7 +79,7 @@
               [class.confirmed]="booking.status === 'CONFIRMED'"
               [class.cancelled]="booking.status === 'CANCELLED'"
               [class.pending]="booking.status === 'PENDING'"
-              [class.cancellation_requested]="booking.status === 'CANCELLATION_REQUESTED'">
+              [class.cancellation_pending]="booking.status === 'CANCELLATION_PENDING'">
           {{ booking.status.replace('_', ' ') }}
         </span>
       </div>
@@ -163,10 +163,15 @@
             <span class="btn-text">{{ canCancelBooking(booking) ? 'Cancel Booking' : 'Show Completed' }}</span>
           </button>
         }
-        @if (booking.status === 'CANCELLATION_REQUESTED') {
+        @if (booking.status === 'CANCELLATION_PENDING') {
           <div class="pending-alert">
             <span class="alert-icon">⏳</span>
-            <span class="alert-text">Customer requested cancellation</span>
+            <div class="alert-content">
+              <span class="alert-text">Customer requested cancellation</span>
+              @if (booking.cancellationReason) {
+                <span class="alert-reason">Reason: {{ booking.cancellationReason }}</span>
+              }
+            </div>
           </div>
           <button class="action-btn btn-success" (click)="approveCancellation(booking)">
             <span class="btn-icon">✅</span>

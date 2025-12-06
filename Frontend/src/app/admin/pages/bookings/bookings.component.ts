@@ -21,6 +21,7 @@ interface BookingData {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  cancellationReason?: string;
 }
 
 @Component({
