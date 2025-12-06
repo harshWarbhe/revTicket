@@ -10,15 +10,16 @@
 FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
-# Copy Maven wrapper and configuration
-COPY mvnw .
-COPY .mvn .mvn
+# Copy Maven configuration and source code
 COPY pom.xml .
 COPY src ./src
 
-# Build the application (skip tests for faster build)
-RUN chmod +x mvnw && ./mvnw clean package -DskipTests || \
-    (apt-get update && apt-get install -y maven && mvn clean package -DskipTests)
+# Install Maven and build the application (skip tests for faster build)
+RUN apt-get update && \
+    apt-get install -y maven && \
+    mvn clean package -DskipTests && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre
