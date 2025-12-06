@@ -8,6 +8,8 @@ pipeline {
         GIT_COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         JAVA_HOME = '/opt/homebrew/Cellar/openjdk@17/17.0.17/libexec/openjdk.jdk/Contents/Home'
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.JAVA_HOME}/bin:${env.PATH}"
+        BACKEND_HOST_PORT = '8081'
+        FRONTEND_HOST_PORT = '4200'
     }
     
     stages {
@@ -97,7 +99,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh 'docker-compose down || true'
-                sh 'docker-compose up -d'
+                sh "BACKEND_HOST_PORT=${BACKEND_HOST_PORT} FRONTEND_HOST_PORT=${FRONTEND_HOST_PORT} docker-compose up -d"
                 sh 'sleep 30'
                 sh 'docker-compose ps'
             }
@@ -108,7 +110,7 @@ pipeline {
                 script {
                     retry(10) {
                         sleep 10
-                        sh 'curl -f http://localhost:8080/actuator/health'
+                        sh "curl -f http://localhost:${BACKEND_HOST_PORT}/actuator/health"
                     }
                 }
                 echo 'Application is healthy and ready!'

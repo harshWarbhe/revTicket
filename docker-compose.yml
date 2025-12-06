@@ -40,7 +40,7 @@ services:
     build: ./Backend
     container_name: revticket-backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_HOST_PORT:-8081}:8080"
     environment:
       MYSQL_HOST: mysql
       MYSQL_DATABASE: ${MYSQL_DATABASE:-revticket_db}
@@ -59,7 +59,7 @@ services:
     build: ./Frontend
     container_name: revticket-frontend
     ports:
-      - "80:80"
+      - "${FRONTEND_HOST_PORT:-4200}:80"
     depends_on:
       - backend
     networks:
