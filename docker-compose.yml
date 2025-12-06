@@ -5,8 +5,8 @@ services:
     image: mysql:8.0
     container_name: revticket-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: revticket
+      MYSQL_ROOT_PASSWORD: Admin123
+      MYSQL_DATABASE: revticket_db
     ports:
       - "3306:3306"
     volumes:
@@ -22,7 +22,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
-      MONGO_INITDB_DATABASE: revticket
+      MONGO_INITDB_DATABASE: revticket_reviews
     ports:
       - "27017:27017"
     volumes:
@@ -41,10 +41,11 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/revticket
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      SPRING_DATA_MONGODB_URI: mongodb://root:root@mongodb:27017/revticket?authSource=admin
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: revticket_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: Admin123
+      MONGODB_URI: mongodb://root:root@mongodb:27017/revticket_reviews?authSource=admin
     ports:
       - "8080:8080"
 
