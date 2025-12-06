@@ -56,7 +56,7 @@ pipeline {
         
         stage('Push to Registry') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 script {
@@ -96,12 +96,12 @@ pipeline {
                                 def status
                                 if (isUnix()) {
                                     status = sh(
-                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/health || echo 000',
+                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000',
                                         returnStdout: true
                                     ).trim()
                                 } else {
                                     status = bat(
-                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8081/actuator/health || echo 000',
+                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8080/actuator/health || echo 000',
                                         returnStdout: true
                                     ).trim()
                                 }
