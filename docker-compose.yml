@@ -1,0 +1,110 @@
+version: '3.8'
+
+# ============================================
+# OPTION 1: Docker Volumes (Current - Recommended for Production)
+# ============================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: revticket-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Admin123
+      MYSQL_DATABASE: revticket_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pAdmin123"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - revticket-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: revticket-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - revticket-network
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: revticket-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/revticket_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Admin123
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/revticket_reviews
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - revticket-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: revticket-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: on-failure
+    networks:
+      - revticket-network
+
+volumes:
+  mysql-data:
+  mongo-data:
+
+networks:
+  revticket-network:
+    driver: bridge
+
+# ============================================
+# OPTION 2: Local Database (For Development)
+# ============================================
+# To use local database:
+# 1. Comment out mysql and mongodb services above
+# 2. Uncomment the configuration below
+# 3. Make sure your local MySQL (port 3306) and MongoDB (port 27017) are running
+# 4. Comment out volumes and networks sections if not using any Docker databases
+
+# services:
+#   backend:
+#     build:
+#       context: ./Backend
+#       dockerfile: Dockerfile
+#     container_name: revticket-backend
+#     network_mode: host
+#     ports:
+#       - "8080:8080"
+#     restart: on-failure
+#
+#   frontend:
+#     build:
+#       context: ./Frontend
+#       dockerfile: Dockerfile
+#     container_name: revticket-frontend
+#     network_mode: host
+#     ports:
+#       - "80:80"
+#     depends_on:
+#       - backend
+#     restart: on-failure

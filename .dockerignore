@@ -1,0 +1,34 @@
+# ============================================
+# Root .dockerignore
+# ============================================
+# Global exclusions for all Docker builds
+# ============================================
+
+# Dependencies
+**/node_modules
+
+# Build outputs
+**/dist
+**/target
+
+# Version control
+**/.git
+**/.gitignore
+
+# Angular cache
+**/.angular
+
+# Test coverage
+**/coverage
+
+# Documentation
+**/*.md
+**/*.pptx
+
+# Scripts
+**/*.bat
+
+# IDE files
+**/.idea
+**/.vscode
+**/*.iml

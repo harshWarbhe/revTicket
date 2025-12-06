@@ -1,0 +1,24 @@
+# ============================================
+# Backend .dockerignore
+# ============================================
+# Exclude files from Docker build context
+# to speed up builds and reduce image size
+# ============================================
+
+# Build output
+target/
+
+# Version control
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml

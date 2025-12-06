@@ -1,0 +1,91 @@
+# ============================================
+# Production Docker Compose Configuration
+# ============================================
+# Use this for production deployments
+# Pull images from Docker Hub instead of building locally
+# ============================================
+
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: revticket-mysql-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Admin123}
+      MYSQL_DATABASE: revticket_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-prod-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-Admin123}"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - revticket-network
+    restart: always
+
+  mongodb:
+    image: mongo:7.0
+    container_name: revticket-mongodb-prod
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-prod-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - revticket-network
+    restart: always
+
+  backend:
+    image: ${DOCKERHUB_USERNAME}/revticket-backend:latest
+    container_name: revticket-backend-prod
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/revticket_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Admin123}
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/revticket_reviews
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - revticket-network
+    restart: always
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/revticket-frontend:latest
+    container_name: revticket-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - revticket-network
+    restart: always
+
+volumes:
+  mysql-prod-data:
+  mongo-prod-data:
+
+networks:
+  revticket-network:
+    driver: bridge
+
+# ============================================
+# Usage:
+# ============================================
+# Set environment variable:
+# export DOCKERHUB_USERNAME=your-username
+#
+# Pull and run:
+# docker-compose -f docker-compose.prod.yml pull
+# docker-compose -f docker-compose.prod.yml up -d
+# ============================================
