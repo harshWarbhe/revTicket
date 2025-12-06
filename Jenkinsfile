@@ -34,9 +34,11 @@ pipeline {
                 dir('Backend') {
                     script {
                         if (isUnix()) {
-                            sh 'mvn clean package -DskipTests'
+                            sh 'mvn dependency:purge-local-repository -DactTransitively=false -DreResolve=false'
+                            sh 'mvn clean package -DskipTests -U'
                         } else {
-                            bat 'mvn clean package -DskipTests'
+                            bat 'mvn dependency:purge-local-repository -DactTransitively=false -DreResolve=false'
+                            bat 'mvn clean package -DskipTests -U'
                         }
                     }
                 }
