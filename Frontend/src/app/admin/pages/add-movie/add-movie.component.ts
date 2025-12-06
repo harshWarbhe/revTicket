@@ -118,17 +118,13 @@ export class AddMovieComponent implements OnInit {
     });
   }
 
-  onGenreSelect(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
-    const newGenres = selectedOptions.filter(g => g && !this.selectedGenres().includes(g));
-    if (newGenres.length > 0) {
-      this.selectedGenres.set([...this.selectedGenres(), ...newGenres]);
+  toggleGenre(genre: string): void {
+    const current = this.selectedGenres();
+    if (current.includes(genre)) {
+      this.selectedGenres.set(current.filter(g => g !== genre));
+    } else {
+      this.selectedGenres.set([...current, genre]);
     }
-  }
-
-  removeGenre(genre: string): void {
-    this.selectedGenres.set(this.selectedGenres().filter(g => g !== genre));
   }
 
   getAvailableGenres(): string[] {

@@ -64,7 +64,17 @@
               id="language" 
               formControlName="language"
               [class.error]="movieForm.get('language')?.invalid && movieForm.get('language')?.touched">
-              <option value="">Select Language</option>
+              <option value="" disabled>Select Language</option>
+              <option value="English">English</option>
+              <option value="Hindi">Hindi</option>
+              <option value="Tamil">Tamil</option>
+              <option value="Telugu">Telugu</option>
+              <option value="Malayalam">Malayalam</option>
+              <option value="Kannada">Kannada</option>
+              <option value="Bengali">Bengali</option>
+              <option value="Marathi">Marathi</option>
+              <option value="Punjabi">Punjabi</option>
+              <option value="Gujarati">Gujarati</option>
               @for (lang of availableLanguages(); track lang) {
                 <option [value]="lang">{{ lang }}</option>
               }
@@ -90,28 +100,24 @@
         <!-- Genre Selection & Description -->
         <div class="form-grid">
           <div class="form-group">
-            <label for="genreSelect">🎭 Genre *</label>
-            <select 
-              id="genreSelect" 
-              (change)="onGenreSelect($event)"
-              class="genre-select"
-              multiple
-              size="6">
-              @for (genre of getAvailableGenres(); track genre) {
-                <option [value]="genre">{{ genre }}</option>
+            <label>🎭 Genre * <span class="hint-inline">(Select multiple)</span></label>
+            <div class="genre-chips-container">
+              @for (genre of availableGenres; track genre) {
+                <button 
+                  type="button"
+                  class="genre-chip"
+                  [class.selected]="selectedGenres().includes(genre)"
+                  (click)="toggleGenre(genre)">
+                  {{ genre }}
+                </button>
               }
-            </select>
+            </div>
             @if (selectedGenres().length > 0) {
-              <div class="selected-genres">
-                @for (genre of selectedGenres(); track genre) {
-                  <span class="genre-tag">
-                    {{ genre }}
-                    <button type="button" (click)="removeGenre(genre)" class="remove-genre">×</button>
-                  </span>
-                }
+              <div class="selected-count">
+                ✓ {{ selectedGenres().length }} genre(s) selected: {{ selectedGenres().join(', ') }}
               </div>
             } @else {
-              <small class="hint">No genres selected yet</small>
+              <small class="hint">Please select at least one genre</small>
             }
           </div>
 
