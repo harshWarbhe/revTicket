@@ -85,31 +85,43 @@ export class ETicketComponent implements OnInit {
       
       const element = this.ticketContent.nativeElement;
       
-      // Wait for QR code to load
       if (!this.qrCodeDataUrl) {
         await this.generateQRCode();
         await new Promise(resolve => setTimeout(resolve, 300));
       }
       
       const canvas = await html2canvas(element, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#f5f7fa',
         scrollY: -window.scrollY,
         scrollX: -window.scrollX,
         windowHeight: element.scrollHeight,
         imageTimeout: 0
       });
 
-      const imgWidth = 210;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      let heightLeft = imgHeight;
+      let position = 0;
+      
       const imgData = canvas.toDataURL('image/png', 1.0);
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      if (imgHeight <= pageHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else {
+        const ratio = pageHeight / imgHeight;
+        const scaledWidth = imgWidth * ratio;
+        const scaledHeight = pageHeight;
+        const xOffset = (pageWidth - scaledWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xOffset, 0, scaledWidth, scaledHeight);
+      }
       
       const booking = this.booking();
       pdf.save(`RevTicket_${booking.ticketNumber || booking.id}.pdf`);
