@@ -53,24 +53,6 @@ pipeline {
             }
         }
         
-        stage('Tag Images') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh "docker tag revticket-backend:latest ${BACKEND_IMAGE}:${BUILD_TAG}"
-                        sh "docker tag revticket-backend:latest ${BACKEND_IMAGE}:latest"
-                        sh "docker tag revticket-frontend:latest ${FRONTEND_IMAGE}:${BUILD_TAG}"
-                        sh "docker tag revticket-frontend:latest ${FRONTEND_IMAGE}:latest"
-                    } else {
-                        bat "docker tag revticket-backend:latest ${BACKEND_IMAGE}:${BUILD_TAG}"
-                        bat "docker tag revticket-backend:latest ${BACKEND_IMAGE}:latest"
-                        bat "docker tag revticket-frontend:latest ${FRONTEND_IMAGE}:${BUILD_TAG}"
-                        bat "docker tag revticket-frontend:latest ${FRONTEND_IMAGE}:latest"
-                    }
-                }
-            }
-        }
-        
         stage('Push to Registry') {
             steps {
                 script {
@@ -92,7 +74,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy') {
             steps {
                 script {
