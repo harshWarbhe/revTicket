@@ -1,7 +1,10 @@
+version: '3.9'
+
 services:
   mysql:
     image: mysql:8.0
     container_name: revticket-mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Admin123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-revticket_db}
@@ -12,62 +15,89 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Admin123}"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 30s
     networks:
       - revticket-network
 
   mongodb:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: revticket-mongodb
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 20s
     networks:
       - revticket-network
 
   backend:
-    build: ./Backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    image: revticket-backend:latest
     container_name: revticket-backend
+    restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${BACKEND_HOST_PORT:-8081}:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-prod}
       MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
       MYSQL_DATABASE: ${MYSQL_DATABASE:-revticket_db}
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Admin123}
       MONGODB_URI: mongodb://mongodb:27017/revticket_reviews
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
     depends_on:
       mysql:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     networks:
       - revticket-network
 
   frontend:
-    build: ./Frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    image: revticket-frontend:latest
     container_name: revticket-frontend
+    restart: unless-stopped
     ports:
-      - "80:80"
+      - "${FRONTEND_HOST_PORT:-4200}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - revticket-network
 
 volumes:
   mysql_data:
+    driver: local
   mongo_data:
+    driver: local
 
 networks:
   revticket-network:

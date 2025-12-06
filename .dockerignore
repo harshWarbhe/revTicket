@@ -1,7 +1,13 @@
 **/target/
 **/node_modules/
-**/.git
+**/dist/
+**/.angular/
+**/.git/
 **/.gitignore
-**/.env
-**/README.md
+**/*.md
+**/.DS_Store
+**/.idea/
+**/.vscode/
 **/*.log
+**/.env
+**/coverage/

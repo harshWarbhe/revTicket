@@ -1,30 +1,11 @@
-# ============================================
-# Frontend .dockerignore
-# ============================================
-# Exclude files from Docker build context
-# to speed up builds and reduce image size
-# ============================================
-
-# Dependencies (will be installed in container)
 node_modules/
-
-# Build output
 dist/
 .angular/
-
-# Version control
 .git/
 .gitignore
-
-# Documentation
 *.md
-
-# OS files
 .DS_Store
-
-# Test coverage
 coverage/
-
-# IDE files
 .idea/
 .vscode/
+*.log
