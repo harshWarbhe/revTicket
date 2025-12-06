@@ -22,6 +22,13 @@ public class MovieService {
         return movieRepository.findByIsActiveTrue();
     }
 
+    public List<Movie> getMoviesByCity(String city) {
+        if (city == null || city.trim().isEmpty()) {
+            return movieRepository.findByIsActiveTrue();
+        }
+        return movieRepository.findActiveMoviesByCity(city);
+    }
+
     public List<MovieDTO> getAllMoviesForAdmin() {
         return movieRepository.findAll().stream()
                 .map(this::convertToDTO)

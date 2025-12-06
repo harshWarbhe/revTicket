@@ -1,23 +1,28 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+
+let tokenCleanupDone = false;
 
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const router = inject(Router);
   const token = localStorage.getItem('token');
   
-  // Skip token validation for auth endpoints
-  if (req.url.includes('/auth/')) {
+  if (req.url.includes('/auth/') || req.url.includes('/settings')) {
     return next(req);
   }
   
   if (token && isTokenValid(token)) {
+    tokenCleanupDone = false;
     req = req.clone({
       headers: req.headers.set('Authorization', `Bearer ${token}`)
     });
-  } else if (token) {
-    // Token exists but is invalid/expired
+  } else if (token && !tokenCleanupDone) {
+    tokenCleanupDone = true;
     authService.logout();
+    router.navigate(['/auth/login']);
   }
   
   return next(req);

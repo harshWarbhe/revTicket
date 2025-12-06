@@ -9,5 +9,7 @@ import java.util.List;
 @Repository
 public interface TheaterRepository extends JpaRepository<Theater, String> {
     List<Theater> findByIsActiveTrue();
+    List<Theater> findByLocationAndIsActiveTrue(String location);
+    List<Theater> findByLocation(String location);
 }
 

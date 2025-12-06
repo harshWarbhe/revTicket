@@ -59,12 +59,11 @@ export class ShowtimeService {
     return this.http.get<Showtime[]>(`${environment.apiUrl}/showtimes`, { params });
   }
 
-  getShowtimesByMovie(movieId: string, date?: string): Observable<Showtime[]> {
-    let url = `${environment.apiUrl}/showtimes/movie/${movieId}`;
-    if (date) {
-      return this.http.get<Showtime[]>(url, { params: { date } });
-    }
-    return this.http.get<Showtime[]>(url);
+  getShowtimesByMovie(movieId: string, date?: string, city?: string): Observable<Showtime[]> {
+    let params: any = {};
+    if (date) params.date = date;
+    if (city) params.city = city;
+    return this.http.get<Showtime[]>(`${environment.apiUrl}/showtimes/movie/${movieId}`, { params });
   }
 
   getShowtimeById(id: string): Observable<Showtime> {

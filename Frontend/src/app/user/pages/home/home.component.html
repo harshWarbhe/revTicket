@@ -11,11 +11,18 @@
 
   <!-- Main Content -->
   @if (!loading()) {
-
-
-    <!-- Movie Grid -->
-    <app-movie-carousel [movies]="movies()" [title]="'Now Showing'"></app-movie-carousel>
-
-
+    @if (movies().length === 0) {
+      <div class="no-movies">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <h2>No movies available in {{ locationService.selectedCity() }}</h2>
+        <p>Try selecting a different city to see available movies</p>
+        <app-location-selector></app-location-selector>
+      </div>
+    } @else {
+      <app-movie-carousel [movies]="movies()" [title]="'Now Showing'"></app-movie-carousel>
+    }
   }
 </div>

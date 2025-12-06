@@ -2,12 +2,15 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { BookingDraft, BookingCostBreakdown, BookingRequest } from '../../../core/models/booking.model';
+import { BookingDraft, BookingCostBreakdown } from '../../../core/models/booking.model';
 import { BookingService } from '../../../core/services/booking.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { SettingsService } from '../../../core/services/settings.service';
+import { RazorpayService } from '../../../core/services/razorpay.service';
 import { finalize } from 'rxjs/operators';
+
+declare var Razorpay: any;
 
 @Component({
   selector: 'app-payment',
@@ -23,32 +26,17 @@ export class PaymentComponent implements OnInit {
   private bookingService = inject(BookingService);
   private authService = inject(AuthService);
   private alertService = inject(AlertService);
+  private razorpayService = inject(RazorpayService);
   readonly settingsService = inject(SettingsService);
 
-  paymentMethod = signal('card');
-  cardForm: FormGroup;
-  upiForm: FormGroup;
   contactForm: FormGroup;
   processing = signal(false);
   bookingDraft = signal<BookingDraft | null>(null);
   costBreakdown = signal<BookingCostBreakdown | undefined>(undefined);
   showtimeId = '';
-  readonly monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
-  readonly yearOptions = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() + i);
+  razorpayLoaded = signal(false);
 
   constructor() {
-    this.cardForm = this.fb.group({
-      cardNumber: ['', [Validators.required, Validators.pattern(/^\d{16}$/)]],
-      expiryMonth: ['', [Validators.required, Validators.min(1), Validators.max(12)]],
-      expiryYear: ['', [Validators.required, Validators.min(new Date().getFullYear())]],
-      cvv: ['', [Validators.required, Validators.pattern(/^\d{3,4}$/)]],
-      cardholderName: ['', Validators.required]
-    });
-
-    this.upiForm = this.fb.group({
-      upiId: ['', [Validators.required, Validators.pattern(/^[\w.-]+@[\w.-]+$/)]]
-    });
-
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -56,7 +44,7 @@ export class PaymentComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     window.scrollTo(0, 0);
     
     const showtimeId = this.route.snapshot.paramMap.get('showtimeId');
@@ -68,10 +56,8 @@ export class PaymentComponent implements OnInit {
     
     this.showtimeId = showtimeId;
     const draft = this.bookingService.getCurrentBooking();
-    console.log('Payment component - booking draft:', draft);
     
     if (!draft || draft.showtimeId !== showtimeId) {
-      console.log('No valid booking draft found, redirecting to seat booking');
       this.alertService.error('Booking session expired. Please select seats again.');
       this.router.navigate(['/user/seat-booking', showtimeId]);
       return;
@@ -88,10 +74,13 @@ export class PaymentComponent implements OnInit {
         phone: currentUser.phone || ''
       });
     }
-  }
 
-  onPaymentMethodChange(method: string): void {
-    this.paymentMethod.set(method);
+    // Load Razorpay script
+    const loaded = await this.razorpayService.loadRazorpayScript();
+    this.razorpayLoaded.set(loaded);
+    if (!loaded) {
+      this.alertService.error('Failed to load payment gateway. Please refresh.');
+    }
   }
 
   processPayment(): void {
@@ -110,70 +99,107 @@ export class PaymentComponent implements OnInit {
       return;
     }
 
-    let methodValid = false;
-    const method = this.paymentMethod();
-    if (method === 'card') {
-      this.cardForm.markAllAsTouched();
-      methodValid = this.cardForm.valid;
-      if (!methodValid) {
-        this.alertService.error('Please fill in all card details correctly.');
-        return;
-      }
-    } else if (method === 'upi') {
-      this.upiForm.markAllAsTouched();
-      methodValid = this.upiForm.valid;
-      if (!methodValid) {
-        this.alertService.error('Please enter a valid UPI ID.');
-        return;
-      }
-    } else {
-      methodValid = true;
+    if (!this.razorpayLoaded()) {
+      this.alertService.error('Payment gateway not loaded. Please refresh.');
+      return;
     }
 
+    this.processing.set(true);
     const contact = this.contactForm.value;
-    const bookingRequest: BookingRequest = {
-      movieId: draft.movieId,
-      theaterId: draft.theaterId,
+
+    // Create Razorpay order
+    this.razorpayService.createOrder({
+      amount: breakdown.total,
       showtimeId: draft.showtimeId,
-      showtime: new Date(draft.showDateTime),
+      currency: 'INR'
+    }).pipe(finalize(() => this.processing.set(false)))
+      .subscribe({
+        next: (orderResponse) => {
+          this.openRazorpayCheckout(orderResponse, draft, breakdown, contact);
+        },
+        error: (err) => {
+          this.alertService.error('Failed to create payment order. Please try again.');
+        }
+      });
+  }
+
+  private openRazorpayCheckout(orderResponse: any, draft: BookingDraft, breakdown: BookingCostBreakdown, contact: any): void {
+    const options = {
+      key: orderResponse.key,
+      amount: orderResponse.amount,
+      currency: orderResponse.currency,
+      name: 'RevTicket',
+      description: `${draft.movieTitle} - ${draft.seatLabels?.join(', ') || draft.seats.join(', ')}`,
+      order_id: orderResponse.orderId,
+      prefill: {
+        name: contact.name,
+        email: contact.email,
+        contact: contact.phone
+      },
+      theme: {
+        color: '#e50914'
+      },
+      handler: (response: any) => {
+        this.handlePaymentSuccess(response, draft, breakdown, contact);
+      },
+      modal: {
+        ondismiss: () => {
+          this.alertService.error('Payment cancelled');
+        }
+      }
+    };
+
+    const razorpay = new Razorpay(options);
+    razorpay.on('payment.failed', (response: any) => {
+      this.handlePaymentFailure(response, draft, contact);
+    });
+    razorpay.open();
+  }
+
+  private handlePaymentSuccess(response: any, draft: BookingDraft, breakdown: BookingCostBreakdown, contact: any): void {
+    this.processing.set(true);
+
+    const verificationRequest = {
+      razorpayOrderId: response.razorpay_order_id,
+      razorpayPaymentId: response.razorpay_payment_id,
+      razorpaySignature: response.razorpay_signature,
+      showtimeId: draft.showtimeId,
       seats: draft.seats,
-      seatLabels: draft.seatLabels,
+      seatLabels: draft.seatLabels || draft.seats,
       totalAmount: breakdown.total,
       customerName: contact.name,
       customerEmail: contact.email,
       customerPhone: contact.phone
     };
 
-    this.processing.set(true);
-    this.bookingService.createBooking(bookingRequest)
+    this.razorpayService.verifyPayment(verificationRequest)
       .pipe(finalize(() => this.processing.set(false)))
       .subscribe({
-        next: booking => {
-          const confirmation = this.bookingService.buildConfirmationFromDraft(
-            booking,
-            draft,
-            breakdown.total
-          );
-          this.bookingService.setLastConfirmedBooking(confirmation);
+        next: (result) => {
           this.bookingService.clearCurrentBooking();
-          this.alertService.success('🎉 Payment successful! Booking confirmed.');
-          
-          const movieSlug = this.createSlug(draft.movieTitle);
-          const bookingSlug = `booking-${booking.id.slice(-8)}`;
-          
-          this.router.navigate(['/user/success', movieSlug, bookingSlug]);
+          this.router.navigate(['/user/payment-success'], {
+            state: {
+              bookingId: result.bookingId,
+              ticketNumber: result.ticketNumber,
+              draft: draft,
+              amount: breakdown.total
+            }
+          });
         },
         error: (err) => {
-          const errorMsg = err?.error?.message || err?.message || 'Payment failed. Please try again.';
-          this.alertService.error(errorMsg);
-          
-          if (errorMsg.includes('no longer available') || errorMsg.includes('already booked')) {
-            setTimeout(() => {
-              this.router.navigate(['/user/seat-booking', this.showtimeId]);
-            }, 2000);
-          }
+          this.alertService.error('Payment verification failed. Please contact support.');
+          this.router.navigate(['/user/payment-failure'], {
+            state: { draft: draft }
+          });
         }
       });
+  }
+
+  private handlePaymentFailure(response: any, draft: BookingDraft, contact: any): void {
+    this.alertService.error('Payment failed. Please try again.');
+    this.router.navigate(['/user/payment-failure'], {
+      state: { draft: draft }
+    });
   }
   
   private createSlug(title: string): string {

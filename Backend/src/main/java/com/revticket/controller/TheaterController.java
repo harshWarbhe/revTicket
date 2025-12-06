@@ -21,7 +21,11 @@ public class TheaterController {
 
     @GetMapping
     public ResponseEntity<List<TheaterResponse>> getAllTheaters(
-            @RequestParam(name = "activeOnly", defaultValue = "true") boolean activeOnly) {
+            @RequestParam(name = "activeOnly", defaultValue = "true") boolean activeOnly,
+            @RequestParam(required = false) String city) {
+        if (city != null && !city.trim().isEmpty()) {
+            return ResponseEntity.ok(theaterService.getTheatersByCity(city, activeOnly));
+        }
         return ResponseEntity.ok(theaterService.getAllTheaters(activeOnly));
     }
 

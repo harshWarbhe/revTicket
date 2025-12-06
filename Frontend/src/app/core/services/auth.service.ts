@@ -15,7 +15,10 @@ export class AuthService {
   public isAuthenticated = computed(() => {
     const user = this.currentUserSignal();
     const token = localStorage.getItem('token');
-    return !!(user && token && this.isTokenValid(token));
+    if (token && !this.isTokenValid(token)) {
+      return false;
+    }
+    return !!(user && token);
   });
   public isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
 
@@ -94,11 +97,13 @@ export class AuthService {
       if (token && userStr && this.isTokenValid(token)) {
         const user = JSON.parse(userStr);
         this.currentUserSignal.set(user);
-      } else {
-        this.logout();
+      } else if (token || userStr) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }
     } catch (error) {
-      this.logout();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   }
 

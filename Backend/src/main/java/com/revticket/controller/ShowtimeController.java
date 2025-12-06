@@ -41,9 +41,16 @@ public class ShowtimeController {
     @GetMapping("/movie/{movieId}")
     public ResponseEntity<List<ShowtimeResponse>> getShowtimesByMovie(
             @PathVariable("movieId") String movieId,
-            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String city) {
+        if (date != null && city != null && !city.trim().isEmpty()) {
+            return ResponseEntity.ok(showtimeService.getShowtimesByMovieDateAndCity(movieId, date, city));
+        }
         if (date != null) {
             return ResponseEntity.ok(showtimeService.getShowtimesByMovieAndDate(movieId, date));
+        }
+        if (city != null && !city.trim().isEmpty()) {
+            return ResponseEntity.ok(showtimeService.getShowtimesByMovieAndCity(movieId, city));
         }
         return ResponseEntity.ok(showtimeService.getShowtimesByMovie(movieId));
     }

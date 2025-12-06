@@ -6,6 +6,8 @@ import { MovieDetailsComponent } from './pages/movie-details/movie-details.compo
 import { ShowtimesComponent } from './pages/showtimes/showtimes.component';
 import { SeatBookingComponent } from './pages/seat-booking/seat-booking.component';
 import { PaymentComponent } from './pages/payment/payment.component';
+import { PaymentSuccessComponent } from './pages/payment/success/payment-success.component';
+import { PaymentFailureComponent } from './pages/payment/failure/payment-failure.component';
 import { BookingSuccessComponent } from './pages/booking-success/booking-success.component';
 import { MyBookingsComponent } from './pages/my-bookings/my-bookings.component';
 import { ProfileComponent } from './pages/profile/profile.component';
@@ -18,6 +20,8 @@ export const userRoutes: Routes = [
   { path: 'showtimes/:id', component: ShowtimesComponent },
   { path: 'seat-booking/:showtimeId', component: SeatBookingComponent, canActivate: [authGuard] },
   { path: 'payment/:showtimeId', component: PaymentComponent, canActivate: [authGuard] },
+  { path: 'payment-success', component: PaymentSuccessComponent, canActivate: [authGuard] },
+  { path: 'payment-failure', component: PaymentFailureComponent, canActivate: [authGuard] },
   { path: 'success/:movieSlug/:bookingSlug', component: BookingSuccessComponent, canActivate: [authGuard] },
   { path: 'my-bookings', component: MyBookingsComponent, canActivate: [authGuard] },
   { path: 'booking-summary', component: BookingSummaryComponent, canActivate: [authGuard] },

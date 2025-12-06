@@ -1,13 +1,15 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { DisplayUtils } from '../../../core/utils/display-utils';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
 import { ShowtimeService, Showtime } from '../../../core/services/showtime.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { LocationService } from '../../../core/services/location.service';
 import { Movie } from '../../../core/models/movie.model';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../../core/services/settings.service';
+import { LocationSelectorComponent } from '../../../shared/components/location-selector/location-selector.component';
 
 interface TheaterGroup {
   theaterId: string;
@@ -50,7 +52,8 @@ export class ShowtimesComponent implements OnInit {
   getShowtimeCountForDate(date: Date): number {
     const dateStr = this.formatDate(date);
     return this.showtimes().filter(s => {
-      const showDateStr = new Date(s.showDateTime).toISOString().split('T')[0];
+      const showDate = new Date(s.showDateTime);
+      const showDateStr = `${showDate.getFullYear()}-${String(showDate.getMonth() + 1).padStart(2, '0')}-${String(showDate.getDate()).padStart(2, '0')}`;
       return showDateStr === dateStr;
     }).length;
   }
@@ -69,7 +72,8 @@ export class ShowtimesComponent implements OnInit {
     // Filter by selected date
     const selectedDateStr = this.formatDate(this.selectedDate());
     filtered = filtered.filter(s => {
-      const showDateStr = new Date(s.showDateTime).toISOString().split('T')[0];
+      const showDate = new Date(s.showDateTime);
+      const showDateStr = `${showDate.getFullYear()}-${String(showDate.getMonth() + 1).padStart(2, '0')}-${String(showDate.getDate()).padStart(2, '0')}`;
       return showDateStr === selectedDateStr;
     });
 
@@ -134,6 +138,18 @@ export class ShowtimesComponent implements OnInit {
   private showtimeService = inject(ShowtimeService);
   private alertService = inject(AlertService);
   readonly settingsService = inject(SettingsService);
+  readonly locationService = inject(LocationService);
+
+  constructor() {
+    effect(() => {
+      const city = this.locationService.selectedCity();
+      const movie = this.movie();
+      if (movie) {
+        this.loading.set(true);
+        this.loadShowtimes(movie.id);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
@@ -192,7 +208,10 @@ export class ShowtimesComponent implements OnInit {
   }
 
   formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   getDayLabel(date: Date): string {
@@ -225,16 +244,18 @@ export class ShowtimesComponent implements OnInit {
   }
 
   private loadShowtimes(movieId: string): void {
-    // Load all showtimes for the movie (next 7 days)
-    this.showtimeService.getShowtimesByMovie(movieId).subscribe({
+    const city = this.locationService.selectedCity();
+    this.showtimeService.getShowtimesByMovie(movieId, undefined, city).subscribe({
       next: (data) => {
-        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const sevenDaysLater = new Date();
-        sevenDaysLater.setDate(now.getDate() + 7);
+        sevenDaysLater.setDate(today.getDate() + 7);
+        sevenDaysLater.setHours(23, 59, 59, 999);
         
         const active = data.filter(s => {
           const showDate = new Date(s.showDateTime);
-          return s.status === 'ACTIVE' && showDate >= now && showDate < sevenDaysLater;
+          return s.status === 'ACTIVE' && showDate >= today && showDate <= sevenDaysLater;
         });
         
         this.showtimes.set(active);

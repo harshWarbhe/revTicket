@@ -7,6 +7,7 @@ import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TheaterService, Theater } from '../../../core/services/theater.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { LocationService } from '../../../core/services/location.service';
 import { environment } from '../../../../environments/environment';
 import { TheatreItemComponent } from './theatre-item/theatre-item.component';
 import { ScreenConfigComponent } from './screen-config/screen-config.component';
@@ -65,6 +66,7 @@ export class VenueManagementComponent implements OnInit {
   private alertService = inject(AlertService);
   private destroyRef = inject(DestroyRef);
   private venueService = inject(VenueService);
+  readonly locationService = inject(LocationService);
 
   // Theatre management
   theatres = signal<Theater[]>([]);

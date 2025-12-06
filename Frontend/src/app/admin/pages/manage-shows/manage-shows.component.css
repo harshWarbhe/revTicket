@@ -122,6 +122,16 @@ tr.past {
   color: #065f46;
 }
 
+.location-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
 .btn-icon {
   background: none;
   border: none;

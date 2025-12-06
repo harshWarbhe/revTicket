@@ -1,14 +1,22 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 import { AlertService } from '../services/alert.service';
+import { AuthService } from '../services/auth.service';
+
+let lastUnauthorizedTime = 0;
+const UNAUTHORIZED_THROTTLE = 3000;
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const alertService = inject(AlertService);
+  const authService = inject(AuthService);
+  const router = inject(Router);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       let errorMessage = 'An unknown error occurred';
+      let showAlert = true;
 
       if (error.status === 0) {
         errorMessage = 'Backend is not reachable. Please ensure Spring Boot server is running on http://localhost:8080';
@@ -21,7 +29,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             errorMessage = error.error?.message || error.error || 'Bad request';
             break;
           case 401:
-            errorMessage = error.error?.message || 'Unauthorized. Please login again.';
+            const now = Date.now();
+            if (now - lastUnauthorizedTime > UNAUTHORIZED_THROTTLE) {
+              lastUnauthorizedTime = now;
+              errorMessage = 'Session expired. Please login again.';
+              authService.logout();
+              router.navigate(['/auth/login']);
+            } else {
+              showAlert = false;
+            }
             break;
           case 403:
             errorMessage = 'Access forbidden';
@@ -40,11 +56,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       console.error('HTTP Error:', { 
         status: error.status, 
         message: errorMessage, 
-        url: error.url, 
-        fullError: error,
-        errorBody: error.error 
+        url: error.url 
       });
-      alertService.error(errorMessage);
+      
+      if (showAlert) {
+        alertService.error(errorMessage);
+      }
 
       return throwError(() => error);
     })

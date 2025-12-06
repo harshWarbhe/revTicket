@@ -19,7 +19,10 @@ public class MovieController {
     private MovieService movieService;
 
     @GetMapping("/movies")
-    public ResponseEntity<List<Movie>> getAllMovies() {
+    public ResponseEntity<List<Movie>> getAllMovies(@RequestParam(required = false) String city) {
+        if (city != null && !city.trim().isEmpty()) {
+            return ResponseEntity.ok(movieService.getMoviesByCity(city));
+        }
         return ResponseEntity.ok(movieService.getAllMovies());
     }
 

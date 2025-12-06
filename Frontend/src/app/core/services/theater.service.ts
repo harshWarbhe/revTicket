@@ -26,10 +26,13 @@ export interface Screen {
 export class TheaterService {
   private http = inject(HttpClient);
 
-  getAllTheaters(activeOnly: boolean = true): Observable<Theater[]> {
+  getAllTheaters(activeOnly: boolean = true, city?: string): Observable<Theater[]> {
     let params = new HttpParams();
     if (!activeOnly) {
       params = params.set('activeOnly', 'false');
+    }
+    if (city) {
+      params = params.set('city', city);
     }
     return this.http.get<Theater[]>(`${environment.apiUrl}/theaters`, { params });
   }

@@ -11,6 +11,9 @@ import java.util.List;
 public interface MovieRepository extends JpaRepository<Movie, String> {
     List<Movie> findByIsActiveTrue();
     
+    @Query("SELECT DISTINCT m FROM Movie m JOIN m.showtimes s JOIN s.theater t WHERE m.isActive = true AND t.location = :city AND t.isActive = true")
+    List<Movie> findActiveMoviesByCity(String city);
+    
     @Query("SELECT COUNT(s) FROM Showtime s WHERE s.movie.id = :movieId")
     Integer countShowtimesByMovieId(String movieId);
     

@@ -70,6 +70,24 @@ public class ShowtimeService {
     }
 
     @Transactional(readOnly = true)
+    public List<ShowtimeResponse> getShowtimesByMovieAndCity(String movieId, String city) {
+        return showtimeRepository.findByMovieIdAndCity(movieId, city)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ShowtimeResponse> getShowtimesByMovieDateAndCity(String movieId, LocalDate date, String city) {
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(LocalTime.MAX);
+        return showtimeRepository.findByMovieIdCityAndShowDateBetween(movieId, city, start, end)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<ShowtimeResponse> getShowtimesWithFilters(String movieId, String theaterId, LocalDate date, String search) {
         List<Showtime> showtimes;
         

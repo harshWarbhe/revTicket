@@ -1,13 +1,15 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { LocationService } from '../../../core/services/location.service';
 import { Movie } from '../../../core/models/movie.model';
 import { LoaderComponent } from '../../../shared/components/loader/loader.component';
 import { HeroSliderComponent } from '../../components/hero-slider/hero-slider.component';
 import { MovieCarouselComponent } from '../../components/movie-carousel/movie-carousel.component';
+import { LocationSelectorComponent } from '../../../shared/components/location-selector/location-selector.component';
 
 @Component({
   selector: 'app-home',
@@ -17,7 +19,8 @@ import { MovieCarouselComponent } from '../../components/movie-carousel/movie-ca
     FormsModule,
     LoaderComponent,
     HeroSliderComponent,
-    MovieCarouselComponent
+    MovieCarouselComponent,
+    LocationSelectorComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
@@ -26,11 +29,19 @@ export class HomeComponent implements OnInit {
   private movieService = inject(MovieService);
   private alertService = inject(AlertService);
   private router = inject(Router);
+  locationService = inject(LocationService);
 
   movies = signal<Movie[]>([]);
   loading = signal(true);
   searchTerm = signal('');
   selectedGenre = signal('All');
+
+  constructor() {
+    effect(() => {
+      const city = this.locationService.selectedCity();
+      this.loadMovies();
+    }, { allowSignalWrites: true });
+  }
   
   featuredMovies = computed(() => {
     return this.movies().filter(m => m.rating >= 7).slice(0, 4);
@@ -58,14 +69,16 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
-    this.loadMovies();
   }
 
   loadMovies(): void {
     this.loading.set(true);
-    this.movieService.getMovies().subscribe({
+    const city = this.locationService.selectedCity();
+    this.movieService.getMovies(city).subscribe({
       next: (movies) => {
-        const activeMovies = movies.filter(movie => movie.isActive);
+        const activeMovies = movies
+          .filter(movie => movie.isActive)
+          .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
         this.movies.set(activeMovies);
         this.loading.set(false);
       },

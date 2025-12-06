@@ -17,8 +17,10 @@ interface ApiResponse<T> {
 export class MovieService {
   private http = inject(HttpClient);
 
-  getMovies(): Observable<Movie[]> {
-    return this.http.get<Movie[]>(`${environment.apiUrl}/movies`);
+  getMovies(city?: string): Observable<Movie[]> {
+    const params: Record<string, string> = {};
+    if (city) params['city'] = city;
+    return this.http.get<Movie[]>(`${environment.apiUrl}/movies`, { params });
   }
 
   getAdminMovies(): Observable<Movie[]> {
@@ -35,11 +37,11 @@ export class MovieService {
       .pipe(map(response => response.data));
   }
 
-  getShowtimes(movieId: string, date?: string): Observable<Showtime[]> {
-    const url = date 
-      ? `${environment.apiUrl}/showtimes/movie/${movieId}?date=${date}`
-      : `${environment.apiUrl}/showtimes/movie/${movieId}`;
-    return this.http.get<Showtime[]>(url);
+  getShowtimes(movieId: string, date?: string, city?: string): Observable<Showtime[]> {
+    let params: any = {};
+    if (date) params.date = date;
+    if (city) params.city = city;
+    return this.http.get<Showtime[]>(`${environment.apiUrl}/showtimes/movie/${movieId}`, { params });
   }
 
   addMovie(movie: Partial<Movie>): Observable<Movie> {

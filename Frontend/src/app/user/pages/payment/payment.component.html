@@ -29,71 +29,9 @@
         </div>
       </form>
 
-      <div class="payment-methods">
-        <h3>Payment Method</h3>
-        <div class="method-options">
-          <label class="method-option" [class.active]="paymentMethod() === 'card'">
-            <input type="radio" value="card" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('card')">
-            <span>💳 Card</span>
-          </label>
-          <label class="method-option" [class.active]="paymentMethod() === 'upi'">
-            <input type="radio" value="upi" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('upi')">
-            <span>📱 UPI</span>
-          </label>
-          <label class="method-option" [class.active]="paymentMethod() === 'wallet'">
-            <input type="radio" value="wallet" [(ngModel)]="paymentMethod" (change)="onPaymentMethodChange('wallet')">
-            <span>💰 Wallet</span>
-          </label>
-        </div>
-      </div>
-
-      <form *ngIf="paymentMethod() === 'card'" [formGroup]="cardForm" class="payment-form">
-        <div class="form-row">
-          <label>Cardholder Name *</label>
-          <input type="text" formControlName="cardholderName" placeholder="Name as on card">
-        </div>
-        <div class="form-row">
-          <label>Card Number *</label>
-          <input type="text" formControlName="cardNumber" placeholder="1234 5678 9012 3456" maxlength="16">
-        </div>
-        <div class="two-column">
-          <div>
-            <label>Expiry Month *</label>
-            <select formControlName="expiryMonth">
-              <option value="">MM</option>
-              <option *ngFor="let month of monthOptions" [value]="month">
-                {{ month | number:'2.0-0' }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label>Expiry Year *</label>
-            <select formControlName="expiryYear">
-              <option value="">YYYY</option>
-              <option *ngFor="let year of yearOptions" [value]="year">{{ year }}</option>
-            </select>
-          </div>
-          <div>
-            <label>CVV *</label>
-            <input type="text" formControlName="cvv" maxlength="4" placeholder="123">
-          </div>
-        </div>
-      </form>
-
-      <form *ngIf="paymentMethod() === 'upi'" [formGroup]="upiForm" class="payment-form">
-        <div class="form-row">
-          <label>UPI ID *</label>
-          <input type="text" formControlName="upiId" placeholder="yourname@upi">
-        </div>
-        <div class="upi-apps">
-          <button type="button">GPay</button>
-          <button type="button">PhonePe</button>
-          <button type="button">Paytm</button>
-        </div>
-      </form>
-
-      <div *ngIf="paymentMethod() === 'wallet'" class="wallet-info">
-        <p>💼 Select your preferred wallet at checkout. Supported wallets: Paytm, PhonePe, Amazon Pay, and more.</p>
+      <div class="payment-info">
+        <h3>💳 Payment via Razorpay</h3>
+        <p>Secure payment gateway supporting UPI, Cards, Wallets & Net Banking</p>
       </div>
 
       <div class="payment-actions">

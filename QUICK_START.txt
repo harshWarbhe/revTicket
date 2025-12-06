@@ -1,0 +1,150 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    RAZORPAY INTEGRATION - QUICK START
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 GET STARTED IN 3 STEPS:
+
+STEP 1: GET RAZORPAY TEST KEYS (2 minutes)
+-------------------------------------------
+1. Visit: https://dashboard.razorpay.com/signup
+2. Sign up (free, no credit card needed)
+3. Go to: Settings → API Keys → Generate Test Keys
+4. Copy both:
+   - Key ID (starts with rzp_test_)
+   - Key Secret
+
+STEP 2: UPDATE BACKEND CONFIG (30 seconds)
+-------------------------------------------
+File: Backend/src/main/resources/application.properties
+
+Replace:
+  razorpay.key.id=rzp_test_YOUR_KEY_ID
+  razorpay.key.secret=YOUR_KEY_SECRET
+
+With your actual keys from Step 1
+
+STEP 3: RUN THE APPLICATION
+----------------------------
+Terminal 1 (Backend):
+  cd Backend
+  mvn spring-boot:run
+
+Terminal 2 (Frontend):
+  cd Frontend
+  ng serve
+
+Open: http://localhost:4200
+
+═══════════════════════════════════════════════════════════════════════════════
+🧪 TEST THE PAYMENT FLOW
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Login/Signup to the application
+2. Browse movies → Select a movie
+3. Choose showtime → Select seats
+4. Click "Proceed to Payment"
+5. Fill contact details
+6. Click "Pay ₹XXX" button
+7. Razorpay popup opens
+
+TEST SUCCESSFUL PAYMENT:
+------------------------
+Card Number: 4111 1111 1111 1111
+CVV: 123
+Expiry: 12/25
+Name: Test User
+
+OR
+
+UPI ID: success@razorpay
+
+Result: ✅ Animated success screen → Booking confirmed
+
+TEST FAILED PAYMENT:
+--------------------
+Card Number: 4000 0000 0000 0002
+CVV: 123
+Expiry: 12/25
+
+Result: ❌ Animated failure screen → Retry option
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ WHAT HAPPENS AFTER PAYMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+SUCCESS:
+✓ Payment verified via signature
+✓ Booking created with status = CONFIRMED
+✓ Payment record saved in MySQL with:
+  - razorpay_order_id
+  - razorpay_payment_id
+  - razorpay_signature
+  - amount
+  - timestamp
+✓ Animated success screen (2 seconds)
+✓ Booking details displayed
+✓ Navigate to "My Bookings" to view ticket
+
+FAILURE:
+✓ Failed payment logged in database
+✓ Animated error screen
+✓ Retry payment option
+✓ Seats remain available for rebooking
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 CHECK DATABASE
+═══════════════════════════════════════════════════════════════════════════════
+
+After successful payment, verify in MySQL:
+
+SELECT * FROM bookings WHERE status = 'CONFIRMED' ORDER BY booking_date DESC LIMIT 1;
+SELECT * FROM payments WHERE status = 'SUCCESS' ORDER BY payment_date DESC LIMIT 1;
+
+You should see:
+- Booking with ticket_number, seats, total_amount
+- Payment with razorpay_order_id, razorpay_payment_id, razorpay_signature
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 FEATURES IMPLEMENTED
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Dynamic Razorpay script loading
+✅ Order creation with actual seat prices
+✅ Razorpay checkout popup
+✅ Payment signature verification (HMAC SHA256)
+✅ MySQL storage of all payment details
+✅ Animated success screen (CSS animations)
+✅ Animated failure screen with retry
+✅ Booking status tracking (PENDING → CONFIRMED/CANCELLED)
+✅ JWT authentication
+✅ Error handling
+✅ Responsive design
+✅ Angular 18 best practices (standalone, signals, inject)
+
+═══════════════════════════════════════════════════════════════════════════════
+🔍 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Issue: "Failed to load payment gateway"
+Fix: Check internet connection, Razorpay script loads from CDN
+
+Issue: "Invalid payment signature"
+Fix: Verify razorpay.key.secret in application.properties matches dashboard
+
+Issue: Payment popup doesn't open
+Fix: Check browser console for errors, ensure Razorpay keys are correct
+
+Issue: Database error
+Fix: Ensure MySQL is running and revticket_db exists
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 NEED HELP?
+═══════════════════════════════════════════════════════════════════════════════
+
+Razorpay Docs: https://razorpay.com/docs/
+Test Cards: https://razorpay.com/docs/payments/payments/test-card-details/
+Support: https://razorpay.com/support/
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ READY TO ACCEPT PAYMENTS!
+═══════════════════════════════════════════════════════════════════════════════

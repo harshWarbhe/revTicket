@@ -2,10 +2,7 @@
   <div class="nav-container">
     <div class="nav-left">
       <a routerLink="/user/home" class="logo">🎬 {{ settingsService.siteName() }}</a>
-      <div class="location-selector">
-        <span class="location-icon">📍</span>
-        <span class="location-text">Chennai</span>
-      </div>
+      <app-location-selector></app-location-selector>
     </div>
     
     @if (currentUser(); as user) {

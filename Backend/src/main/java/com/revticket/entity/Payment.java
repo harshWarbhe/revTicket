@@ -38,6 +38,15 @@ public class Payment {
     @Column(name = "transaction_id", unique = true)
     private String transactionId;
 
+    @Column(name = "razorpay_order_id")
+    private String razorpayOrderId;
+
+    @Column(name = "razorpay_payment_id")
+    private String razorpayPaymentId;
+
+    @Column(name = "razorpay_signature")
+    private String razorpaySignature;
+
     @CreationTimestamp
     @Column(name = "payment_date", nullable = false, updatable = false)
     private LocalDateTime paymentDate;

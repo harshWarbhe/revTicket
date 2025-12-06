@@ -65,7 +65,12 @@
     <div class="container">
       @if (theaterGroups().length === 0) {
       <div class="empty">
-        <p>No shows available</p>
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+          <polyline points="17 2 12 7 7 2"/>
+        </svg>
+        <h3>No shows available in {{ locationService.selectedCity() }}</h3>
+        <p>Try selecting a different date or city</p>
       </div>
       } @else {
       @for (theater of theaterGroups(); track theater.theaterId) {

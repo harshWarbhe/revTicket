@@ -80,7 +80,12 @@
 
           <div class="form-group" [class.error]="isInvalid('location')">
             <label>City / Location *</label>
-            <input type="text" formControlName="location" placeholder="e.g., Mumbai">
+            <select formControlName="location">
+              <option value="" disabled>Select a city</option>
+              @for (city of locationService.cities(); track city.name) {
+                <option [value]="city.name">{{ city.name }}, {{ city.state }}</option>
+              }
+            </select>
             @if (isInvalid('location')) {
               <span class="error-text">Location is required</span>
             }

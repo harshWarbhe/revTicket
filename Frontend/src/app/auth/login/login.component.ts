@@ -57,20 +57,20 @@ export class LoginComponent implements OnInit {
         this.loading.set(false);
         this.alertService.success('Login successful! Welcome back.');
 
-        // Check for redirect URL first
-        const redirectUrl = this.authService.getRedirectUrl();
-        if (redirectUrl) {
-          this.authService.clearRedirectUrl();
-          this.router.navigateByUrl(redirectUrl);
-          return;
-        }
+        setTimeout(() => {
+          const redirectUrl = this.authService.getRedirectUrl();
+          if (redirectUrl) {
+            this.authService.clearRedirectUrl();
+            this.router.navigateByUrl(redirectUrl);
+            return;
+          }
 
-        // Default navigation based on role
-        if (response.user.role === 'ADMIN') {
-          this.router.navigate(['/admin/dashboard']);
-        } else {
-          this.router.navigate(['/user/home']);
-        }
+          if (response.user.role === 'ADMIN') {
+            this.router.navigate(['/admin/dashboard']);
+          } else {
+            this.router.navigate(['/user/home']);
+          }
+        }, 0);
       },
       error: (err) => {
         this.loading.set(false);
@@ -154,11 +154,13 @@ export class LoginComponent implements OnInit {
             this.loading.set(false);
             this.alertService.success('Welcome! Logged in with Google.');
             
-            if (authResponse.user.role === 'ADMIN') {
-              this.router.navigate(['/admin/dashboard']);
-            } else {
-              this.router.navigate(['/user/home']);
-            }
+            setTimeout(() => {
+              if (authResponse.user.role === 'ADMIN') {
+                this.router.navigate(['/admin/dashboard']);
+              } else {
+                this.router.navigate(['/user/home']);
+              }
+            }, 0);
           },
           error: (err) => {
             this.loading.set(false);

@@ -188,9 +188,19 @@ export class SeatBookingComponent implements OnInit {
       }
 
       // Load booked seats for this showtime
-      const bookedSeats: any[] = await this.http.get<any[]>(`${environment.apiUrl}/seats/showtime/${this.showtimeId}`).toPromise() || [];
-      console.log('Booked seats from API:', bookedSeats);
-      console.log('Seats marked as booked:', bookedSeats.filter(s => s.isBooked));
+      let bookedSeats: any[] = [];
+      try {
+        bookedSeats = await this.http.get<any[]>(`${environment.apiUrl}/seats/showtime/${this.showtimeId}`).toPromise() || [];
+        console.log('Booked seats from API:', bookedSeats);
+        console.log('Seats marked as booked:', bookedSeats.filter(s => s.isBooked));
+      } catch (seatError: any) {
+        if (seatError.status === 400) {
+          console.warn('Seats not initialized for this showtime, showing all as available');
+          bookedSeats = [];
+        } else {
+          throw seatError;
+        }
+      }
       const bookedSeatIds = new Set(bookedSeats.filter(s => s.isBooked === true || s.isBooked === 1).map(s => s.id));
 
       // Generate seats from screen configuration, excluding disabled seats

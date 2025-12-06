@@ -30,6 +30,16 @@ public class TheaterService {
     }
 
     @Transactional(readOnly = true)
+    public List<TheaterResponse> getTheatersByCity(String city, boolean activeOnly) {
+        List<Theater> theaters = activeOnly
+                ? theaterRepository.findByLocationAndIsActiveTrue(city)
+                : theaterRepository.findByLocation(city);
+        return theaters.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public Optional<TheaterResponse> getTheaterById(String id) {
         return theaterRepository.findById(Objects.requireNonNullElse(id, "")).map(this::mapToResponse);
     }

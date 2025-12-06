@@ -23,9 +23,9 @@
         <tr>
           <th>Movie</th>
           <th>Theater</th>
+          <th>Location</th>
           <th>Screen</th>
           <th>Date & Time</th>
-
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -34,6 +34,9 @@
         <tr *ngFor="let show of shows()" [class.past]="!isUpcoming(show.showDateTime)">
           <td><strong>{{ show.movie?.title || 'N/A' }}</strong></td>
           <td>{{ show.theater?.name || 'N/A' }}</td>
+          <td>
+            <span class="location-badge">📍 {{ show.theater?.location || 'N/A' }}</span>
+          </td>
           <td>{{ getScreenName(show.screen) }}</td>
           <td>{{ formatDateTime(show.showDateTime) }}</td>
           <td>

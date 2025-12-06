@@ -78,40 +78,27 @@ export class SettingsService {
         this.settings.set(settings);
         this.loaded.set(true);
         
-        console.log('Settings loaded:', { wasMaintenanceMode, newMaintenanceMode: settings.maintenanceMode, wasLoaded });
-        
-        // Only check after initial load
         if (wasLoaded) {
           const currentUserStr = localStorage.getItem('currentUser');
           const isAdmin = currentUserStr ? JSON.parse(currentUserStr).role === 'ADMIN' : false;
           const currentPath = window.location.pathname;
           const isAdminRoute = currentPath.startsWith('/admin');
           
-          console.log('Checking maintenance:', { isAdmin, isAdminRoute, currentPath, maintenanceMode: settings.maintenanceMode });
-          
-          // Skip redirects for admin users or admin routes
           if (isAdmin || isAdminRoute) {
             return;
           }
           
-          // Maintenance mode enabled - redirect users
           if (!wasMaintenanceMode && settings.maintenanceMode) {
-            console.log('Redirecting to maintenance page');
             window.location.href = '/maintenance';
           }
           
-          // Maintenance mode disabled - redirect from maintenance page
           if (wasMaintenanceMode && !settings.maintenanceMode && currentPath === '/maintenance') {
-            console.log('Redirecting from maintenance to home');
             window.location.href = '/user/home';
           }
         }
       })
     ).subscribe({
-      error: (err) => {
-        console.error('Failed to load settings:', err);
-        this.loaded.set(true);
-      }
+      error: () => this.loaded.set(true)
     });
   }
 
