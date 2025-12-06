@@ -1,170 +1,132 @@
 <div class="e-ticket-wrapper" #ticketContent>
   @if (booking(); as booking) {
     <div class="e-ticket">
-      <!-- Ticket Header -->
       <div class="ticket-header">
         <div class="brand-section">
           <div class="brand-logo">🎬</div>
           <div class="brand-info">
             <h1 class="brand-name">RevTicket</h1>
-            <p class="brand-tagline">Your Movie Experience Partner</p>
+            <p class="brand-tagline">Payment Successful</p>
           </div>
         </div>
         <div class="ticket-number-section">
-          <span class="ticket-label">TICKET NO.</span>
+          <span class="ticket-label">TICKET</span>
           <span class="ticket-number">{{ booking.ticketNumber || booking.id.substring(0, 8).toUpperCase() }}</span>
         </div>
       </div>
 
-      <!-- Movie Section -->
-      <div class="movie-section">
-        @if (booking.moviePosterUrl) {
-          <div class="movie-poster-container">
-            <img [src]="booking.moviePosterUrl" [alt]="booking.movieTitle" class="movie-poster">
-          </div>
-        }
-        <div class="movie-info">
-          <h2 class="movie-title">{{ booking.movieTitle }}</h2>
-          <div class="status-badge" [ngClass]="'status-' + booking.status.toLowerCase()">
-            {{ booking.status === 'CANCELLATION_PENDING' ? 'PENDING CANCELLATION' : booking.status }}
-          </div>
-        </div>
-      </div>
-
-    <!-- Booking Details -->
-    <div class="booking-details">
-      <div class="details-grid">
-        <div class="detail-item">
-          <div class="detail-icon">🏢</div>
-          <div class="detail-content">
-            <span class="detail-label">Theatre</span>
-            <span class="detail-value">{{ booking.theaterName }}</span>
-            @if (booking.theaterLocation) {
-              <span class="detail-sub">{{ booking.theaterLocation }}</span>
-            }
-          </div>
-        </div>
-
-        <div class="detail-item">
-          <div class="detail-icon">📺</div>
-          <div class="detail-content">
-            <span class="detail-label">Screen</span>
-            <span class="detail-value">{{ booking.screen || 'N/A' }}</span>
-          </div>
-        </div>
-
-        <div class="detail-item">
-          <div class="detail-icon">📅</div>
-          <div class="detail-content">
-            <span class="detail-label">Show Date & Time</span>
-            <span class="detail-value">{{ formatDateTime(booking.showtime) }}</span>
-          </div>
-        </div>
-
-        <div class="detail-item">
-          <div class="detail-icon">💺</div>
-          <div class="detail-content">
-            <span class="detail-label">Seats</span>
-            <div class="seats-container">
-              @for (seat of (booking.seatLabels || booking.seats); track seat) {
-                <span class="seat-badge">
-                  {{ seat }}
-                </span>
+      <div class="ticket-body">
+        <div class="content-row">
+          <div class="left-section">
+            <div class="movie-section">
+              @if (booking.moviePosterUrl) {
+                <img [src]="booking.moviePosterUrl" [alt]="booking.movieTitle" class="movie-poster">
               }
+              <div class="movie-info">
+                <h2 class="movie-title">{{ booking.movieTitle }}</h2>
+                <div class="status-badge" [ngClass]="'status-' + booking.status.toLowerCase()">
+                  {{ booking.status === 'CANCEL' ? 'PENDING' : booking.status }}
+                </div>
+              </div>
+            </div>
+
+            <div class="details-section">
+              <div class="detail-row">
+                <span class="icon">🏢</span>
+                <div>
+                  <div class="label">Theatre</div>
+                  <div class="value">{{ booking.theaterName }}</div>
+                  @if (booking.theaterLocation) {
+                    <div class="sub">{{ booking.theaterLocation }}</div>
+                  }
+                </div>
+              </div>
+              <div class="detail-row">
+                <span class="icon">📅</span>
+                <div>
+                  <div class="label">Show Time</div>
+                  <div class="value">{{ formatDateTime(booking.showtime) }}</div>
+                </div>
+              </div>
+              <div class="detail-row">
+                <span class="icon">📺</span>
+                <div>
+                  <div class="label">Screen</div>
+                  <div class="value">{{ booking.screen || 'N/A' }}</div>
+                </div>
+              </div>
+              <div class="detail-row">
+                <span class="icon">💺</span>
+                <div>
+                  <div class="label">Seats</div>
+                  <div class="seats-wrap">
+                    @for (seat of (booking.seatLabels || booking.seats); track seat) {
+                      <span class="seat-badge">{{ seat }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="customer-section">
+              <div class="section-title">Customer Details</div>
+              <div class="customer-row">
+                <span class="label">Name:</span>
+                <span class="value">{{ booking.customerName }}</span>
+              </div>
+              <div class="customer-row">
+                <span class="label">Email:</span>
+                <span class="value">{{ booking.customerEmail }}</span>
+              </div>
+              <div class="customer-row">
+                <span class="label">Phone:</span>
+                <span class="value">{{ booking.customerPhone }}</span>
+              </div>
+            </div>
+
+            <div class="payment-section">
+              <div class="payment-row">
+                <span class="label">Total Amount</span>
+                <span class="amount">{{ formatCurrency(booking.totalAmount) }}</span>
+              </div>
+              <div class="payment-row">
+                <span class="label">Booking ID</span>
+                <span class="value">{{ booking.id }}</span>
+              </div>
+              <div class="payment-row">
+                <span class="label">Booking Date</span>
+                <span class="value">{{ formatDate(booking.bookingDate) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="right-section">
+            <div class="qr-section">
+              <div class="qr-container">
+                @if (qrCodeDataUrl) {
+                  <img [src]="qrCodeDataUrl" alt="QR Code" class="qr-code">
+                } @else {
+                  <div class="qr-placeholder">Loading...</div>
+                }
+              </div>
+              <div class="qr-text">Scan at entrance</div>
+            </div>
+
+            <div class="terms-section">
+              <div class="terms-title">Important</div>
+              <ul class="terms-list">
+                <li>Arrive 30 min early</li>
+                <li>Carry valid ID</li>
+                <li>No outside food</li>
+                <li>Non-transferable</li>
+              </ul>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Customer Details -->
-    <div class="customer-section">
-      <h3 class="section-title">Customer Details</h3>
-      <div class="customer-grid">
-        <div class="customer-item">
-          <span class="customer-label">Name</span>
-          <span class="customer-value">{{ booking.customerName }}</span>
-        </div>
-        <div class="customer-item">
-          <span class="customer-label">Email</span>
-          <span class="customer-value">{{ booking.customerEmail }}</span>
-        </div>
-        <div class="customer-item">
-          <span class="customer-label">Phone</span>
-          <span class="customer-value">{{ booking.customerPhone }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Payment Section -->
-    <div class="payment-section">
-      <div class="payment-row">
-        <span class="payment-label">Total Amount Paid</span>
-        <span class="payment-amount">{{ formatCurrency(booking.totalAmount) }}</span>
-      </div>
-      <div class="payment-row">
-        <span class="payment-label">Booking ID</span>
-        <span class="payment-value">{{ booking.id }}</span>
-      </div>
-      <div class="payment-row">
-        <span class="payment-label">Booking Date</span>
-        <span class="payment-value">{{ formatDate(booking.bookingDate) }}</span>
-      </div>
-      @if (booking.paymentId) {
-        <div class="payment-row">
-          <span class="payment-label">Payment ID</span>
-          <span class="payment-value">{{ booking.paymentId }}</span>
-        </div>
-      }
-    </div>
-
-      <!-- QR Code Section -->
-      <div class="qr-section">
-        <div class="qr-container">
-          @if (qrCodeDataUrl) {
-            <img [src]="qrCodeDataUrl" alt="QR Code" class="qr-code">
-          } @else {
-            <div class="qr-placeholder">
-              <div class="qr-loading">Generating QR Code...</div>
-            </div>
-          }
-        </div>
-      <div class="qr-instructions">
-        <p class="qr-title">Show this QR code at the theatre entrance</p>
-        <p class="qr-subtitle">Scan to verify booking details</p>
-      </div>
-    </div>
-
-    <!-- Terms & Conditions -->
-    <div class="terms-section">
-      <h4 class="terms-title">Important Instructions</h4>
-      <ul class="terms-list">
-        <li>Please arrive at least 30 minutes before showtime</li>
-        <li>Carry a valid ID proof for verification</li>
-        <li>Outside food and beverages are not allowed</li>
-        <li>This ticket is non-transferable and valid only for the mentioned show</li>
-        <li>No refund will be provided after the show starts</li>
-      </ul>
-    </div>
-
-      <!-- Refund Info (if cancelled) -->
-      @if (booking.status === 'CANCELLED' && booking.refundAmount) {
-        <div class="refund-section">
-          <div class="refund-alert">
-            <div class="refund-icon">💰</div>
-            <div class="refund-info">
-              <p class="refund-title">Refund Processed</p>
-              <p class="refund-amount">{{ formatCurrency(booking.refundAmount) }}</p>
-              <p class="refund-date">Refunded on {{ formatDate(booking.refundDate!) }}</p>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Footer -->
       <div class="ticket-footer">
-        <p class="footer-text">Thank you for choosing RevTicket! Enjoy your movie! 🍿</p>
-        <p class="footer-support">For support, contact: support&#64;revticket.com | +91-1800-XXX-XXXX</p>
+        <p>Thank you for choosing RevTicket! Enjoy your movie! 🍿</p>
       </div>
     </div>
   }
