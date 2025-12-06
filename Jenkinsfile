@@ -7,7 +7,7 @@ pipeline {
         DOCKER_TAG = "${BUILD_NUMBER}"
         GIT_COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         JAVA_HOME = '/opt/homebrew/Cellar/openjdk@17/17.0.17/libexec/openjdk.jdk/Contents/Home'
-        PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.JAVA_HOME}/bin:${env.PATH}"
     }
     
     stages {
