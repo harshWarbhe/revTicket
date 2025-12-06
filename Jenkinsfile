@@ -1,14 +1,9 @@
 pipeline {
     agent any
     
-    tools {
-        jdk 'JDK17'
-    }
-    
     environment {
         DOCKER_IMAGE = 'revticket-backend'
         DOCKER_TAG = "${BUILD_NUMBER}"
-        JAVA_HOME = "${tool 'JDK17'}"
     }
     
     stages {
