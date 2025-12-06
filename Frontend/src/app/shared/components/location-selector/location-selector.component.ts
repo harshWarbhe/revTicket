@@ -14,7 +14,7 @@ import { AlertService } from '../../../core/services/alert.service';
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
           <circle cx="12" cy="10" r="3"/>
         </svg>
-        <span>{{ locationService.selectedCity() }}</span>
+        <span>{{ locationService.selectedCity() || 'Select City' }}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
@@ -37,6 +37,12 @@ import { AlertService } from '../../../core/services/alert.service';
             </button>
           </div>
           <div class="cities-list">
+            <button 
+              class="city-item"
+              [class.active]="locationService.selectedCity() === null"
+              (click)="selectAllCities()">
+              All Cities
+            </button>
             @for (city of locationService.cities(); track city.name) {
               <button 
                 class="city-item"
@@ -180,6 +186,12 @@ export class LocationSelectorComponent {
     this.showDropdown.set(false);
   }
 
+  selectAllCities(): void {
+    this.locationService.clearCity();
+    this.locationService.markAsPrompted();
+    this.showDropdown.set(false);
+  }
+
   async detectLocation(): Promise<void> {
     await this.locationService.detectLocation();
     
@@ -187,8 +199,11 @@ export class LocationSelectorComponent {
     if (error) {
       this.alertService.error(error);
     } else {
-      this.alertService.success(`Location set to ${this.locationService.selectedCity()}`);
-      this.showDropdown.set(false);
+      const city = this.locationService.selectedCity();
+      if (city) {
+        this.alertService.success(`Location set to ${city}`);
+        this.showDropdown.set(false);
+      }
     }
   }
 }

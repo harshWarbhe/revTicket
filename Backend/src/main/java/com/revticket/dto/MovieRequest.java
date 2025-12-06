@@ -27,10 +27,6 @@ public class MovieRequest {
     @Min(value = 1, message = "Duration must be at least 1 minute")
     private Integer duration;
     
-    @Min(value = 0, message = "Rating must be at least 0")
-    @Max(value = 10, message = "Rating must not exceed 10")
-    private Double rating;
-    
     private String director;
     private List<String> crew;
     

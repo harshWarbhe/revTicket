@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
 import { ShowtimeService, Showtime } from '../../../core/services/showtime.service';
+import { LocationService } from '../../../core/services/location.service';
 import { Movie } from '../../../core/models/movie.model';
 import { DisplayUtils } from '../../../core/utils/display-utils';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -20,6 +21,7 @@ export class MovieDetailsComponent implements OnInit {
   private router = inject(Router);
   private movieService = inject(MovieService);
   private showtimeService = inject(ShowtimeService);
+  private locationService = inject(LocationService);
   private sanitizer = inject(DomSanitizer);
   
   movie = signal<Movie | null>(null);
@@ -117,7 +119,8 @@ export class MovieDetailsComponent implements OnInit {
 
   private loadShowtimes(movieId: string): void {
     const today = new Date().toISOString().split('T')[0];
-    this.showtimeService.getShowtimesByMovie(movieId, today).subscribe({
+    const city = this.locationService.selectedCity();
+    this.showtimeService.getShowtimesByMovie(movieId, today, city || undefined).subscribe({
       next: (data) => {
         this.showtimes.set(data.filter(s => s.status === 'ACTIVE').slice(0, 5));
       },

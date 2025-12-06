@@ -253,7 +253,7 @@ public class ShowtimeService {
                         .title(movie.getTitle())
                         .genre(movie.getGenre())
                         .duration(movie.getDuration())
-                        .rating(movie.getRating())
+                        .rating(null)
                         .posterUrl(movie.getPosterUrl())
                         .build())
                 .theater(ShowtimeResponse.TheaterSummary.builder()

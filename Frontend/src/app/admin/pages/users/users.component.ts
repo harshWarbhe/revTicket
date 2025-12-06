@@ -152,14 +152,15 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  toggleRole(user: User): void {
-    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+  changeUserRole(user: User, newRole: string): void {
+    if (user.role === newRole) return;
     
+    const role = newRole as 'USER' | 'ADMIN';
     this.updatingRoleId.set(user.id);
     this.adminUserService.updateUserRole(user.id, newRole).subscribe({
       next: () => {
         this.alertService.success(`Role updated to ${newRole}`);
-        this.users.update(users => users.map(u => u.id === user.id ? { ...u, role: newRole } : u));
+        this.users.update(users => users.map(u => u.id === user.id ? { ...u, role } : u));
         this.applyFilters();
         this.updatingRoleId.set(null);
       },

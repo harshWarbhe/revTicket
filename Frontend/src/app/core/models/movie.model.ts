@@ -9,6 +9,7 @@ export interface Movie {
   crew?: string[];
   releaseDate: Date;
   posterUrl: string;
+  backgroundUrl?: string;
   trailerUrl?: string;
   language: string;
   isActive: boolean;

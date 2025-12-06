@@ -2,8 +2,10 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MovieService } from '../../../core/services/movie.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { Movie } from '../../../core/models/movie.model';
 
 @Component({
@@ -19,6 +21,8 @@ export class AddMovieComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private movieService = inject(MovieService);
   private alertService = inject(AlertService);
+  private languageService = inject(LanguageService);
+  private sanitizer = inject(DomSanitizer);
 
   movieForm: FormGroup;
   isEditMode = signal(false);
@@ -26,7 +30,11 @@ export class AddMovieComponent implements OnInit {
   loading = signal(false);
   submitting = signal(false);
   posterPreview = signal<string>('');
+  backgroundPreview = signal<string>('');
   trailerPreview = signal<string>('');
+  loadingPoster = signal(false);
+  loadingBackground = signal(false);
+  loadingTrailer = signal(false);
 
   availableGenres = [
     'Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
@@ -34,27 +42,40 @@ export class AddMovieComponent implements OnInit {
     'Romance', 'Sci-Fi', 'Sports', 'Thriller', 'War', 'Western'
   ];
   selectedGenres = signal<string[]>([]);
+  availableLanguages = signal<string[]>([]);
 
   constructor() {
     this.movieForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(2)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       duration: ['', [Validators.required, Validators.min(1)]],
-      rating: ['', [Validators.required, Validators.min(0), Validators.max(10), Validators.pattern(/^\d+(\.\d{1})?$/)]],
       director: [''],
-      language: ['English', Validators.required],
+      language: ['', Validators.required],
       releaseDate: ['', Validators.required],
       posterUrl: [''],
+      backgroundUrl: [''],
       trailerUrl: ['']
     });
   }
 
   ngOnInit(): void {
+    this.loadLanguages();
     this.route.queryParams.subscribe(params => {
       if (params['id']) {
         this.isEditMode.set(true);
         this.editingMovieId.set(params['id']);
         this.loadMovieForEdit();
+      }
+    });
+  }
+
+  loadLanguages(): void {
+    this.languageService.getAllLanguages().subscribe({
+      next: (languages) => {
+        this.availableLanguages.set(languages.map(l => l.name));
+        if (languages.length === 0) {
+          this.languageService.initializeLanguages().subscribe();
+        }
       }
     });
   }
@@ -70,11 +91,11 @@ export class AddMovieComponent implements OnInit {
           title: movie.title,
           description: movie.description || '',
           duration: movie.duration,
-          rating: movie.rating,
           director: movie.director || '',
           language: movie.language || 'English',
           releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : '',
           posterUrl: movie.posterUrl || '',
+          backgroundUrl: movie.backgroundUrl || '',
           trailerUrl: movie.trailerUrl || ''
         });
         
@@ -85,6 +106,7 @@ export class AddMovieComponent implements OnInit {
         }
         
         if (movie.posterUrl) this.posterPreview.set(movie.posterUrl);
+        if (movie.backgroundUrl) this.backgroundPreview.set(movie.backgroundUrl);
         if (movie.trailerUrl) this.trailerPreview.set(movie.trailerUrl);
         this.loading.set(false);
       },
@@ -122,12 +144,12 @@ export class AddMovieComponent implements OnInit {
         title: formValue.title,
         description: formValue.description,
         duration: parseInt(formValue.duration),
-        rating: parseFloat(formValue.rating),
         director: formValue.director || null,
         genre: this.selectedGenres(),
         language: formValue.language,
         releaseDate: new Date(formValue.releaseDate),
         posterUrl: formValue.posterUrl || null,
+        backgroundUrl: formValue.backgroundUrl || null,
         trailerUrl: formValue.trailerUrl || null,
         isActive: true
       };
@@ -185,41 +207,93 @@ export class AddMovieComponent implements OnInit {
   onPosterFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) {
+    if (file && file.type.startsWith('image/')) {
+      this.loadingPoster.set(true);
       const reader = new FileReader();
       reader.onload = (e) => {
         this.posterPreview.set(e.target?.result as string);
+        this.movieForm.patchValue({ posterUrl: e.target?.result as string });
+        this.loadingPoster.set(false);
       };
       reader.readAsDataURL(file);
-      this.movieForm.patchValue({ posterUrl: '' });
+    }
+  }
+
+  onBackgroundFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      this.loadingBackground.set(true);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.backgroundPreview.set(e.target?.result as string);
+        this.movieForm.patchValue({ backgroundUrl: e.target?.result as string });
+        this.loadingBackground.set(false);
+      };
+      reader.readAsDataURL(file);
     }
   }
 
   onTrailerFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) {
+    if (file && file.type.startsWith('video/')) {
+      this.loadingTrailer.set(true);
       const reader = new FileReader();
       reader.onload = (e) => {
         this.trailerPreview.set(e.target?.result as string);
+        this.movieForm.patchValue({ trailerUrl: e.target?.result as string });
+        this.loadingTrailer.set(false);
       };
       reader.readAsDataURL(file);
-      this.movieForm.patchValue({ trailerUrl: '' });
     }
   }
 
   loadPosterPreview(): void {
     const url = this.movieForm.get('posterUrl')?.value?.trim();
-    if (url) {
+    if (!url) return;
+    
+    this.loadingPoster.set(true);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
       this.posterPreview.set(url);
-    }
+      this.loadingPoster.set(false);
+    };
+    img.onerror = () => {
+      this.posterPreview.set(url);
+      this.loadingPoster.set(false);
+    };
+    img.src = url;
+  }
+
+  loadBackgroundPreview(): void {
+    const url = this.movieForm.get('backgroundUrl')?.value?.trim();
+    if (!url) return;
+    
+    this.loadingBackground.set(true);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      this.backgroundPreview.set(url);
+      this.loadingBackground.set(false);
+    };
+    img.onerror = () => {
+      this.backgroundPreview.set(url);
+      this.loadingBackground.set(false);
+    };
+    img.src = url;
   }
 
   loadTrailerPreview(): void {
     const url = this.movieForm.get('trailerUrl')?.value?.trim();
-    if (url) {
-      this.trailerPreview.set(url);
-    }
+    if (!url) return;
+    
+    this.loadingTrailer.set(true);
+    this.trailerPreview.set(url);
+    setTimeout(() => {
+      this.loadingTrailer.set(false);
+    }, 300);
   }
 
   isImage(url: string): boolean {
@@ -228,6 +302,20 @@ export class AddMovieComponent implements OnInit {
 
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg)$/i.test(url) || url.startsWith('data:video');
+  }
+
+  getYouTubeEmbedUrl(url: string): SafeResourceUrl | null {
+    let videoId = '';
+    if (url.includes('youtube.com/watch?v=')) {
+      videoId = url.split('v=')[1]?.split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    }
+    return videoId ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${videoId}`) : null;
+  }
+
+  isYouTubeUrl(url: string): boolean {
+    return url.includes('youtube.com') || url.includes('youtu.be');
   }
 
   getFieldError(fieldName: string): string {

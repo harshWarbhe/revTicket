@@ -1,4 +1,42 @@
 <div class="home-page">
+  <!-- Location Modal -->
+  @if (showLocationModal()) {
+    <div class="location-modal-overlay" (click)="onSkipLocation()">
+      <div class="location-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Select Your City</h2>
+          <p>Choose your location to see movies available in your area</p>
+        </div>
+        <div class="modal-body">
+          <button class="detect-btn" (click)="locationService.detectLocation()" [disabled]="locationService.isDetecting()">
+            @if (locationService.isDetecting()) {
+              <span class="spinner"></span>
+              <span>Detecting...</span>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span>Detect My Location</span>
+            }
+          </button>
+          <div class="divider">OR</div>
+          <div class="cities-grid">
+            @for (city of locationService.cities(); track city.name) {
+              <button class="city-card" (click)="onLocationSelected(city.name)">
+                <span class="city-name">{{ city.name }}</span>
+                <span class="city-state">{{ city.state }}</span>
+              </button>
+            }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="skip-btn" (click)="onSkipLocation()">Show All Movies</button>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- Hero Slider -->
   <app-hero-slider [movies]="featuredMovies()"></app-hero-slider>
 
@@ -17,12 +55,12 @@
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
           <circle cx="12" cy="10" r="3"/>
         </svg>
-        <h2>No movies available in {{ locationService.selectedCity() }}</h2>
+        <h2>No movies available{{ locationService.selectedCity() ? ' in ' + locationService.selectedCity() : '' }}</h2>
         <p>Try selecting a different city to see available movies</p>
         <app-location-selector></app-location-selector>
       </div>
     } @else {
-      <app-movie-carousel [movies]="movies()" [title]="'Now Showing'"></app-movie-carousel>
+      <app-movie-carousel [movies]="movies()" [title]="locationService.selectedCity() ? 'Now Showing in ' + locationService.selectedCity() : 'All Movies'"></app-movie-carousel>
     }
   }
 </div>

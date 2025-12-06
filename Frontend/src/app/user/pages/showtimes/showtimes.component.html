@@ -10,7 +10,9 @@
     <div class="container">
       <h1>{{ movie()!.title }}</h1>
       <div class="meta">
-        <span class="rating">⭐ {{ movie()!.rating }}/10</span>
+        @if (movie()!.rating) {
+          <span class="rating">⭐ {{ movie()!.rating | number:'1.1-1' }}/5</span>
+        }
         <span>{{ movie()!.genre.join(', ') }}</span>
         <span>{{ movie()!.duration }} mins</span>
       </div>

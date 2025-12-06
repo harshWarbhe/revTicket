@@ -13,7 +13,7 @@ import { Movie } from '../../../core/models/movie.model';
         <div class="slider-wrapper">
           @for (movie of movies(); track movie.id; let i = $index) {
             <div class="slide" [class.active]="i === currentIndex()">
-              <div class="slide-bg" [style.background-image]="'url(' + movie.posterUrl + ')'">
+              <div class="slide-bg" [style.background-image]="'url(' + (movie.backgroundUrl || movie.posterUrl) + ')'">
                 <div class="slide-overlay"></div>
               </div>
               <div class="slide-content">
@@ -21,7 +21,9 @@ import { Movie } from '../../../core/models/movie.model';
                   <div class="movie-badge">{{ movie.language }}</div>
                   <h1 class="movie-title">{{ movie.title }}</h1>
                   <div class="movie-meta">
-                    <span class="rating">⭐ {{ movie.rating || 'N/A' }}</span>
+                    @if (movie.rating) {
+                      <span class="rating">⭐ {{ movie.rating | number:'1.1-1' }}/5</span>
+                    }
                     <span class="duration">{{ formatDuration(movie.duration) }}</span>
                     <span class="genre">{{ movie.genre[0] || 'Movie' }}</span>
                   </div>

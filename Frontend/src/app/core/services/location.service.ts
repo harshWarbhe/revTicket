@@ -23,23 +23,42 @@ const INDIAN_CITIES: City[] = [
 })
 export class LocationService {
   private readonly STORAGE_KEY = 'selectedCity';
-  private readonly DEFAULT_CITY = 'Chennai';
-  private readonly OPENCAGE_API_KEY = 'YOUR_API_KEY_HERE';
+  private readonly LOCATION_PROMPTED_KEY = 'locationPrompted';
 
-  selectedCity = signal<string>(this.loadFromStorage());
+  selectedCity = signal<string | null>(this.loadFromStorage());
   cities = signal<City[]>(INDIAN_CITIES);
   detectionError = signal<string | null>(null);
   isDetecting = signal(false);
+  hasPrompted = signal<boolean>(this.hasBeenPrompted());
 
   constructor() {
     effect(() => {
-      localStorage.setItem(this.STORAGE_KEY, this.selectedCity());
+      const city = this.selectedCity();
+      if (city) {
+        localStorage.setItem(this.STORAGE_KEY, city);
+      } else {
+        localStorage.removeItem(this.STORAGE_KEY);
+      }
     });
   }
 
   setCity(city: string): void {
     this.selectedCity.set(city);
     this.detectionError.set(null);
+    this.markAsPrompted();
+  }
+
+  clearCity(): void {
+    this.selectedCity.set(null);
+  }
+
+  markAsPrompted(): void {
+    localStorage.setItem(this.LOCATION_PROMPTED_KEY, 'true');
+    this.hasPrompted.set(true);
+  }
+
+  private hasBeenPrompted(): boolean {
+    return localStorage.getItem(this.LOCATION_PROMPTED_KEY) === 'true';
   }
 
   async detectLocation(): Promise<void> {
@@ -55,11 +74,9 @@ export class LocationService {
     try {
       const position = await this.getCurrentPosition();
       const city = await this.reverseGeocode(position.coords.latitude, position.coords.longitude);
-      
       if (city) {
         this.selectedCity.set(city);
-      } else {
-        this.detectionError.set('Service not available in your city, please select manually');
+        this.markAsPrompted();
       }
     } catch (error: any) {
       if (error.code === 1) {
@@ -92,26 +109,28 @@ export class LocationService {
       const data = await response.json();
       const detectedCity = data.city || data.locality || data.principalSubdivision;
       
-      if (!detectedCity) return null;
+      if (!detectedCity) {
+        return null;
+      }
       
       const matchedCity = INDIAN_CITIES.find(c => 
         detectedCity.toLowerCase().includes(c.name.toLowerCase()) ||
         c.name.toLowerCase().includes(detectedCity.toLowerCase())
       );
       
-      return matchedCity?.name || null;
+      return matchedCity ? matchedCity.name : null;
     } catch (error) {
       console.error('Reverse geocoding error:', error);
       return null;
     }
   }
 
-  private loadFromStorage(): string {
+  private loadFromStorage(): string | null {
     const stored = localStorage.getItem(this.STORAGE_KEY);
     if (stored && INDIAN_CITIES.some(c => c.name === stored)) {
       return stored;
     }
-    return this.DEFAULT_CITY;
+    return null;
   }
 
   getCityList(): City[] {

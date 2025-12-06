@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MovieService } from '../../../core/services/movie.service';
 import { AlertService } from '../../../core/services/alert.service';
+import { LocationService } from '../../../core/services/location.service';
 import { Movie } from '../../../core/models/movie.model';
 import { LoaderComponent } from '../../../shared/components/loader/loader.component';
 
@@ -17,9 +18,17 @@ export class AllMoviesComponent implements OnInit {
   private movieService = inject(MovieService);
   private alertService = inject(AlertService);
   private router = inject(Router);
+  private locationService = inject(LocationService);
 
   movies = signal<Movie[]>([]);
   loading = signal(true);
+
+  constructor() {
+    effect(() => {
+      const city = this.locationService.selectedCity();
+      this.loadMovies();
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
@@ -28,7 +37,8 @@ export class AllMoviesComponent implements OnInit {
 
   loadMovies(): void {
     this.loading.set(true);
-    this.movieService.getMovies().subscribe({
+    const city = this.locationService.selectedCity();
+    this.movieService.getMovies(city || undefined).subscribe({
       next: (movies) => {
         this.movies.set(movies.filter(m => m.isActive));
         this.loading.set(false);

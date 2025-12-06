@@ -4,11 +4,18 @@
     @if (averageRating() > 0) {
       <div class="average-rating">
         <span class="rating-value">{{ averageRating() | number:'1.1-1' }}</span>
+        <span class="rating-max">/5</span>
         <div class="stars">
           @for (star of getStars(Math.round(averageRating())); track $index) {
-            <span class="star">{{ star }}</span>
+            <span class="star" [class.filled]="star === '★'">{{ star }}</span>
           }
         </div>
+        <span class="review-count">({{ reviews().length }} {{ reviews().length === 1 ? 'review' : 'reviews' }})</span>
+      </div>
+    } @else {
+      <div class="no-rating">
+        <span class="empty-stars">☆☆☆☆☆</span>
+        <span class="no-rating-text">No ratings yet</span>
       </div>
     }
   </div>

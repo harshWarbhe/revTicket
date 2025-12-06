@@ -33,8 +33,6 @@ public class Movie {
     @Column(nullable = false)
     private Integer duration; // in minutes
 
-    private Double rating; // Rating like 4.5, 3.0, etc.
-
     private String director;
 
     @ElementCollection(fetch = FetchType.EAGER)

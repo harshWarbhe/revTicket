@@ -4,6 +4,7 @@ import com.revticket.dto.MovieDTO;
 import com.revticket.dto.MovieRequest;
 import com.revticket.entity.Movie;
 import com.revticket.repository.MovieRepository;
+import com.revticket.repository.MongoReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,9 @@ public class MovieService {
 
     @Autowired
     private MovieRepository movieRepository;
+
+    @Autowired
+    private MongoReviewRepository reviewRepository;
 
     public List<Movie> getAllMovies() {
         return movieRepository.findByIsActiveTrue();
@@ -52,7 +56,6 @@ public class MovieService {
         movie.setDescription(request.getDescription());
         movie.setGenre(request.getGenre());
         movie.setDuration(request.getDuration());
-        movie.setRating(request.getRating());
         movie.setDirector(request.getDirector());
         movie.setCrew(request.getCrew());
         movie.setReleaseDate(request.getReleaseDate());
@@ -72,7 +75,6 @@ public class MovieService {
         movie.setDescription(request.getDescription());
         movie.setGenre(request.getGenre());
         movie.setDuration(request.getDuration());
-        movie.setRating(request.getRating());
         movie.setDirector(request.getDirector());
         movie.setCrew(request.getCrew());
         movie.setReleaseDate(request.getReleaseDate());
@@ -110,9 +112,9 @@ public class MovieService {
                 .collect(Collectors.toList());
     }
 
-    public List<Double> getAllRatings() {
+    public List<String> getAllLanguages() {
         return movieRepository.findAll().stream()
-                .map(Movie::getRating)
+                .map(Movie::getLanguage)
                 .filter(Objects::nonNull)
                 .distinct()
                 .sorted()
@@ -126,7 +128,7 @@ public class MovieService {
         dto.setDescription(movie.getDescription());
         dto.setGenre(movie.getGenre());
         dto.setDuration(movie.getDuration());
-        dto.setRating(movie.getRating());
+        dto.setRating(calculateDynamicRating(movie.getId()));
         dto.setDirector(movie.getDirector());
         dto.setCrew(movie.getCrew());
         dto.setReleaseDate(movie.getReleaseDate());
@@ -137,6 +139,15 @@ public class MovieService {
         dto.setTotalShows(movieRepository.countShowtimesByMovieId(movie.getId()));
         dto.setTotalBookings(movieRepository.countBookingsByMovieId(movie.getId()));
         return dto;
+    }
+
+    private Double calculateDynamicRating(String movieId) {
+        var reviews = reviewRepository.findByMovieIdAndApprovedTrueOrderByCreatedAtDesc(movieId);
+        if (reviews.isEmpty()) return null;
+        return reviews.stream()
+                .mapToInt(review -> review.getRating())
+                .average()
+                .orElse(0.0);
     }
 }
 

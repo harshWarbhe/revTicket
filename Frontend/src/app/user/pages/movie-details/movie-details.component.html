@@ -7,7 +7,7 @@
   } @else if (movie()) {
   <!-- Hero Section -->
   <div class="hero-section">
-    <div class="hero-bg" [style.background-image]="'url(' + movie()!.posterUrl + ')'"></div>
+    <div class="hero-bg" [style.background-image]="'url(' + (movie()!.backgroundUrl || movie()!.posterUrl) + ')'"></div>
     <div class="hero-gradient"></div>
 
     <div class="hero-container">
@@ -19,11 +19,18 @@
         <h1 class="movie-title">{{ movie()!.title }}</h1>
 
         <div class="rating-meta">
-          <div class="rating-badge">
-            <span class="star">★</span>
-            <span class="score">{{ movie()!.rating || 'N/A' }}</span>
-            <span class="max">/10</span>
-          </div>
+          @if (movie()!.rating) {
+            <div class="rating-badge">
+              <span class="star">★</span>
+              <span class="score">{{ movie()!.rating | number:'1.1-1' }}</span>
+              <span class="max">/5</span>
+            </div>
+          } @else {
+            <div class="rating-badge no-rating">
+              <span class="star">☆</span>
+              <span class="score">No ratings yet</span>
+            </div>
+          }
           <div class="meta-info">
             <span>{{ movie()!.duration }} mins</span>
             <span class="dot">•</span>
@@ -72,7 +79,7 @@
           </div>
           <div class="info-card">
             <span class="info-label">Rating</span>
-            <span class="info-value">{{ movie()!.rating || 'N/A' }}/10</span>
+            <span class="info-value">{{ movie()!.rating ? (movie()!.rating | number:'1.1-1') + '/5' : 'No ratings yet' }}</span>
           </div>
         </div>
       </div>

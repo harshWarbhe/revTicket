@@ -17,7 +17,9 @@ import { Movie } from '../../../core/models/movie.model';
         <div class="movie-card" (click)="viewDetails(movie.id)">
           <div class="card-poster">
             <img [src]="movie.posterUrl" [alt]="movie.title">
-            <div class="rating-badge">⭐ {{ movie.rating || 'N/A' }}</div>
+            @if (movie.rating) {
+              <div class="rating-badge">⭐ {{ movie.rating | number:'1.1-1' }}/5</div>
+            }
           </div>
           <div class="card-content">
             <h3 class="movie-title">{{ movie.title }}</h3>

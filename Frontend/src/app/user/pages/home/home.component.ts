@@ -36,6 +36,8 @@ export class HomeComponent implements OnInit {
   searchTerm = signal('');
   selectedGenre = signal('All');
 
+  showLocationModal = signal(false);
+
   constructor() {
     effect(() => {
       const city = this.locationService.selectedCity();
@@ -44,7 +46,10 @@ export class HomeComponent implements OnInit {
   }
   
   featuredMovies = computed(() => {
-    return this.movies().filter(m => m.rating >= 7).slice(0, 4);
+    const movies = this.movies();
+    if (movies.length === 0) return [];
+    const withRating = movies.filter(m => m.rating && m.rating >= 4);
+    return withRating.length > 0 ? withRating.slice(0, 4) : movies.slice(0, 4);
   });
   
   genres = computed(() => {
@@ -69,12 +74,15 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
+    if (!this.locationService.hasPrompted()) {
+      this.showLocationModal.set(true);
+    }
   }
 
   loadMovies(): void {
     this.loading.set(true);
     const city = this.locationService.selectedCity();
-    this.movieService.getMovies(city).subscribe({
+    this.movieService.getMovies(city || undefined).subscribe({
       next: (movies) => {
         const activeMovies = movies
           .filter(movie => movie.isActive)
@@ -87,6 +95,16 @@ export class HomeComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  onLocationSelected(city: string): void {
+    this.locationService.setCity(city);
+    this.showLocationModal.set(false);
+  }
+
+  onSkipLocation(): void {
+    this.locationService.markAsPrompted();
+    this.showLocationModal.set(false);
   }
 
   onSearch(term: string): void {

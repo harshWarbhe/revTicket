@@ -59,29 +59,16 @@
           </div>
 
           <div class="form-group">
-            <label for="rating">⭐ Rating (0-10) *</label>
-            <input 
-              type="number" 
-              id="rating" 
-              formControlName="rating"
-              placeholder="7.5"
-              min="0"
-              max="10"
-              step="0.1"
-              [class.error]="movieForm.get('rating')?.invalid && movieForm.get('rating')?.touched">
-            @if (movieForm.get('rating')?.invalid && movieForm.get('rating')?.touched) {
-              <span class="error-message">{{ getFieldError('rating') }}</span>
-            }
-          </div>
-
-          <div class="form-group">
             <label for="language">🌐 Language *</label>
-            <input 
-              type="text" 
+            <select 
               id="language" 
               formControlName="language"
-              placeholder="English"
               [class.error]="movieForm.get('language')?.invalid && movieForm.get('language')?.touched">
+              <option value="">Select Language</option>
+              @for (lang of availableLanguages(); track lang) {
+                <option [value]="lang">{{ lang }}</option>
+              }
+            </select>
             @if (movieForm.get('language')?.invalid && movieForm.get('language')?.touched) {
               <span class="error-message">{{ getFieldError('language') }}</span>
             }
@@ -145,12 +132,15 @@
         <!-- Media Assets Section -->
         <div class="section-header">
           <h3>Media Assets</h3>
+          <p class="section-subtitle">Upload poster, background image, and trailer for the movie</p>
         </div>
         
-        <div class="form-grid">
+        <div class="media-grid">
           <!-- Poster Upload -->
-          <div class="form-group">
-            <label for="posterFile">🖼️ Poster Image</label>
+          <div class="media-card">
+            <label class="media-label">🖼️ Poster Image</label>
+            <p class="media-hint">Vertical poster (recommended: 300x450px)</p>
+            
             <div class="file-upload-wrapper">
               <input 
                 type="file" 
@@ -159,31 +149,104 @@
                 (change)="onPosterFileChange($event)"
                 class="file-input">
               <label for="posterFile" class="file-label">
-                <span>📤</span>
-                <span>Choose Image</span>
+                @if (loadingPoster()) {
+                  <span class="spinner-small"></span>
+                  <span>Loading...</span>
+                } @else {
+                  <span>📤</span>
+                  <span>Choose Image</span>
+                }
               </label>
             </div>
+            
             <div class="url-divider">OR</div>
+            
             <div class="url-input-group">
               <input 
                 type="text" 
                 id="posterUrl" 
                 formControlName="posterUrl"
-                placeholder="Enter image URL">
-              <button type="button" class="load-btn" (click)="loadPosterPreview()">
-                Load Preview
+                placeholder="https://example.com/poster.jpg"
+                [disabled]="loadingPoster()">
+              <button 
+                type="button" 
+                class="load-btn" 
+                (click)="loadPosterPreview()"
+                [disabled]="loadingPoster() || !movieForm.get('posterUrl')?.value">
+                @if (loadingPoster()) {
+                  <span class="spinner-small"></span>
+                } @else {
+                  <span>Load</span>
+                }
               </button>
             </div>
+            
             @if (posterPreview() && isImage(posterPreview())) {
-              <div class="preview-box">
+              <div class="preview-box poster-preview">
                 <img [src]="posterPreview()" alt="Poster preview">
+                <div class="preview-label">✓ Poster Loaded</div>
+              </div>
+            }
+          </div>
+
+          <!-- Background Upload -->
+          <div class="media-card">
+            <label class="media-label">🌄 Background Image</label>
+            <p class="media-hint">Wide background for slider & details (1920x1080px)</p>
+            
+            <div class="file-upload-wrapper">
+              <input 
+                type="file" 
+                id="backgroundFile" 
+                accept="image/*"
+                (change)="onBackgroundFileChange($event)"
+                class="file-input">
+              <label for="backgroundFile" class="file-label">
+                @if (loadingBackground()) {
+                  <span class="spinner-small"></span>
+                  <span>Loading...</span>
+                } @else {
+                  <span>📤</span>
+                  <span>Choose Image</span>
+                }
+              </label>
+            </div>
+            
+            <div class="url-divider">OR</div>
+            
+            <div class="url-input-group">
+              <input 
+                type="text" 
+                id="backgroundUrl" 
+                formControlName="backgroundUrl"
+                placeholder="https://example.com/background.jpg"
+                [disabled]="loadingBackground()">
+              <button 
+                type="button" 
+                class="load-btn" 
+                (click)="loadBackgroundPreview()"
+                [disabled]="loadingBackground() || !movieForm.get('backgroundUrl')?.value">
+                @if (loadingBackground()) {
+                  <span class="spinner-small"></span>
+                } @else {
+                  <span>Load</span>
+                }
+              </button>
+            </div>
+            
+            @if (backgroundPreview() && isImage(backgroundPreview())) {
+              <div class="preview-box background-preview">
+                <img [src]="backgroundPreview()" alt="Background preview">
+                <div class="preview-label">✓ Background Loaded</div>
               </div>
             }
           </div>
 
           <!-- Trailer Upload -->
-          <div class="form-group">
-            <label for="trailerFile">🎞️ Trailer Video</label>
+          <div class="media-card">
+            <label class="media-label">🎞️ Trailer Video</label>
+            <p class="media-hint">Movie trailer (YouTube URL or video file)</p>
+            
             <div class="file-upload-wrapper">
               <input 
                 type="file" 
@@ -192,24 +255,51 @@
                 (change)="onTrailerFileChange($event)"
                 class="file-input">
               <label for="trailerFile" class="file-label">
-                <span>📤</span>
-                <span>Choose Video</span>
+                @if (loadingTrailer()) {
+                  <span class="spinner-small"></span>
+                  <span>Loading...</span>
+                } @else {
+                  <span>📤</span>
+                  <span>Choose Video</span>
+                }
               </label>
             </div>
+            
             <div class="url-divider">OR</div>
+            
             <div class="url-input-group">
               <input 
                 type="text" 
                 id="trailerUrl" 
                 formControlName="trailerUrl"
-                placeholder="Enter video URL">
-              <button type="button" class="load-btn" (click)="loadTrailerPreview()">
-                Load Preview
+                placeholder="https://youtube.com/watch?v=... or video URL"
+                [disabled]="loadingTrailer()">
+              <button 
+                type="button" 
+                class="load-btn" 
+                (click)="loadTrailerPreview()"
+                [disabled]="loadingTrailer() || !movieForm.get('trailerUrl')?.value">
+                @if (loadingTrailer()) {
+                  <span class="spinner-small"></span>
+                } @else {
+                  <span>Load</span>
+                }
               </button>
             </div>
-            @if (trailerPreview() && isVideo(trailerPreview())) {
-              <div class="preview-box">
-                <video [src]="trailerPreview()" controls></video>
+            
+            @if (trailerPreview()) {
+              <div class="preview-box trailer-preview">
+                @if (isYouTubeUrl(trailerPreview())) {
+                  <iframe 
+                    [src]="getYouTubeEmbedUrl(trailerPreview())" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                  </iframe>
+                } @else {
+                  <video [src]="trailerPreview()" controls controlsList="nodownload"></video>
+                }
+                <div class="preview-label">✓ Trailer Loaded</div>
               </div>
             }
           </div>

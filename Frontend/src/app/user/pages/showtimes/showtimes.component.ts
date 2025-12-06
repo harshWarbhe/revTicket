@@ -244,7 +244,7 @@ export class ShowtimesComponent implements OnInit {
   }
 
   private loadShowtimes(movieId: string): void {
-    const city = this.locationService.selectedCity();
+    const city = this.locationService.selectedCity() || undefined;
     this.showtimeService.getShowtimesByMovie(movieId, undefined, city).subscribe({
       next: (data) => {
         const today = new Date();
