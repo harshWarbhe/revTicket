@@ -21,8 +21,8 @@ docker-compose up --build
 
 - **Backend API**: http://localhost:8081 (container port 8080 mapped to host 8081)
 - **Frontend**: http://localhost:4200
-- **MySQL**: localhost:3306
-- **MongoDB**: localhost:27017
+- **MySQL**: localhost:3307 (container port 3306 mapped to host 3307)
+- **MongoDB**: localhost:27018 (container port 27017 mapped to host 27018)
 - **Jenkins**: http://localhost:8080 (no conflict with backend)
 
 Note: Backend uses host port 8081 to avoid conflict with Jenkins running on port 8080.
@@ -82,8 +82,9 @@ Default credentials (change in production):
 ### Port Already in Use
 ```bash
 docker-compose down
-# Backend runs on 8081, Jenkins on 8080
+# Backend runs on 8081, MySQL on 3307, Jenkins on 8080
 lsof -ti:8081 | xargs kill -9
+lsof -ti:3307 | xargs kill -9
 ```
 
 ### Database Connection Issues

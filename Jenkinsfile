@@ -82,11 +82,17 @@ pipeline {
                         sh 'docker-compose down || true'
                         sh 'docker stop revticket-mysql revticket-mongodb revticket-backend revticket-frontend || true'
                         sh 'docker rm revticket-mysql revticket-mongodb revticket-backend revticket-frontend || true'
+                        sh 'lsof -ti:8081 | xargs kill -9 || true'
+                        sh 'lsof -ti:3307 | xargs kill -9 || true'
+                        sh 'lsof -ti:27018 | xargs kill -9 || true'
                         sh 'docker-compose up -d'
                     } else {
                         bat 'docker-compose down || exit 0'
                         bat 'docker stop revticket-mysql revticket-mongodb revticket-backend revticket-frontend || exit 0'
                         bat 'docker rm revticket-mysql revticket-mongodb revticket-backend revticket-frontend || exit 0'
+                        bat 'for /f "tokens=5" %%a in (\'netstat -aon ^| find ":8081" ^| find "LISTENING"\') do taskkill /F /PID %%a || exit 0'
+                        bat 'for /f "tokens=5" %%a in (\'netstat -aon ^| find ":3307" ^| find "LISTENING"\') do taskkill /F /PID %%a || exit 0'
+                        bat 'for /f "tokens=5" %%a in (\'netstat -aon ^| find ":27018" ^| find "LISTENING"\') do taskkill /F /PID %%a || exit 0'
                         bat 'docker-compose up -d'
                     }
                 }
@@ -102,12 +108,12 @@ pipeline {
                                 def status
                                 if (isUnix()) {
                                     status = sh(
-                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000',
+                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/health || echo 000',
                                         returnStdout: true
                                     ).trim()
                                 } else {
                                     status = bat(
-                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8080/actuator/health || echo 000',
+                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8081/actuator/health || echo 000',
                                         returnStdout: true
                                     ).trim()
                                 }
