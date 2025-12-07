@@ -30,7 +30,7 @@ echo RevTicket is running!
 echo ========================================
 echo Frontend:  http://localhost:4200
 echo Backend:   http://localhost:8081
-echo MySQL:     localhost:3306
+echo MySQL:     localhost:3307
 echo MongoDB:   localhost:27017
 echo ========================================
 echo.
