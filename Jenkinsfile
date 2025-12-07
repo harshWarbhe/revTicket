@@ -82,6 +82,9 @@ pipeline {
                         sh 'docker-compose down || true'
                         sh 'docker stop revticket-mysql revticket-mongodb revticket-backend revticket-frontend || true'
                         sh 'docker rm revticket-mysql revticket-mongodb revticket-backend revticket-frontend || true'
+                        sh 'fuser -k 8081/tcp || true'
+                        sh 'fuser -k 3307/tcp || true'
+                        sh 'fuser -k 27018/tcp || true'
                         sh 'docker-compose up -d'
                     } else {
                         bat 'docker-compose down || exit 0'
@@ -102,12 +105,12 @@ pipeline {
                                 def status
                                 if (isUnix()) {
                                     status = sh(
-                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000',
+                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/health || echo 000',
                                         returnStdout: true
                                     ).trim()
                                 } else {
                                     status = bat(
-                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8080/actuator/health || echo 000',
+                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8081/actuator/health || echo 000',
                                         returnStdout: true
                                     ).trim()
                                 }
