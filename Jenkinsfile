@@ -22,6 +22,14 @@ pipeline {
             }
         }
         
+        stage('Build Backend') {
+            steps {
+                dir('Backend') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+        
         stage('Setup Buildx') {
             steps {
                 script {
