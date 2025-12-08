@@ -2,8 +2,7 @@ pipeline {
     agent any
     
     environment {
-        JAVA_HOME = '/opt/homebrew/Cellar/openjdk@17/17.0.17/libexec/openjdk.jdk/Contents/Home'
-        PATH = "${JAVA_HOME}/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
+        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKER_HUB_USERNAME = 'harshwarbhe'
         BACKEND_IMAGE = "${DOCKER_HUB_USERNAME}/revticket-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB_USERNAME}/revticket-frontend"
@@ -26,7 +25,10 @@ pipeline {
         stage('Build Backend') {
             steps {
                 dir('Backend') {
-                    sh 'mvn clean package -DskipTests'
+                    sh '''
+                        export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || echo $JAVA_HOME)
+                        mvn clean package -DskipTests
+                    '''
                 }
             }
         }
