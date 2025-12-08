@@ -2,7 +2,8 @@ pipeline {
     agent any
     
     environment {
-        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
+        JAVA_HOME = '/opt/homebrew/Cellar/openjdk@17/17.0.17/libexec/openjdk.jdk/Contents/Home'
+        PATH = "${JAVA_HOME}/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKER_HUB_USERNAME = 'harshwarbhe'
         BACKEND_IMAGE = "${DOCKER_HUB_USERNAME}/revticket-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB_USERNAME}/revticket-frontend"
