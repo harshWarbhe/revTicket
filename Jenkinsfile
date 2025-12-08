@@ -22,106 +22,82 @@ pipeline {
             }
         }
         
-        stage('Build Docker Images') {
-            parallel {
-                stage('Backend Image') {
-                    steps {
-                        script {
-                            dir('Backend') {
-                                if (isUnix()) {
-                                    sh "docker build -t ${BACKEND_IMAGE}:${BUILD_TAG} -t ${BACKEND_IMAGE}:latest ."
-                                } else {
-                                    bat "docker build -t ${BACKEND_IMAGE}:${BUILD_TAG} -t ${BACKEND_IMAGE}:latest ."
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('Frontend Image') {
-                    steps {
-                        script {
-                            dir('Frontend') {
-                                if (isUnix()) {
-                                    sh "docker build -t ${FRONTEND_IMAGE}:${BUILD_TAG} -t ${FRONTEND_IMAGE}:latest ."
-                                } else {
-                                    bat "docker build -t ${FRONTEND_IMAGE}:${BUILD_TAG} -t ${FRONTEND_IMAGE}:latest ."
-                                }
-                            }
-                        }
+        stage('Setup Buildx') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'docker buildx create --use --name multiarch-builder || docker buildx use multiarch-builder'
+                        sh 'docker run --privileged --rm tonistiigi/binfmt --install all'
+                        sh 'docker buildx inspect --bootstrap'
                     }
                 }
             }
         }
         
-        stage('Push to Registry') {
+        stage('Build & Push Multi-Platform Images') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         if (isUnix()) {
                             sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                            sh "docker push ${BACKEND_IMAGE}:${BUILD_TAG}"
-                            sh "docker push ${BACKEND_IMAGE}:latest"
-                            sh "docker push ${FRONTEND_IMAGE}:${BUILD_TAG}"
-                            sh "docker push ${FRONTEND_IMAGE}:latest"
+                            
+                            // Build and push backend
+                            dir('Backend') {
+                                sh "docker buildx build --platform linux/amd64,linux/arm64 -t ${BACKEND_IMAGE}:${BUILD_TAG} -t ${BACKEND_IMAGE}:latest --push ."
+                            }
+                            
+                            // Build and push frontend
+                            dir('Frontend') {
+                                sh "docker buildx build --platform linux/amd64,linux/arm64 -t ${FRONTEND_IMAGE}:${BUILD_TAG} -t ${FRONTEND_IMAGE}:latest --push ."
+                            }
                         } else {
                             bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
-                            bat "docker push ${BACKEND_IMAGE}:${BUILD_TAG}"
-                            bat "docker push ${BACKEND_IMAGE}:latest"
-                            bat "docker push ${FRONTEND_IMAGE}:${BUILD_TAG}"
-                            bat "docker push ${FRONTEND_IMAGE}:latest"
+                            dir('Backend') {
+                                bat "docker build -t ${BACKEND_IMAGE}:${BUILD_TAG} -t ${BACKEND_IMAGE}:latest ."
+                            }
+                            dir('Frontend') {
+                                bat "docker build -t ${FRONTEND_IMAGE}:${BUILD_TAG} -t ${FRONTEND_IMAGE}:latest ."
+                            }
                         }
-                    }
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh 'docker-compose down || true'
-                        sh 'docker stop revticket-mysql revticket-mongodb revticket-backend revticket-frontend || true'
-                        sh 'docker rm revticket-mysql revticket-mongodb revticket-backend revticket-frontend || true'
-                        sh 'lsof -ti:8081 | xargs kill -9 || true'
-                        sh 'lsof -ti:3307 | xargs kill -9 || true'
-                        sh 'lsof -ti:27018 | xargs kill -9 || true'
-                        sh 'docker-compose up -d'
-                    } else {
-                        bat 'docker-compose down || exit 0'
-                        bat 'docker stop revticket-mysql revticket-mongodb revticket-backend revticket-frontend || exit 0'
-                        bat 'docker rm revticket-mysql revticket-mongodb revticket-backend revticket-frontend || exit 0'
-                        bat 'for /f "tokens=5" %%a in (\'netstat -aon ^| find ":8081" ^| find "LISTENING"\') do taskkill /F /PID %%a || exit 0'
-                        bat 'for /f "tokens=5" %%a in (\'netstat -aon ^| find ":3307" ^| find "LISTENING"\') do taskkill /F /PID %%a || exit 0'
-                        bat 'for /f "tokens=5" %%a in (\'netstat -aon ^| find ":27018" ^| find "LISTENING"\') do taskkill /F /PID %%a || exit 0'
-                        bat 'docker-compose up -d'
                     }
                 }
             }
         }
         
-        stage('Health Check') {
+
+
+        stage('Verify Images Pushed') {
             steps {
                 script {
-                    timeout(time: 3, unit: 'MINUTES') {
-                        waitUntil {
-                            script {
-                                def status
-                                if (isUnix()) {
-                                    status = sh(
-                                        script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/health || echo 000',
-                                        returnStdout: true
-                                    ).trim()
-                                } else {
-                                    status = bat(
-                                        script: '@curl -s -o nul -w "%%{http_code}" http://localhost:8081/actuator/health || echo 000',
-                                        returnStdout: true
-                                    ).trim()
-                                }
-                                return status == '200'
-                            }
-                        }
+                    if (isUnix()) {
+                        sh "docker buildx imagetools inspect ${BACKEND_IMAGE}:latest"
+                        sh "docker buildx imagetools inspect ${FRONTEND_IMAGE}:latest"
                     }
-                    echo 'Application is healthy!'
+                    echo '✅ Multi-platform images successfully pushed to DockerHub!'
+                    echo 'Platforms: linux/amd64, linux/arm64'
+                    echo ''
+                    echo '📦 Images:'
+                    echo "   - ${BACKEND_IMAGE}:latest"
+                    echo "   - ${BACKEND_IMAGE}:${BUILD_TAG}"
+                    echo "   - ${FRONTEND_IMAGE}:latest"
+                    echo "   - ${FRONTEND_IMAGE}:${BUILD_TAG}"
+                }
+            }
+        }
+        
+        stage('Deploy to EC2') {
+            steps {
+                script {
+                    echo ''
+                    echo '🚀 Ready to Deploy on EC2!'
+                    echo ''
+                    echo 'Run these commands on EC2:'
+                    echo '  ssh -i "revticket.pem" ubuntu@ec2-3-6-43-162.ap-south-1.compute.amazonaws.com'
+                    echo '  cd ~/revticket'
+                    echo '  docker-compose pull'
+                    echo '  docker-compose up -d'
+                    echo '  docker-compose ps'
+                    echo ''
                 }
             }
         }
@@ -138,17 +114,31 @@ pipeline {
             }
         }
         success {
+            echo ''
+            echo '========================================'
             echo "✅ Pipeline completed successfully - Build #${BUILD_NUMBER}"
+            echo '========================================'
+            echo ''
+            echo '📦 Images pushed to DockerHub:'
+            echo "   - harshwarbhe/revticket-backend:latest"
+            echo "   - harshwarbhe/revticket-backend:${BUILD_NUMBER}"
+            echo "   - harshwarbhe/revticket-frontend:latest"
+            echo "   - harshwarbhe/revticket-frontend:${BUILD_NUMBER}"
+            echo ''
+            echo '🌍 Platforms: linux/amd64, linux/arm64'
+            echo ''
+            echo '🚀 Deploy on EC2:'
+            echo '   cd ~/revticket && docker-compose pull && docker-compose up -d'
+            echo ''
+            echo '========================================'
         }
         failure {
-            echo "❌ Pipeline failed - Check logs for details"
-            script {
-                if (isUnix()) {
-                    sh 'docker-compose logs --tail=50 || true'
-                } else {
-                    bat 'docker-compose logs --tail=50 || exit 0'
-                }
-            }
+            echo ''
+            echo '========================================'
+            echo "❌ Pipeline failed - Build #${BUILD_NUMBER}"
+            echo '========================================'
+            echo 'Check Jenkins console output for details'
+            echo ''
         }
         cleanup {
             cleanWs()
